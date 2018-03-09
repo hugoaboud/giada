@@ -31,6 +31,7 @@
 
 #include <pthread.h>
 #include <vector>
+#include "inputChannel.h"
 #include "../deps/rtaudio-mod/RtAudio.h"
 
 
@@ -84,7 +85,9 @@ enum {    // const - fade types
 	XFADE   = 0x02
 };
 
+extern std::vector<InputChannel*> inputChannels;
 extern std::vector<Channel*> channels;
+extern std::vector<Channel*> masterChannels;
 
 extern bool   recording;         // is recording something?
 extern bool   ready;

@@ -117,6 +117,12 @@ src/core/channel.h                     \
 src/core/channel.cpp                   \
 src/core/sampleChannel.h               \
 src/core/sampleChannel.cpp             \
+src/core/inputChannel.h                \
+src/core/inputChannel.cpp              \
+src/core/columnChannel.h               \
+src/core/columnChannel.cpp             \
+src/core/masterChannel.h               \
+src/core/masterChannel.cpp             \
 src/core/midiDispatcher.h              \
 src/core/midiDispatcher.cpp            \
 src/core/midiChannel.h                 \
@@ -195,6 +201,8 @@ src/gui/dialogs/gd_devInfo.h           \
 src/gui/dialogs/gd_devInfo.cpp		     \
 src/gui/dialogs/pluginList.h	         \
 src/gui/dialogs/pluginList.cpp         \
+src/gui/dialogs/inputList.h	         \
+src/gui/dialogs/inputList.cpp         \
 src/gui/dialogs/pluginWindow.h	       \
 src/gui/dialogs/pluginWindow.cpp       \
 src/gui/dialogs/sampleEditor.h         \

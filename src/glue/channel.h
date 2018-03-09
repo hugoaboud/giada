@@ -40,6 +40,7 @@ namespace giada {
 namespace c     {
 namespace channel 
 {
+
 /* addChannel
 Adds an empty new channel to the stack. Returns the new channel. */
 

@@ -239,6 +239,9 @@
 /* -- channel types --------------------------------------------------------- */
 #define CHANNEL_SAMPLE 0x01
 #define CHANNEL_MIDI   0x02
+#define CHANNEL_INPUT  0x04
+#define CHANNEL_COLUMN 0x08
+#define CHANNEL_MASTER 0x10
 
 
 

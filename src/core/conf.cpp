@@ -90,7 +90,11 @@ void sanitize()
 	if (configY < 0) configY = 0;
 	if (pluginListX < 0) pluginListX = 0;
 	if (pluginListY < 0) pluginListY = 0;
+	if (inputListX < 0) inputListX = 0;
+	if (inputListY < 0) inputListY = 0;
 #ifdef WITH_VST
+	if (pluginChooserX < 0) pluginChooserX = 0;
+	if (pluginChooserY < 0) pluginChooserY = 0;
 	if (pluginChooserW < 640) pluginChooserW = 640;
 	if (pluginChooserH < 480) pluginChooserW = 480;
 #endif
@@ -229,6 +233,9 @@ int pianoRollH = 422;
 int pluginListX = 0;
 int pluginListY = 0;
 
+int inputListX = 0;
+int inputListY = 0;
+
 int configX = 0;
 int configY = 0;
 
@@ -243,6 +250,7 @@ int aboutY = 0;
 
 int nameX = 0;
 int nameY = 0;
+
 
 #ifdef WITH_VST
 

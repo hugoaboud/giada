@@ -45,6 +45,7 @@
 #include "../../dialogs/browser/browserLoad.h"
 #include "../../dialogs/browser/browserSave.h"
 #include "../../dialogs/midiIO/midiInputMaster.h"
+#include "../../dialogs/inputList.h"
 #include "keyboard/keyboard.h"
 #include "mainMenu.h"
 
@@ -164,6 +165,7 @@ void geMainMenu::__cb_file()
 void geMainMenu::__cb_edit()
 {
 	Fl_Menu_Item menu[] = {
+		{"Input channels"},
 		{"Clear all samples"},
 		{"Clear all actions"},
 		{"Remove empty columns"},
@@ -198,6 +200,11 @@ void geMainMenu::__cb_edit()
 	const Fl_Menu_Item* m = menu->popup(Fl::event_x(),	Fl::event_y(), 0, 0, b);
 	if (!m) return;
 
+	if (strcmp(m->label(), "Input channels") == 0) {
+		gu_openSubWindow(G_MainWin, new gdInputList(), 0);
+		return;
+	}
+	
 	if (strcmp(m->label(), "Clear all samples") == 0) {
 		if (!gdConfirmWin("Warning", "Clear all samples: are you sure?"))
 			return;

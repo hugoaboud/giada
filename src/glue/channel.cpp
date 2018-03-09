@@ -120,7 +120,6 @@ int loadChannel(SampleChannel* ch, const string& fname)
 	return result;
 }
 
-
 /* -------------------------------------------------------------------------- */
 
 

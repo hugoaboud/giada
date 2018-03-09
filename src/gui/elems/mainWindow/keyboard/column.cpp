@@ -63,7 +63,7 @@ geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent)
 	instead. */
 
 	begin();
-	m_addChannelBtn = new geButton(x(), y(), w(), G_GUI_UNIT, "Add new channel");
+	m_addChannelBtn = new geButton(x(), y(), w(), G_GUI_UNIT, ("Column " + std::to_string(index)).c_str());
 	end();
 
 	m_resizer = new geResizerBar(x()+w(), y(), G_GUI_OUTER_MARGIN * 2, h(), 

@@ -33,6 +33,7 @@
 
 
 class Channel;
+class InputChannel;
 class SampleChannel;
 
 
@@ -40,6 +41,30 @@ namespace giada {
 namespace m {
 namespace mh
 {
+
+/**
+	INPUT
+**/
+
+/* addInputChannel
+Adds a new input channel into mixer's stack. */
+
+InputChannel* addInputChannel();
+
+/* getInputChannelCount
+Get how many inputs are on stack. */
+
+int getInputChannelCount();
+
+/* getInputChannelByIndex
+Returns channel with given index 'i'. */
+
+InputChannel* getInputChannelByIndex(int i);
+
+/**
+	COLUMN
+**/
+
 /* addChannel
 Adds a new channel of type 'type' into mixer's stack. */
 

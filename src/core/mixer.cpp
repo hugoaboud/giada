@@ -362,6 +362,7 @@ void testLastBeat()
 /* -------------------------------------------------------------------------- */
 
 
+std::vector<InputChannel*> inputChannels;
 std::vector<Channel*> channels;
 
 bool   recording    = false;   // is recording something?

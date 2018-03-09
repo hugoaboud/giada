@@ -45,6 +45,7 @@
 #include "channel.h"
 #include "kernelAudio.h"
 #include "midiMapConf.h"
+#include "inputChannel.h"
 #include "sampleChannel.h"
 #include "midiChannel.h"
 #include "wave.h"
@@ -86,6 +87,24 @@ int readPatchPlugins(vector<patch::plugin_t>* list, int type)
 
 #endif
 
+/* ------------------------------------------------------------------------ */
+
+
+int getNewInputChanIndex()
+{
+	/* always skip last channel: it's the last one just added */
+
+	if (mixer::inputChannels.size() == 1)
+		return 0;
+
+	int index = 0;
+	for (unsigned i=0; i<mixer::inputChannels.size()-1; i++) {
+		if (mixer::inputChannels.at(i)->index > index)
+			index = mixer::inputChannels.at(i)->index;
+		}
+	index += 1;
+	return index;
+}
 
 /* ------------------------------------------------------------------------ */
 
@@ -127,6 +146,54 @@ bool uniqueSamplePath(const SampleChannel* skip, const string& path)
 	return true;
 }
 
+
+/* -------------------------------------------------------------------------- */
+
+
+InputChannel* addInputChannel()
+{
+	InputChannel* ch;
+	int bufferSize = kernelAudio::getRealBufSize() * 2;
+
+	ch = new InputChannel(bufferSize);
+
+	if (!ch->allocBuffers()) {
+		delete ch;
+		return nullptr;
+	}
+
+	while (true) {
+		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
+			continue;
+		mixer::inputChannels.push_back(ch);
+		pthread_mutex_unlock(&mixer::mutex_chans);
+		break;
+	}
+
+	ch->index = getNewInputChanIndex();
+	gu_log("[addChannel] channel index=%d added, type=%d, total=%d\n",
+		ch->index, ch->type, mixer::channels.size());
+	return ch;
+}
+
+/* -------------------------------------------------------------------------- */
+
+int getInputChannelCount() 
+{
+	return mixer::inputChannels.size();
+}
+
+/* -------------------------------------------------------------------------- */
+
+
+InputChannel* getInputChannelByIndex(int index)
+{
+	for (unsigned i=0; i<mixer::inputChannels.size(); i++)
+		if (mixer::inputChannels.at(i)->index == index)
+			return mixer::inputChannels.at(i);
+	gu_log("[getInputChannelByIndex] channel at index %d not found!\n", index);
+	return nullptr;
+}
 
 /* -------------------------------------------------------------------------- */
 
