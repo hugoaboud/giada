@@ -31,11 +31,12 @@
 
 #include <pthread.h>
 #include <vector>
-#include "inputChannel.h"
 #include "../deps/rtaudio-mod/RtAudio.h"
 
 
 class Channel;
+class InputChannel;
+class ColumnChannel;
 
 
 namespace giada {
@@ -86,8 +87,9 @@ enum {    // const - fade types
 };
 
 extern std::vector<InputChannel*> inputChannels;
-extern std::vector<Channel*> channels;
-extern std::vector<Channel*> columnChannels;
+extern std::vector<ColumnChannel*> columnChannels;
+extern std::vector<Channel*> channels; // this is about to disappear
+//extern std::vector<MasterChannel*> masterChannels;
 
 extern bool   recording;         // is recording something?
 extern bool   ready;

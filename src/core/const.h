@@ -243,6 +243,9 @@
 #define CHANNEL_COLUMN 0x08
 #define CHANNEL_MASTER 0x10
 
+/* -- menus ----------------------------------------------------------------- */
+#define INPUTCHANNEL_RENAME 0x01
+#define INPUTCHANNEL_REMOVE 0x02
 
 
 /* -- unique IDs of mainWin's subwindows ------------------------------------ */

@@ -91,8 +91,12 @@ protected:
 	float volume;   // global volume
 	float volume_i; // internal volume
 	float volume_d; // delta volume (for envelope)
+	
 	bool armed;
+
 	std::string name;
+
+	float  peak = 0;
 
 public:
 
@@ -110,6 +114,12 @@ public:
 
 	virtual int readPatch(const std::string& basePath, int i,
     pthread_mutex_t* pluginMutex, int samplerate, int rsmpQuality);
+
+	/* input
+	Merges vChannels into buffer. Warning:
+	inBuffer might be nullptr if no input devices are available for recording. */
+
+	virtual void input(float* inBuffer) = 0;
 
 	/* process
 	Merges vChannels into buffer, plus plugin processing (if any). Warning:
@@ -229,6 +239,7 @@ public:
 	bool isArmed() const;
 	bool isPreview() const;
 	int getMidiInFilter() const;
+	float getPeak() const;
 
 	/* isMidiAllowed
 	Given a MIDI channel 'c' tells whether this channel should be allowed to receive

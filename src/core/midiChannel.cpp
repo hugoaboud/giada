@@ -162,6 +162,10 @@ void MidiChannel::unsetMute(bool internal)
 	sendMidiLmute();
 }
 
+/* ----- */
+
+void MidiChannel::input(float *inBuffer) {}
+
 
 /* -------------------------------------------------------------------------- */
 

@@ -34,6 +34,7 @@
 
 class Channel;
 class InputChannel;
+class ColumnChannel;
 class SampleChannel;
 
 
@@ -51,6 +52,11 @@ Adds a new input channel into mixer's stack. */
 
 InputChannel* addInputChannel();
 
+/* deleteInputChannel
+Completely removes a column hannel from the stack. */
+
+int deleteInputChannel(InputChannel* ch);
+
 /* getInputChannelCount
 Get how many inputs are on stack. */
 
@@ -63,6 +69,29 @@ InputChannel* getInputChannelByIndex(int i);
 
 /**
 	COLUMN
+**/
+
+/* addColumnChannel
+Adds a new column channel into mixer's stack. */
+
+ColumnChannel* addColumnChannel();
+
+/* deleteChannel
+Completely removes a column hannel from the stack. */
+
+int deleteColumnChannel(ColumnChannel* ch);
+
+/* getColumnChannelCount
+Get how many inputs are on stack. */
+
+int getColumnChannelCount();
+
+/* getColumnChannelByIndex
+Returns column channel with given index 'i'. */
+
+ColumnChannel* getColumnChannelByIndex(int i);
+
+/**
 **/
 
 /* addChannel

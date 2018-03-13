@@ -39,6 +39,8 @@
 #include "const.h"
 #include "channel.h"
 #include "sampleChannel.h"
+#include "inputChannel.h"
+#include "columnChannel.h"
 #include "midiChannel.h"
 #include "mixer.h"
 
@@ -76,40 +78,31 @@ float tick[TICKSIZE] = {
 
 /* -------------------------------------------------------------------------- */
 
-/* inputChannels
-Records from line in. */
+/* feed
+ on InputChannel::process method. */
 
-void toInputChannels(float* outBuf, float* inBuf, unsigned bufferSize)
+void routeAudio(float* outBuf, float* inBuf, unsigned bufferSize)
 {
 	if (!kernelAudio::isInputEnabled())
 		return;
 
-	if (waitRec < conf::delayComp) {
-		waitRec += conf::channelsIn;
-		return;
-	}
-
-	// For each InputChannel, if it's recording or monitoring, process
-	// de-interleaved buffer for the patched input. This writes the contents
-	// of the buffer to the virtual channel, process throught the VSTs and writes
-	// to the output buffer.
+	// Feeds InputChannels that are currently being used on a recording or being
+	// monitored with the input buffer.
+	// InputChannel copies de-interleaved buffer[inputIndex] to it's own virtual
+	// channel and process throught VSTs.
+	// If the InputChannel is monitoring, writes the processed output to outBuf.
+	// Also feeds the ColumnChannel it's routed to with the processed output.
 	for (unsigned i=0; i<inputChannels.size(); i++) {
 		inputChannels[i]->process(outBuf, inBuf);
 	}
 
-	/*if (!mh::hasArmedSampleChannels() || !kernelAudio::isInputEnabled() || !recording)
-		return;*/
-
-	/* Delay comp: wait until waitRec reaches delayComp. WaitRec
-	 * returns to 0 in mixerHandler, as soon as the recording ends*/
-	/*
-	
-	vChanInput[inputTracker]   += inBuf[frame]   * inVol;
-	vChanInput[inputTracker+1] += inBuf[frame+1] * inVol;
-	inputTracker += 2;
-	if (inputTracker >= clock::getTotalFrames())
-		inputTracker = 0;*/
+	// Process ColumnChannels
+	// 
+	for (unsigned i=0; i<columnChannels.size(); i++) {
+		columnChannels[i]->process(outBuf, nullptr);
+	}
 }
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -123,6 +116,8 @@ void clearAllBuffers(float* outBuf, unsigned bufferSize)
 	pthread_mutex_lock(&mutex_chans);
 	for (InputChannel* ichannel : inputChannels)
 		ichannel->clear();
+	for (ColumnChannel* cchannel : columnChannels)
+		cchannel->clear();
 	for (Channel* channel : channels)
 		channel->clear();
 	pthread_mutex_unlock(&mutex_chans);
@@ -320,6 +315,7 @@ void testLastBeat()
 
 
 std::vector<InputChannel*> inputChannels;
+std::vector<ColumnChannel*> columnChannels;
 std::vector<Channel*> channels;
 
 bool   recording    = false;   // is recording something?
@@ -399,10 +395,12 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 
 	clearAllBuffers(outBuf, bufferSize);
 
-	// Feeds InputChannels with inBuf and write processed output
+	// >Feeds InputChannels with inBuf and write processed output
 	// of monitoring channels to outBuf.
-	toInputChannels(outBuf, inBuf, bufferSize);
+	//
+	routeAudio(outBuf, inBuf, bufferSize);
 
+	// Read actions and test for quantize, bars and beats
 	for (unsigned j=0; j<bufferSize*conf::channelsIn; j+=conf::channelsIn) {
 		if (clock::isRunning()) {
 			doQuantize(j);

@@ -432,6 +432,11 @@ float Channel::getPan() const
 }
 
 
+float Channel::getPeak() const
+{
+	return peak;
+}
+
 /* -------------------------------------------------------------------------- */
 
 

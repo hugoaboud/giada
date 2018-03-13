@@ -80,31 +80,35 @@ private:
   gdInputList  *pParent;
   InputChannel *pInput;
 
-  	static void cb_removeInput(Fl_Widget *v, void *p);
+  	static void cb_button(Fl_Widget *v, void *p);
   	static void cb_setBypass(Fl_Widget *v, void *p);
-  	static void cb_setName(Fl_Widget *v, void *p);
 	static void cb_setInputAudio(Fl_Widget *v, void *p);
 	static void cb_setInputMidiDevice(Fl_Widget *v, void *p);
 	static void cb_setInputMidiChannel(Fl_Widget *v, void *p);
 #ifdef WITH_VST
 	static void cb_openFxWindow(Fl_Widget* v, void* p);
 #endif
-	static void cb_mute(Fl_Widget* v, void* p);
+	static void cb_preMute(Fl_Widget* v, void* p);
+	static void cb_posMute(Fl_Widget* v, void* p);
+	static void cb_setColumnChannel(Fl_Widget *v, void *p);
 	static void cb_changeVol(Fl_Widget* v, void* p);
 	static void cb_inputMonitor(Fl_Widget* v, void* p);
 
-	void cb_removeInput();
+	void cb_button();
 	void cb_setBypass();
-	void cb_setName();
 	void cb_setInputAudio();
 	void cb_setInputMidiDevice();
 	void cb_setInputMidiChannel();
 #ifdef WITH_VST
 	void cb_openFxWindow();
 #endif
-	void cb_mute();
+	void cb_preMute();
+	void cb_posMute();
+	void cb_setColumnChannel();
 	void cb_changeVol();
 	void cb_inputMonitor();
+
+	int openInputChannelMenu();
 
 public:
 
@@ -116,8 +120,10 @@ public:
 #ifdef WITH_VST
 	geStatusButton *fx;
 #endif
-	geStatusButton *mute;
+	geStatusButton *preMute;
+	geStatusButton *posMute;
 	geSoundMeter   *meter;
+	geChoice	   *columnChannel;
 	geDial         *vol;
 	geStatusButton *inputMonitor;
 

@@ -33,6 +33,7 @@
 
 
 class Channel;
+class ColumnChannel;
 class geButton;
 class geChannel;
 class geResizerBar;
@@ -48,15 +49,17 @@ private:
 
 	int openTypeMenu();
 
-	geButton*     m_addChannelBtn;
-	geResizerBar* m_resizer;
-	geKeyboard*   m_parent;
+	geButton*      m_addChannelBtn;
+	geResizerBar*  m_resizer;
+	geKeyboard*    m_parent;
 
 	int m_index;
 
+	ColumnChannel* channel;
+
 public:
 
-	geColumn(int x, int y, int w, int h, int index, geKeyboard* parent);
+	geColumn(int x, int y, int w, int h, int index, geKeyboard* parent, ColumnChannel *channel);
 	~geColumn();
 
 	/* addChannel

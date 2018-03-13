@@ -854,8 +854,7 @@ void SampleChannel::pushWave(Wave* w)
 
 /* -------------------------------------------------------------------------- */
 
-
-void SampleChannel::process(float* outBuffer, float* inBuffer)
+void SampleChannel::input(float* inBuffer)
 {
 	/* If armed and inbuffer is not nullptr (i.e. input device available) and
   input monitor is on, copy input buffer to vChan: this enables the input
@@ -865,15 +864,21 @@ void SampleChannel::process(float* outBuffer, float* inBuffer)
 	if (armed && inBuffer && inputMonitor)
     for (int i=0; i<bufferSize; i++)
       vChan[i] += inBuffer[i]; // add, don't overwrite (no raw memcpy)
+}
+
+
+void SampleChannel::process(float* outBuffer, float* inBuffer)
+{
+	input(inBuffer);
 
 #ifdef WITH_VST
 	pluginHost::processStack(vChan, this);
 #endif
 
 	// TODO - Opaque channels' processing
-  for (int j=0; j<bufferSize; j+=2) {
+  for (int j=0; j<bufferSize; j++) {
 		outBuffer[j]   += vChan[j]   * volume * calcPanning(0) * boost;
-		outBuffer[j+1] += vChan[j+1] * volume * calcPanning(1) * boost;
+		outBuffer[j+1] += vChan[j]   * volume * calcPanning(1) * boost;
 	}
 }
 

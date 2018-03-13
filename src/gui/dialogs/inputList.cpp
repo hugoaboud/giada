@@ -24,6 +24,9 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <FL/fl_draw.H>
+#include <FL/Fl_Menu_Button.H>
+
 #include "../../utils/gui.h"
 #include "../../utils/fs.h"
 #include "../../core/conf.h"
@@ -34,6 +37,7 @@
 #include "../../core/mixer.h"
 #include "../../core/mixerHandler.h"
 #include "../../core/channel.h"
+#include "../../core/columnChannel.h"
 #include "../../glue/plugin.h"
 #include "../../utils/log.h"
 #include "../../utils/string.h"
@@ -47,7 +51,7 @@
 #include "../elems/mainWindow/keyboard/channel.h"
 #include "gd_mainWindow.h"
 #include "inputList.h"
-
+#include "pluginList.h"
 
 extern gdMainWindow* G_MainWin;
 
@@ -56,7 +60,7 @@ using std::string;
 using namespace giada::m;
 using namespace giada::c;
 
-int _w = 717;
+int _w = 849;
 
 gdInputList::gdInputList()
 	: gdWindow(_w, 204)
@@ -158,12 +162,12 @@ void gdInputList::refreshList()
 	
 	//int numInputs = pluginHost::countPlugins(stackType, ch);
 	//int numInputs = 0;
-	int numInputs = mh::getInputChannelCount();
+	int numInputs = mixer::inputChannels.size();
 	int i = 0;
 
 	while (i<numInputs) {
 		InputChannel *pInput = mh::getInputChannelByIndex(i);
-		gdInput *gdi     = new gdInput(this, pInput, list->x(), list->y()-list->yposition()+(i*24), 800);
+		gdInput *gdi     = new gdInput(this, pInput, list->x(), list->y()-list->yposition()+(i*24), 836);
 		list->add(gdi);
 		i++;
 	}
@@ -194,21 +198,22 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	: Fl_Group(X, Y, W, 20), pParent(gdi), pInput (i)
 {
 	begin();
-	remove  		 = new geIdButton(x(), y(), 20, 20, "", fxRemoveOff_xpm, fxRemoveOn_xpm);
-	button  		 = new geIdButton(remove->x()+remove->w()+4, y(), 120, 20);
+	button  		 = new geIdButton(x(), y(), 120, 20);
 	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 132, 20);
 	inputMidiDevice  = new geChoice(inputAudio->x()+inputAudio->w()+4, y(), 132, 20);
 	inputMidiChannel = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);	
-	fx    			 = new geStatusButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
-	mute  			 = new geStatusButton(fx->x()+fx->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
-	meter   		 = new geSoundMeter(mute->x()+mute->w()+4, y()+4, 140, 12);
-	vol				 = new geDial(meter->x()+meter->w()+4, y(), 20, 20);
+	preMute			 = new geStatusButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
+	fx    			 = new geStatusButton(preMute->x()+preMute->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
+	posMute			 = new geStatusButton(fx->x()+fx->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
+	meter   		 = new geSoundMeter(posMute->x()+posMute->w()+4, y()+4, 140, 12);
+	columnChannel    = new geChoice(meter->x()+meter->w()+4, y(), 132, 20);
+	vol				 = new geDial(columnChannel->x()+columnChannel->w()+4, y(), 20, 20);
 	inputMonitor	 = new geStatusButton(vol->x()+vol->w()+4, y(), 20, 20, channelStop_xpm, channelPlay_xpm);
 	end();
 
 	button->copy_label(i->getName().c_str());
-	button->type(FL_TOGGLE_BUTTON);
-	button->value(1);
+	button->callback(cb_button, (void*)this);
+	button->value(0);
 
 	inputAudio->add("- no audio source -");
 	for (int i = 0; i < conf::channelsIn; i++) inputAudio->add(std::to_string(i+1).c_str());
@@ -223,8 +228,20 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	inputMidiChannel->value(0);
 	inputMidiChannel->callback(cb_setInputMidiChannel, (void*)this);
 	
-	mute->type(FL_TOGGLE_BUTTON);
-	mute->value(i->mute);
+	preMute->type(FL_TOGGLE_BUTTON);
+	preMute->value(i->preMute);
+	preMute->callback(cb_preMute, (void*)this);
+
+	fx->callback(cb_openFxWindow, (void*)this);
+
+	posMute->type(FL_TOGGLE_BUTTON);
+	posMute->value(i->mute);
+	posMute->callback(cb_posMute, (void*)this);
+
+	columnChannel->add("- no output column -");
+	for (unsigned i = 0; i < mixer::columnChannels.size(); i++) columnChannel->add(mixer::columnChannels[i]->getName().c_str());
+	columnChannel->value(0);
+	columnChannel->callback(cb_setColumnChannel, (void*)this);
 
 	vol->value(i->getVolume());
 
@@ -258,16 +275,17 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 
 /* -------------------------------------------------------------------------- */
 
-void gdInput::cb_removeInput    		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_removeInput(); }
+void gdInput::cb_button		    		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_button(); }
 void gdInput::cb_setBypass      		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setBypass(); }
-void gdInput::cb_setName		   		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setName(); }
 void gdInput::cb_setInputAudio		 	(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setInputAudio(); }
 void gdInput::cb_setInputMidiDevice		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setInputMidiDevice(); }
 void gdInput::cb_setInputMidiChannel	(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setInputMidiChannel(); }
 #ifdef WITH_VST
 void gdInput::cb_openFxWindow(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_openFxWindow(); }
 #endif
-void gdInput::cb_mute(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_mute(); }
+void gdInput::cb_preMute(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_preMute(); }
+void gdInput::cb_posMute(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_posMute(); }
+void gdInput::cb_setColumnChannel(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setColumnChannel(); }
 void gdInput::cb_changeVol(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_changeVol(); }
 void gdInput::cb_inputMonitor(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_inputMonitor(); }
 
@@ -276,27 +294,53 @@ void gdInput::cb_inputMonitor(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_inputMo
 /* -------------------------------------------------------------------------- */
 
 
-void gdInput::cb_removeInput()
-{
-	/* any subwindow linked to the plugin must be destroyed first */
+/* -------------------------------------------------------------------------- */
 
-	//pParent->delSubWindow(pPlugin->getId());
-	//plugin::freePlugin(pParent->ch, pPlugin->getId(), pParent->stackType);
-	//pParent->refreshList();
+
+void gdInput::cb_button()
+{
+	gu_log("[geColumn::cb_button]");
+	int opt = openInputChannelMenu();
+	switch (opt) {
+		case INPUTCHANNEL_RENAME:
+			break;
+		case INPUTCHANNEL_REMOVE:
+			break;
+	}
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
+int gdInput::openInputChannelMenu()
+{
+	Fl_Menu_Item rclick_menu[] = {
+		{"Rename"},
+		{"Remove"},
+		{0}
+	};
+
+	Fl_Menu_Button* b = new Fl_Menu_Button(0, 0, 100, 50);
+	b->box(G_CUSTOM_BORDER_BOX);
+	b->textsize(G_GUI_FONT_SIZE_BASE);
+	b->textcolor(G_COLOR_LIGHT_2);
+	b->color(G_COLOR_GREY_2);
+
+	const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, b);
+	if (!m) return 0;
+
+	if (strcmp(m->label(), "Rename") == 0)
+		return INPUTCHANNEL_RENAME;
+	if (strcmp(m->label(), "Remove") == 0)
+		return INPUTCHANNEL_REMOVE;
+	return 0;
 }
 
 /* -------------------------------------------------------------------------- */
 
 
 void gdInput::cb_setBypass()
-{
-	
-}
-
-/* -------------------------------------------------------------------------- */
-
-
-void gdInput::cb_setName()
 {
 	
 }
@@ -325,26 +369,46 @@ void gdInput::cb_setInputMidiChannel()
 
 #ifdef WITH_VST
 void gdInput::cb_openFxWindow() {
+	gu_openSubWindow(G_MainWin, new gdPluginList(pInput), WID_FX_LIST);
 }
 #endif
 
 /* -------------------------------------------------------------------------- */
 
-void gdInput::cb_mute() {
+void gdInput::cb_preMute() {
+	if (preMute->value()) {
+		pInput->setPreMute(false);
+		posMute->value(pInput->mute);
+	}
+	else pInput->unsetPreMute(false);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void gdInput::cb_posMute() {
+	if (posMute->value()) {
+		pInput->setMute(false);
+		preMute->value(pInput->preMute);
+	}
+	else pInput->unsetMute(false);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void gdInput::cb_setColumnChannel() {
+	pInput->columnChannel = mixer::columnChannels[columnChannel->value()-1];
 }
 
 /* -------------------------------------------------------------------------- */
 
 void gdInput::cb_changeVol() {
-
+	pInput->setVolume(vol->value());
 }
 
 /* -------------------------------------------------------------------------- */
 
 void gdInput::cb_inputMonitor() {
-	gu_log("gui val: %d | ",inputMonitor->value());
 	pInput->inputMonitor = inputMonitor->value() > 0;
-	gu_log("chn val: %d\n",pInput->inputMonitor);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -358,6 +422,6 @@ void gdInputList::refresh() {
 }
 
 void gdInput::refresh() {
-	meter->mixerPeak  = pInput->peak;
+	meter->mixerPeak  = pInput->getPeak();
 	meter->redraw();
 }

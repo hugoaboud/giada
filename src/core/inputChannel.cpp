@@ -28,6 +28,7 @@
 #include "conf.h"
 #include "pluginHost.h"
 #include "inputChannel.h"
+#include "columnChannel.h"
 #include "../utils/log.h"
 using namespace giada::m;
 
@@ -59,8 +60,6 @@ void InputChannel::preview(float* outBuffer) {}
 void InputChannel::start(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) {}
 void InputChannel::stop() {}
 void InputChannel::kill(int frame) {}
-void InputChannel::setMute  (bool internal) {}
-void InputChannel::unsetMute(bool internal) {}
 void InputChannel::empty() {}
 void InputChannel::stopBySeq(bool chansStopOnSeqHalt) {}
 void InputChannel::quantize(int index, int localFrame) {}
@@ -69,22 +68,46 @@ void InputChannel::onBar(int frame) {}
 void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, int quantize, bool mixerIsRunning){}
 void InputChannel::rewind() {}
 
+void InputChannel::setMute  (bool internal) { 
+	preMute = false;
+	mute = true;
+}
+void InputChannel::unsetMute(bool internal) { 
+	mute = false; 
+}
+void InputChannel::setPreMute  (bool internal) { 
+	preMute = true;
+	mute = false;
+}
+void InputChannel::unsetPreMute(bool internal) { 
+	preMute = false;
+}
+
+
 void InputChannel::clear() {
 	/** TODO - these memsets may be done only if status PLAY (if below),
 	 * but it would require extra clearPChan calls when samples stop */
 	std::memset(vChan, 0, sizeof(float) * bufferSize);
 }
 
+void InputChannel::input(float* inBuffer) {
+	for (int i=0; i<bufferSize; i++) {
+		vChan[i] += inBuffer[inputIndex+i*conf::channelsIn]; // add, don't overwrite (no raw memcpy)
+		if (vChan[i] > peak) peak = vChan[i];
+	}
+}
+
+/*
+	inBuffer -> interleaved buffer of conf::channelsIn channels
+*/
 void InputChannel::process(float* outBuffer, float* inBuffer) {
 	/* If input monitor is on, copy input buffer to vChan: this enables the input
   monitoring. The vChan will be overwritten later by pluginHost::processStack. */
 	peak = 0;
 	if ((canInputRec() || inputMonitor) && inputIndex > -1)
 	{
-	    for (int i=0; i<bufferSize; i++) {
-			vChan[i] += inBuffer[inputIndex+i*conf::channelsIn]; // add, don't overwrite (no raw memcpy)
-			if (vChan[i] > peak) peak = vChan[i];
-		}
+		if (!preMute)
+	    	input(inBuffer);
 
 	#ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
@@ -96,6 +119,11 @@ void InputChannel::process(float* outBuffer, float* inBuffer) {
 				outBuffer[j*2]   += vChan[j] * volume * calcPanning(0);
 				outBuffer[j*2+1] +=	vChan[j] * volume * calcPanning(1);
 			}
+		}
+
+		// feed output ColumnChannel
+		if (columnChannel != nullptr && !preMute && !mute) {
+			columnChannel->input(vChan);
 		}
 	}
 }

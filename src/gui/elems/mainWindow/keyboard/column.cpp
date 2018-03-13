@@ -29,6 +29,7 @@
 #include <FL/fl_draw.H>
 #include <FL/Fl_Menu_Button.H>
 #include "../../../../core/sampleChannel.h"
+#include "../../../../core/columnChannel.h"
 #include "../../../../core/midiChannel.h"
 #include "../../../../glue/channel.h"
 #include "../../../../utils/log.h"
@@ -48,10 +49,11 @@ using std::string;
 using namespace giada;
 
 
-geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent)
+geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent, ColumnChannel *channel)
 	: Fl_Group(X, Y, W, H), 
 		m_parent(parent), 
-		m_index (index)
+		m_index (index),
+		channel(channel)
 {
 	/* geColumn does a bit of a mess: we pass a pointer to its m_parent (geKeyboard) and
 	the geColumn itself deals with the creation of another widget, outside geColumn
@@ -63,7 +65,7 @@ geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent)
 	instead. */
 
 	begin();
-	m_addChannelBtn = new geButton(x(), y(), w(), G_GUI_UNIT, ("Column " + std::to_string(index)).c_str());
+	m_addChannelBtn = new geButton(x(), y(), w(), G_GUI_UNIT, channel->getName().c_str());
 	end();
 
 	m_resizer = new geResizerBar(x()+w(), y(), G_GUI_OUTER_MARGIN * 2, h(), 

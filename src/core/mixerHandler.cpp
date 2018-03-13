@@ -47,6 +47,7 @@
 #include "midiMapConf.h"
 #include "inputChannel.h"
 #include "sampleChannel.h"
+#include "columnChannel.h"
 #include "midiChannel.h"
 #include "wave.h"
 #include "waveManager.h"
@@ -89,7 +90,6 @@ int readPatchPlugins(vector<patch::plugin_t>* list)
 
 /* ------------------------------------------------------------------------ */
 
-
 int getNewInputChanIndex()
 {
 	/* always skip last channel: it's the last one just added */
@@ -101,6 +101,24 @@ int getNewInputChanIndex()
 	for (unsigned i=0; i<mixer::inputChannels.size()-1; i++) {
 		if (mixer::inputChannels.at(i)->index > index)
 			index = mixer::inputChannels.at(i)->index;
+		}
+	index += 1;
+	return index;
+}
+
+/* ------------------------------------------------------------------------ */
+
+int getNewColumnChanIndex()
+{
+	/* always skip last channel: it's the last one just added */
+
+	if (mixer::columnChannels.size() == 1)
+		return 0;
+
+	int index = 0;
+	for (unsigned i=0; i<mixer::columnChannels.size()-1; i++) {
+		if (mixer::columnChannels.at(i)->index > index)
+			index = mixer::columnChannels.at(i)->index;
 		}
 	index += 1;
 	return index;
@@ -153,7 +171,7 @@ bool uniqueSamplePath(const SampleChannel* skip, const string& path)
 InputChannel* addInputChannel()
 {
 	InputChannel* ch;
-	int bufferSize = kernelAudio::getRealBufSize() * 2;
+	int bufferSize = kernelAudio::getRealBufSize()*2;
 
 	ch = new InputChannel(bufferSize);
 
@@ -178,30 +196,85 @@ InputChannel* addInputChannel()
 
 /* -------------------------------------------------------------------------- */
 
-int getInputChannelCount() 
-{
-	return mixer::inputChannels.size();
-}
-
-/* -------------------------------------------------------------------------- */
-
 
 InputChannel* getInputChannelByIndex(int index)
 {
 	for (unsigned i=0; i<mixer::inputChannels.size(); i++)
 		if (mixer::inputChannels.at(i)->index == index)
 			return mixer::inputChannels.at(i);
+	gu_log("[getInputChannelByIndex] input channel at index %d not found!\n", index);
+	return nullptr;
+}
+
+/* -------------------------------------------------------------------------- */
+
+ColumnChannel* addColumnChannel() {
+	ColumnChannel* ch;
+	int bufferSize = kernelAudio::getRealBufSize()*2;
+
+	ch = new ColumnChannel(bufferSize);
+
+	if (!ch->allocBuffers()) {
+		delete ch;
+		return nullptr;
+	}
+
+	while (true) {
+		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
+			continue;
+		mixer::columnChannels.push_back(ch);
+		pthread_mutex_unlock(&mixer::mutex_chans);
+		break;
+	}
+
+	ch->index = getNewColumnChanIndex();
+	ch->setName(("Column " + std::to_string(ch->index)).c_str());
+	gu_log("[addChannel] column channel index=%d added, type=%d, total=%d\n",
+		ch->index, ch->type, mixer::channels.size());
+	return ch;
+}
+
+/* -------------------------------------------------------------------------- */
+
+int deleteColumnChannel(ColumnChannel* ch) {
+	int index = -1;
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		if (mixer::columnChannels.at(i) == ch) {
+			index = i;
+			break;
+		}
+	}
+	if (index == -1) {
+		gu_log("[deleteChannel] unable to find channel %d for deletion!\n", ch->index);
+		return 0;
+	}
+
+	while (true) {
+		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
+			continue;
+		mixer::columnChannels.erase(mixer::columnChannels.begin() + index);
+		delete ch;
+		pthread_mutex_unlock(&mixer::mutex_chans);
+		return 1;
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+ColumnChannel* getColumnChannelByIndex(int index) {
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++)
+		if (mixer::columnChannels.at(i)->index == index)
+			return mixer::columnChannels.at(i);
 	gu_log("[getInputChannelByIndex] channel at index %d not found!\n", index);
 	return nullptr;
 }
 
 /* -------------------------------------------------------------------------- */
 
-
 Channel* addChannel(int type)
 {
 	Channel* ch;
-	int bufferSize = kernelAudio::getRealBufSize() * 2;
+	int bufferSize = kernelAudio::getRealBufSize()*2;
 
 	if (type == CHANNEL_SAMPLE)
 		ch = new SampleChannel(bufferSize, conf::inputMonitorDefaultOn);

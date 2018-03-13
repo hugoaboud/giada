@@ -26,6 +26,7 @@
 
 
 #include "../../../../core/sampleChannel.h"
+#include "../../../../core/mixerHandler.h"
 #include "../../../../glue/transport.h"
 #include "../../../../glue/io.h"
 #include "../../../../utils/log.h"
@@ -36,6 +37,7 @@
 #include "channelButton.h"
 #include "keyboard.h"
 
+using namespace giada::m;
 
 int geKeyboard::indexColumn = 0;
 
@@ -74,12 +76,8 @@ geKeyboard::geKeyboard(int X, int Y, int W, int H)
 
 void geKeyboard::init()
 {
-	/* add 6 empty columns as init layout */
+	/* add 2 empty columns as init layout */
 
-	__cb_addColumn();
-	__cb_addColumn();
-	__cb_addColumn();
-	__cb_addColumn();
 	__cb_addColumn();
 	__cb_addColumn();
 }
@@ -341,8 +339,10 @@ void geKeyboard::__cb_addColumn(int width)
 	}
 
 	/* add geColumn to geKeyboard and to columns vector */
+	ColumnChannel* columnChannel = mh::addColumnChannel();
+	if (columnChannel == nullptr) return;
 
-	geColumn* gc = new geColumn(colx, y(), width, 2000, indexColumn, this);
+	geColumn* gc = new geColumn(colx, y(), width, 2000, indexColumn, this, columnChannel);
   add(gc);
 	columns.push_back(gc);
 	indexColumn++;

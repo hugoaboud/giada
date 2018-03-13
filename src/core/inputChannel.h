@@ -30,6 +30,8 @@
 
 #include "channel.h"
 
+class ColumnChannel;
+
 class InputChannel : public Channel
 {
 private:
@@ -42,6 +44,7 @@ public:
 	std::string getName() const override;
 
 	void copy(const Channel *src, pthread_mutex_t *pluginMutex) override;
+	void input(float* inBuffer) override;
 	void process(float* outBuffer, float* inBuffer) override;
 	void preview(float* outBuffer) override;
 	void start(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
@@ -59,9 +62,14 @@ public:
 	void clear() override;
 	bool canInputRec() override;
 
+	void setPreMute(bool internal);
+	void unsetPreMute(bool internal);
+
 	int inputIndex = -1;
 	bool  inputMonitor = true;
-	float  peak = true;
+	bool preMute = false;
+
+	ColumnChannel* columnChannel = nullptr;
 };
 
 #endif
