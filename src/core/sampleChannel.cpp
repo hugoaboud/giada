@@ -867,7 +867,7 @@ void SampleChannel::process(float* outBuffer, float* inBuffer)
       vChan[i] += inBuffer[i]; // add, don't overwrite (no raw memcpy)
 
 #ifdef WITH_VST
-	pluginHost::processStack(vChan, pluginHost::CHANNEL, this);
+	pluginHost::processStack(vChan, this);
 #endif
 
 	// TODO - Opaque channels' processing

@@ -56,9 +56,8 @@ private:
 public:
 
 	Channel *ch;      // ch == nullptr ? masterOut
-	int stackType;
 
-	gdPluginList(int stackType, Channel *ch=nullptr);
+	gdPluginList(Channel *ch=nullptr);
 	~gdPluginList();
 
 	/* special callback, passed to browser. When closed (i.e. plugin

@@ -34,14 +34,12 @@ class InputChannel : public Channel
 {
 private:
 
-		std::string label;
-
 public:
 
 	InputChannel(int bufferSize);
 	~InputChannel();
 
-	std::string getLabel();
+	std::string getName() const override;
 
 	void copy(const Channel *src, pthread_mutex_t *pluginMutex) override;
 	void process(float* outBuffer, float* inBuffer) override;
@@ -60,6 +58,10 @@ public:
 	void rewind() override;
 	void clear() override;
 	bool canInputRec() override;
+
+	int inputIndex = -1;
+	bool  inputMonitor = true;
+	float  peak = true;
 };
 
 #endif

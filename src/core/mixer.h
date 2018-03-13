@@ -87,17 +87,15 @@ enum {    // const - fade types
 
 extern std::vector<InputChannel*> inputChannels;
 extern std::vector<Channel*> channels;
-extern std::vector<Channel*> masterChannels;
+extern std::vector<Channel*> columnChannels;
 
 extern bool   recording;         // is recording something?
 extern bool   ready;
-extern float *vChanInput;        // virtual channel for recording
-extern float *vChanInToOut;      // virtual channel in->out bridge (hear what you're playin)
 extern int    frameSize;
 extern float  outVol;
 extern float  inVol;
-extern float  peakOut;
 extern float  peakIn;
+extern float  peakOut;
 extern bool	 metronome;
 extern int    waitRec;      // delayComp guard
 extern bool  docross;			 // crossfade guard
@@ -110,12 +108,6 @@ extern bool tickPlay, tockPlay; // 1 = play, 0 = stop
  * position of the sample in the input side (recording) */
 
 extern int inputTracker;
-
-/* inToOut
- * copy, process and paste the input into the output, in order to
- * obtain a "hear what you're playing" feature. */
-
-extern bool inToOut;
 
 extern pthread_mutex_t mutex_recs;
 extern pthread_mutex_t mutex_chans;

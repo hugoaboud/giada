@@ -39,6 +39,8 @@ class geButton;
 class gdInputList;
 class geIdButton;
 class geChoice;
+class geSoundMeter;
+class geDial;
 #ifdef WITH_VST
 class geStatusButton;
 #endif
@@ -64,6 +66,7 @@ public:
 	static void cb_refreshList(Fl_Widget*, void*);
 
 	void refreshList();
+	void refresh();
 };
 
 
@@ -77,41 +80,49 @@ private:
   gdInputList  *pParent;
   InputChannel *pInput;
 
-  	static void cb_setLabel(Fl_Widget *v, void *p);
-	static void cb_removeInput(Fl_Widget *v, void *p);
-	static void cb_setBypass(Fl_Widget *v, void *p);
+  	static void cb_removeInput(Fl_Widget *v, void *p);
+  	static void cb_setBypass(Fl_Widget *v, void *p);
+  	static void cb_setName(Fl_Widget *v, void *p);
 	static void cb_setInputAudio(Fl_Widget *v, void *p);
 	static void cb_setInputMidiDevice(Fl_Widget *v, void *p);
 	static void cb_setInputMidiChannel(Fl_Widget *v, void *p);
-
 #ifdef WITH_VST
 	static void cb_openFxWindow(Fl_Widget* v, void* p);
 #endif
+	static void cb_mute(Fl_Widget* v, void* p);
+	static void cb_changeVol(Fl_Widget* v, void* p);
+	static void cb_inputMonitor(Fl_Widget* v, void* p);
 
-	void cb_setLabel();
 	void cb_removeInput();
+	void cb_setBypass();
+	void cb_setName();
 	void cb_setInputAudio();
 	void cb_setInputMidiDevice();
 	void cb_setInputMidiChannel();
-	void cb_setBypass();
-
 #ifdef WITH_VST
 	void cb_openFxWindow();
 #endif
+	void cb_mute();
+	void cb_changeVol();
+	void cb_inputMonitor();
 
 public:
 
+	geIdButton     *remove;
 	geIdButton	   *button;
 	geChoice	   *inputAudio;
 	geChoice	   *inputMidiDevice;
 	geChoice	   *inputMidiChannel;
-	geIdButton     *remove;
-
 #ifdef WITH_VST
 	geStatusButton *fx;
 #endif
+	geStatusButton *mute;
+	geSoundMeter   *meter;
+	geDial         *vol;
+	geStatusButton *inputMonitor;
 
 	gdInput(gdInputList *gdi, InputChannel *i, int x, int y, int w);
+	void refresh();
 };
 
 #endif

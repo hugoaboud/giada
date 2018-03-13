@@ -258,6 +258,7 @@
 #define WID_FX            -9
 #define WID_KEY_GRABBER   -10
 #define WID_SAMPLE_NAME   -11
+#define WID_INPUT_LIST    -12
 
 
 

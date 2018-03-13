@@ -201,7 +201,7 @@ void geMainMenu::__cb_edit()
 	if (!m) return;
 
 	if (strcmp(m->label(), "Input channels") == 0) {
-		gu_openSubWindow(G_MainWin, new gdInputList(), 0);
+		gu_openSubWindow(G_MainWin, new gdInputList(), WID_INPUT_LIST);
 		return;
 	}
 	

@@ -43,9 +43,9 @@ namespace giada {
 namespace c     {
 namespace plugin 
 {
-Plugin* addPlugin(Channel* ch, int index, int stackType);
-void swapPlugins(Channel* ch, int indexP1, int indexP2, int stackType);
-void freePlugin(Channel* ch, int index, int stackType);
+Plugin* addPlugin(Channel* ch, int index);
+void swapPlugins(Channel* ch, int indexP1, int indexP2);
+void freePlugin(Channel* ch, int index);
 void setParameter(Plugin* p, int index, float value, bool gui=true); 
 void setProgram(Plugin* p, int index);
 

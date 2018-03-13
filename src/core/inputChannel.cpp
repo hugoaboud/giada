@@ -25,13 +25,16 @@
  * -------------------------------------------------------------------------- */
 
 #include "const.h"
+#include "conf.h"
+#include "pluginHost.h"
 #include "inputChannel.h"
+#include "../utils/log.h"
 using namespace giada::m;
 
 InputChannel::InputChannel(int bufferSize)
 	: Channel          (CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize)
 {
-	label = "teste";
+	name = "Guitar";
 }
 
 
@@ -39,20 +42,19 @@ InputChannel::InputChannel(int bufferSize)
 
 
 InputChannel::~InputChannel()
-{
-}
+{}
 
 /* -------------------------------------------------------------------------- */
 
-std::string InputChannel::getLabel() {
-	return label;
+std::string InputChannel::getName() const
+{
+	return "i." + name;
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 void InputChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {}
-void InputChannel::process(float* outBuffer, float* inBuffer) {}
 void InputChannel::preview(float* outBuffer) {}
 void InputChannel::start(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) {}
 void InputChannel::stop() {}
@@ -66,5 +68,38 @@ void InputChannel::onZero(int frame, bool recsStopOnChanHalt) {}
 void InputChannel::onBar(int frame) {}
 void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, int quantize, bool mixerIsRunning){}
 void InputChannel::rewind() {}
-void InputChannel::clear() {}
-bool InputChannel::canInputRec() {return false;}
+
+void InputChannel::clear() {
+	/** TODO - these memsets may be done only if status PLAY (if below),
+	 * but it would require extra clearPChan calls when samples stop */
+	std::memset(vChan, 0, sizeof(float) * bufferSize);
+}
+
+void InputChannel::process(float* outBuffer, float* inBuffer) {
+	/* If input monitor is on, copy input buffer to vChan: this enables the input
+  monitoring. The vChan will be overwritten later by pluginHost::processStack. */
+	peak = 0;
+	if ((canInputRec() || inputMonitor) && inputIndex > -1)
+	{
+	    for (int i=0; i<bufferSize; i++) {
+			vChan[i] += inBuffer[inputIndex+i*conf::channelsIn]; // add, don't overwrite (no raw memcpy)
+			if (vChan[i] > peak) peak = vChan[i];
+		}
+
+	#ifdef WITH_VST
+		pluginHost::processStack(vChan, this);
+	#endif
+
+		// TODO - Opaque channels' processing
+		if (inputMonitor) {
+		  	for (int j=0; j<bufferSize; j++) {
+				outBuffer[j*2]   += vChan[j] * volume * calcPanning(0);
+				outBuffer[j*2+1] +=	vChan[j] * volume * calcPanning(1);
+			}
+		}
+	}
+}
+
+bool InputChannel::canInputRec() {
+	return true;
+}

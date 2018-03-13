@@ -44,12 +44,6 @@ namespace giada {
 namespace m {
 namespace pluginHost
 {
-enum stackType
-{
-	MASTER_OUT,
-	MASTER_IN,
-	CHANNEL
-};
 
 enum sortMethod
 {
@@ -86,24 +80,22 @@ int saveList(const std::string& path);
 int loadList(const std::string& path);
 
 /* addPlugin
- * Add a new plugin to 'stackType' by unique id or by index in knownPluginList
+ * Add a new plugin to stack by unique id or by index in knownPluginList
  * std::vector. Requires:
  * fid - plugin unique file id (i.e. path to dynamic library)
- * stackType - which stack to add plugin to
  * mutex - Mixer.mutex_plugin
  * freq - current audio frequency
- * bufSize - buffer size
- * ch - if stackType == CHANNEL. */
+ * bufSize - buffer size */
 
-Plugin* addPlugin(const std::string& fid, int stackType, pthread_mutex_t* mutex,
+Plugin* addPlugin(const std::string& fid, pthread_mutex_t* mutex,
 	Channel* ch=nullptr);
-Plugin *addPlugin(int index, int stackType, pthread_mutex_t* mutex,
+Plugin *addPlugin(int index, pthread_mutex_t* mutex,
 	Channel* ch=nullptr);
 
 /* countPlugins
- * Return size of 'stackType'. */
+ * Return size of channel's stack. */
 
-unsigned countPlugins(int stackType, Channel* ch=nullptr);
+unsigned countPlugins(Channel* ch=nullptr);
 
 /* countAvailablePlugins
  * Return size of knownPluginList. */
@@ -124,38 +116,32 @@ PluginInfo getAvailablePluginInfo(int index);
 std::string getUnknownPluginInfo(int index);
 
 /* freeStack
- * free plugin stack of type 'stackType'. */
+ * free channel's plugin stack. */
 
-void freeStack(int stackType, pthread_mutex_t* mutex, Channel* ch=nullptr);
+void freeStack(pthread_mutex_t* mutex, Channel* ch=nullptr);
 
 /* processStack
  * apply the fx list to the buffer. */
 
-void processStack(float* buffer, int stackType, Channel* ch=nullptr);
-
-/* getStack
-* Return a std::vector <Plugin *> given the stackType. If stackType == CHANNEL
-* a pointer to Channel is also required. */
-
-std::vector<Plugin*>* getStack(int stackType, Channel* ch=nullptr);
+void processStack(float* buffer, Channel* ch=nullptr);
 
 /* getPluginByIndex */
 
-Plugin* getPluginByIndex(int index, int stackType, Channel* ch=nullptr);
+Plugin* getPluginByIndex(int index, Channel* ch=nullptr);
 
 /* getPluginIndex */
 
-int getPluginIndex(int id, int stackType, Channel* ch=nullptr);
+int getPluginIndex(int id, Channel* ch=nullptr);
 
 /* swapPlugin */
 
-void swapPlugin(unsigned indexA, unsigned indexB, int stackType,
+void swapPlugin(unsigned indexA, unsigned indexB,
 	pthread_mutex_t* mutex, Channel* ch=nullptr);
 
 /* freePlugin.
 Returns the internal stack index of the deleted plugin. */
 
-int freePlugin(int id, int stackType, pthread_mutex_t *mutex,
+int freePlugin(int id, pthread_mutex_t *mutex,
 	Channel* ch=nullptr);
 
 /* runDispatchLoop
@@ -170,7 +156,7 @@ void freeAllStacks(std::vector<Channel*>* channels, pthread_mutex_t* mutex);
 
 /* clonePlugin */
 
-int clonePlugin(Plugin* src, int stackType, pthread_mutex_t* mutex, Channel* ch);
+int clonePlugin(Plugin* src, pthread_mutex_t* mutex, Channel* ch);
  
 /* doesPluginExist */
 

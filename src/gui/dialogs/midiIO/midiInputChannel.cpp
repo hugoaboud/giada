@@ -183,7 +183,7 @@ void gdMidiInputChannel::addChannelLearners()
 
 void gdMidiInputChannel::addPluginLearners()
 {
-	vector<Plugin*>* plugins = pluginHost::getStack(pluginHost::CHANNEL, ch);
+	vector<Plugin*>* plugins = &ch->plugins;
 	for (unsigned i=0; i<plugins->size(); i++) {
 
 		Fl_Pack* pack = new Fl_Pack(container->x() + ((i + 1) * (LEARNER_WIDTH + 8)),

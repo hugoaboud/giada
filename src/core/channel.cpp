@@ -145,8 +145,7 @@ void Channel::copy(const Channel *src, pthread_mutex_t *pluginMutex)
 
 #ifdef WITH_VST
 	for (unsigned i=0; i<src->plugins.size(); i++)
-		pluginHost::clonePlugin(src->plugins.at(i), pluginHost::CHANNEL,
-			pluginMutex, this);
+		pluginHost::clonePlugin(src->plugins.at(i), pluginMutex, this);
 #endif
 
 	/* clone actions */
@@ -241,9 +240,9 @@ int Channel::writePatch(int i, bool isProject)
 
 #ifdef WITH_VST
 
-	unsigned numPlugs = pluginHost::countPlugins(pluginHost::CHANNEL, this);
+	unsigned numPlugs = pluginHost::countPlugins(this);
 	for (unsigned i=0; i<numPlugs; i++) {
-		Plugin* pPlugin = pluginHost::getPluginByIndex(i, pluginHost::CHANNEL, this);
+		Plugin* pPlugin = pluginHost::getPluginByIndex(i, this);
 		patch::plugin_t pp;
 		pp.path   = pPlugin->getUniqueId();
 		pp.bypass = pPlugin->isBypassed();
@@ -302,8 +301,7 @@ int Channel::readPatch(const string& path, int i, pthread_mutex_t* pluginMutex,
 
 	for (const patch::plugin_t& ppl : pch->plugins) {
 		
-		Plugin* plugin = pluginHost::addPlugin(ppl.path, pluginHost::CHANNEL,
-			pluginMutex, this);
+		Plugin* plugin = pluginHost::addPlugin(ppl.path, 			pluginMutex, this);
 		
 		if (plugin == nullptr) {
 			ret &= 0;

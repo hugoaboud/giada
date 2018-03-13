@@ -48,7 +48,6 @@ class gdPluginChooser : public gdWindow
 private:
 
   Channel *ch;      // ch == nullptr ? masterOut
-	int stackType;
 
   geChoice         *sortMethod;
   geButton        *addBtn;
@@ -64,7 +63,7 @@ private:
 
 public:
 
-	gdPluginChooser(int x, int y, int w, int h, int stackType, Channel *ch=nullptr);
+	gdPluginChooser(int x, int y, int w, int h, Channel *ch=nullptr);
   ~gdPluginChooser();
 };
 

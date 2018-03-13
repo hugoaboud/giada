@@ -37,6 +37,8 @@
 #include "../../glue/plugin.h"
 #include "../../utils/log.h"
 #include "../../utils/string.h"
+#include "../elems/soundMeter.h"
+#include "../elems/basics/dial.h"
 #include "../elems/basics/boxtypes.h"
 #include "../elems/basics/idButton.h"
 #include "../elems/basics/statusButton.h"
@@ -54,14 +56,15 @@ using std::string;
 using namespace giada::m;
 using namespace giada::c;
 
+int _w = 717;
 
 gdInputList::gdInputList()
-	: gdWindow(478, 204)
+	: gdWindow(_w, 204)
 {
 	if (conf::inputListX)
 		resize(conf::inputListX, conf::inputListY, w(), h());
 
-	list = new Fl_Scroll(8, 8, 476, 188);
+	list = new Fl_Scroll(8, 8, _w, 188);
 	list->type(Fl_Scroll::VERTICAL);
 	list->scrollbar.color(G_COLOR_GREY_2);
 	list->scrollbar.selection_color(G_COLOR_GREY_4);
@@ -166,7 +169,7 @@ void gdInputList::refreshList()
 	}
 
 	int addInputY = numInputs == 0 ? 90 : list->y()-list->yposition()+(i*24);
-	addInput = new geButton(8, addInputY, 452, 20, "-- add new input --");
+	addInput = new geButton(8, addInputY, _w-16, 20, "-- add new input --");
 	addInput->callback(cb_addInput, (void*)this);
 	list->add(addInput);
 
@@ -174,9 +177,9 @@ void gdInputList::refreshList()
 	 * Scrollbar.width = 20 + 4(margin) */
 
 	if (i>7)
-		size(492, h());
+		size(_w+24, h());
 	else
-		size(468, h());
+		size(_w, h());
 
 	redraw();
 }
@@ -191,20 +194,26 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	: Fl_Group(X, Y, W, 20), pParent(gdi), pInput (i)
 {
 	begin();
-	button  			= new geIdButton(8, y(), 100, 20);
-	inputAudio         = new geChoice(button->x()+button->w()+4, y(), 132, 20);
-	inputMidiDevice    = new geChoice(inputAudio->x()+inputAudio->w()+4, y(), 132, 20);
-	inputMidiChannel   = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);
-	remove  = new geIdButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, "", fxRemoveOff_xpm, fxRemoveOn_xpm);
-	fx    	= new geStatusButton(remove->x()+remove->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
+	remove  		 = new geIdButton(x(), y(), 20, 20, "", fxRemoveOff_xpm, fxRemoveOn_xpm);
+	button  		 = new geIdButton(remove->x()+remove->w()+4, y(), 120, 20);
+	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 132, 20);
+	inputMidiDevice  = new geChoice(inputAudio->x()+inputAudio->w()+4, y(), 132, 20);
+	inputMidiChannel = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);	
+	fx    			 = new geStatusButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
+	mute  			 = new geStatusButton(fx->x()+fx->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
+	meter   		 = new geSoundMeter(mute->x()+mute->w()+4, y()+4, 140, 12);
+	vol				 = new geDial(meter->x()+meter->w()+4, y(), 20, 20);
+	inputMonitor	 = new geStatusButton(vol->x()+vol->w()+4, y(), 20, 20, channelStop_xpm, channelPlay_xpm);
 	end();
 
-	button->copy_label(i->getLabel().c_str());
+	button->copy_label(i->getName().c_str());
 	button->type(FL_TOGGLE_BUTTON);
 	button->value(1);
 
 	inputAudio->add("- no audio source -");
-	inputAudio->value(0);
+	for (int i = 0; i < conf::channelsIn; i++) inputAudio->add(std::to_string(i+1).c_str());
+	inputAudio->value(i->inputIndex+1);
+	inputAudio->callback(cb_setInputAudio, (void*)this);
 
 	inputMidiDevice->add("- no midi source -");
 	inputMidiDevice->value(0);
@@ -212,7 +221,16 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	inputMidiChannel->add("All");
 	for (int i = 0; i < 16; i++) inputMidiChannel->add(std::to_string(i+1).c_str());
 	inputMidiChannel->value(0);
+	inputMidiChannel->callback(cb_setInputMidiChannel, (void*)this);
 	
+	mute->type(FL_TOGGLE_BUTTON);
+	mute->value(i->mute);
+
+	vol->value(i->getVolume());
+
+	inputMonitor->type(FL_TOGGLE_BUTTON);
+	inputMonitor->value(i->inputMonitor);
+	inputMonitor->callback(cb_inputMonitor, (void*)this);
 
 	/*
 	program->callback(cb_setProgram, (void*)this);
@@ -240,12 +258,20 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 
 /* -------------------------------------------------------------------------- */
 
-void gdInput::cb_setLabel		   		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setLabel(); }
 void gdInput::cb_removeInput    		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_removeInput(); }
+void gdInput::cb_setBypass      		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setBypass(); }
+void gdInput::cb_setName		   		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setName(); }
 void gdInput::cb_setInputAudio		 	(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setInputAudio(); }
 void gdInput::cb_setInputMidiDevice		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setInputMidiDevice(); }
 void gdInput::cb_setInputMidiChannel	(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setInputMidiChannel(); }
-void gdInput::cb_setBypass      		(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setBypass(); }
+#ifdef WITH_VST
+void gdInput::cb_openFxWindow(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_openFxWindow(); }
+#endif
+void gdInput::cb_mute(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_mute(); }
+void gdInput::cb_changeVol(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_changeVol(); }
+void gdInput::cb_inputMonitor(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_inputMonitor(); }
+
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -259,15 +285,6 @@ void gdInput::cb_removeInput()
 	//pParent->refreshList();
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-
-void gdInput::cb_setLabel()
-{
-	
-}
-
 /* -------------------------------------------------------------------------- */
 
 
@@ -276,12 +293,19 @@ void gdInput::cb_setBypass()
 	
 }
 
+/* -------------------------------------------------------------------------- */
+
+
+void gdInput::cb_setName()
+{
+	
+}
 
 /* -------------------------------------------------------------------------- */
 
 void gdInput::cb_setInputAudio()
 {
-	
+	pInput->inputIndex = inputAudio->value()-1;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -295,4 +319,45 @@ void gdInput::cb_setInputMidiDevice()
 void gdInput::cb_setInputMidiChannel()
 {
 	
+}
+
+/* -------------------------------------------------------------------------- */
+
+#ifdef WITH_VST
+void gdInput::cb_openFxWindow() {
+}
+#endif
+
+/* -------------------------------------------------------------------------- */
+
+void gdInput::cb_mute() {
+}
+
+/* -------------------------------------------------------------------------- */
+
+void gdInput::cb_changeVol() {
+
+}
+
+/* -------------------------------------------------------------------------- */
+
+void gdInput::cb_inputMonitor() {
+	gu_log("gui val: %d | ",inputMonitor->value());
+	pInput->inputMonitor = inputMonitor->value() > 0;
+	gu_log("chn val: %d\n",pInput->inputMonitor);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void gdInputList::refresh() {
+	// TODO: this is just terrible and may cause segfaults, fix it
+	// (FL_Group has 2 misterious children that resist clear plus the "new input" button)
+	for (int i=3; i<list->children(); i++) {
+		((gdInput*)list->child(i-3))->refresh();
+	}
+}
+
+void gdInput::refresh() {
+	meter->mixerPeak  = pInput->peak;
+	meter->redraw();
 }

@@ -144,10 +144,10 @@ static void glue_fillPatchGlobals__(const string &name)
 
 #ifdef WITH_VST
 
-	glue_fillPatchGlobalsPlugins__(pluginHost::getStack(pluginHost::MASTER_IN),
+	/*glue_fillPatchGlobalsPlugins__(pluginHost::getStack(pluginHost::MASTER_IN),
 			&patch::masterInPlugins);
 	glue_fillPatchGlobalsPlugins__(pluginHost::getStack(pluginHost::MASTER_OUT),
-			&patch::masterOutPlugins);
+			&patch::masterOutPlugins);*/
 
 #endif
 }

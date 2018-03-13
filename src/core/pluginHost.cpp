@@ -225,10 +225,10 @@ int loadList(const string& filepath)
 /* -------------------------------------------------------------------------- */
 
 
-Plugin* addPlugin(const string& fid, int stackType, pthread_mutex_t* mutex, 
+Plugin* addPlugin(const string& fid, pthread_mutex_t* mutex, 
 	Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 
 	/* Initialize plugin. The default mode uses getTypeForIdentifierString, 
 	falling back to  getTypeForFile (deprecated) for old patches (< 0.14.4). */
@@ -266,8 +266,8 @@ Plugin* addPlugin(const string& fid, int stackType, pthread_mutex_t* mutex,
 		break;
 	}
 
-	gu_log("[pluginHost::addPlugin] plugin id=%s loaded (%s), stack type=%d, stack size=%d\n",
-		fid.c_str(), p->getName().c_str(), stackType, pStack->size());
+	gu_log("[pluginHost::addPlugin] channel=%d, plugin id=%s loaded (%s), stack size=%d\n",
+		ch->index, fid.c_str(), p->getName().c_str(), pStack->size());
 
 	return p;
 }
@@ -276,14 +276,14 @@ Plugin* addPlugin(const string& fid, int stackType, pthread_mutex_t* mutex,
 /* -------------------------------------------------------------------------- */
 
 
-Plugin* addPlugin(int index, int stackType, pthread_mutex_t* mutex,
+Plugin* addPlugin(int index, pthread_mutex_t* mutex,
 	Channel* ch)
 {
 	juce::PluginDescription* pd = knownPluginList.getType(index);
 	if (pd) {
 		gu_log("[pluginHost::addPlugin] plugin found, uid=%s, name=%s...\n",
 			pd->createIdentifierString().toRawUTF8(), pd->name.toRawUTF8());
-		return addPlugin(pd->createIdentifierString().toStdString(), stackType, mutex, ch);
+		return addPlugin(pd->createIdentifierString().toStdString(), mutex, ch);
 	}
 	gu_log("[pluginHost::addPlugin] no plugins found at index=%d!\n", index);
 	return nullptr;
@@ -293,28 +293,9 @@ Plugin* addPlugin(int index, int stackType, pthread_mutex_t* mutex,
 /* -------------------------------------------------------------------------- */
 
 
-vector<Plugin*>* getStack(int stackType, Channel* ch)
+unsigned countPlugins(Channel* ch)
 {
-	switch(stackType) {
-		case MASTER_OUT:
-			return &masterOut;
-		case MASTER_IN:
-			return &masterIn;
-		case CHANNEL:
-			return &ch->plugins;
-		default:
-			return nullptr;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-unsigned countPlugins(int stackType, Channel* ch)
-{
-	vector<Plugin*>* pStack = getStack(stackType, ch);
-	return pStack->size();
+	return ch->plugins.size();
 }
 
 
@@ -374,9 +355,9 @@ string getUnknownPluginInfo(int i)
 /* -------------------------------------------------------------------------- */
 
 
-void freeStack(int stackType, pthread_mutex_t* mutex, Channel* ch)
+void freeStack(pthread_mutex_t* mutex, Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 
 	if (pStack->size() == 0)
 		return;
@@ -390,16 +371,16 @@ void freeStack(int stackType, pthread_mutex_t* mutex, Channel* ch)
 		pthread_mutex_unlock(mutex);
 		break;
 	}
-	gu_log("[pluginHost::freeStack] stack type=%d freed\n", stackType);
+	gu_log("[pluginHost::freeStack] channel=%d freed\n", ch->index);
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 
-void processStack(float* buffer, int stackType, Channel* ch)
+void processStack(float* buffer, Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 
 	/* Empty stack, stack not found or mixer not ready: do nothing. */
 
@@ -472,9 +453,9 @@ void processStack(float* buffer, int stackType, Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-Plugin* getPluginByIndex(int index, int stackType, Channel* ch)
+Plugin* getPluginByIndex(int index, Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 	if (pStack->size() == 0)
 		return nullptr;
 	if ((unsigned) index >= pStack->size())
@@ -486,9 +467,9 @@ Plugin* getPluginByIndex(int index, int stackType, Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-int getPluginIndex(int id, int stackType, Channel* ch)
+int getPluginIndex(int id, Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 	for (unsigned i=0; i<pStack->size(); i++)
 		if (pStack->at(i)->getId() == id)
 			return i;
@@ -499,10 +480,10 @@ int getPluginIndex(int id, int stackType, Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void swapPlugin(unsigned indexA, unsigned indexB, int stackType,
+void swapPlugin(unsigned indexA, unsigned indexB,
 	pthread_mutex_t* mutex, Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 	while (true) {
 		if (pthread_mutex_trylock(mutex) != 0)
 			continue;
@@ -517,9 +498,9 @@ void swapPlugin(unsigned indexA, unsigned indexB, int stackType,
 /* -------------------------------------------------------------------------- */
 
 
-int freePlugin(int id, int stackType, pthread_mutex_t* mutex, Channel* ch)
+int freePlugin(int id, pthread_mutex_t* mutex, Channel* ch)
 {
-	vector<Plugin*>* pStack = getStack(stackType, ch);
+	vector<Plugin*>* pStack = &ch->plugins;
 	for (unsigned i=0; i<pStack->size(); i++) {
 		Plugin *pPlugin = pStack->at(i);
 		if (pPlugin->getId() != id)
@@ -554,10 +535,8 @@ void runDispatchLoop()
 
 void freeAllStacks(vector<Channel*>* channels, pthread_mutex_t* mutex)
 {
-	freeStack(pluginHost::MASTER_OUT, mutex);
-	freeStack(pluginHost::MASTER_IN, mutex);
 	for (unsigned i=0; i<channels->size(); i++)
-		freeStack(pluginHost::CHANNEL, mutex, channels->at(i));
+		freeStack(mutex, channels->at(i));
 	missingPlugins = false;
 	unknownPluginList.clear();
 }
@@ -566,10 +545,10 @@ void freeAllStacks(vector<Channel*>* channels, pthread_mutex_t* mutex)
 /* -------------------------------------------------------------------------- */
 
 
-int clonePlugin(Plugin* src, int stackType, pthread_mutex_t* mutex,
+int clonePlugin(Plugin* src, pthread_mutex_t* mutex,
 	Channel* ch)
 {
-	Plugin* p = addPlugin(src->getUniqueId(), stackType, mutex, ch);
+	Plugin* p = addPlugin(src->getUniqueId(), mutex, ch);
 	if (!p) {
 		gu_log("[pluginHost::clonePlugin] unable to add new plugin to stack!\n");
 		return 0;

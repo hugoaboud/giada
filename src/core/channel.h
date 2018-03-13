@@ -221,11 +221,12 @@ public:
 
 	virtual bool allocBuffers();
 
+	virtual std::string getName() const;
+
 	bool isPlaying() const;
 	float getPan() const;
 	float getVolume() const;
 	bool isArmed() const;
-	std::string getName() const;
 	bool isPreview() const;
 	int getMidiInFilter() const;
 

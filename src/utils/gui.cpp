@@ -45,6 +45,7 @@
 #include "../gui/dialogs/gd_actionEditor.h"
 #include "../gui/dialogs/window.h"
 #include "../gui/dialogs/sampleEditor.h"
+#include "../gui/dialogs/inputList.h"
 #include "../gui/elems/mainWindow/mainIO.h"
 #include "../gui/elems/mainWindow/mainTimer.h"
 #include "../gui/elems/mainWindow/mainTransport.h"
@@ -90,6 +91,12 @@ void gu_refreshUI()
 	if (se != nullptr)
 		se->waveTools->redrawWaveformAsync();
 
+	/* If Input List is open, refresh it (for dynamic peaks). */
+
+	gdInputList* il = static_cast<gdInputList*>(gu_getSubwindow(G_MainWin, WID_INPUT_LIST));
+	if (il != nullptr)
+		il->refresh();
+
 	/* redraw GUI */
 
 	Fl::unlock();
@@ -117,8 +124,8 @@ void gu_updateControls()
 	G_MainWin->mainIO->setOutVol(mixer::outVol);
 	G_MainWin->mainIO->setInVol(mixer::inVol);
 #ifdef WITH_VST
-	G_MainWin->mainIO->setMasterFxOutFull(pluginHost::getStack(pluginHost::MASTER_OUT)->size() > 0);
-	G_MainWin->mainIO->setMasterFxInFull(pluginHost::getStack(pluginHost::MASTER_IN)->size() > 0);
+	//G_MainWin->mainIO->setMasterFxOutFull(pluginHost::getStack(pluginHost::MASTER_OUT)->size() > 0);
+	//G_MainWin->mainIO->setMasterFxInFull(pluginHost::getStack(pluginHost::MASTER_IN)->size() > 0);
 #endif
 
 	G_MainWin->mainTimer->setMeter(clock::getBeats(), clock::getBars());

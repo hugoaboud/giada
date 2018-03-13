@@ -76,55 +76,40 @@ float tick[TICKSIZE] = {
 
 /* -------------------------------------------------------------------------- */
 
-
-/* lineInRec
+/* inputChannels
 Records from line in. */
 
-void lineInRec(float* inBuf, unsigned frame)
-{
-	if (!mh::hasArmedSampleChannels() || !kernelAudio::isInputEnabled() || !recording)
-		return;
-
-	/* Delay comp: wait until waitRec reaches delayComp. WaitRec
-	 * returns to 0 in mixerHandler, as soon as the recording ends */
-
-	if (waitRec < conf::delayComp) {
-		waitRec += 2;
-		return;
-	}
-
-	vChanInput[inputTracker]   += inBuf[frame]   * inVol;
-	vChanInput[inputTracker+1] += inBuf[frame+1] * inVol;
-	inputTracker += 2;
-	if (inputTracker >= clock::getTotalFrames())
-		inputTracker = 0;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* ProcessLineIn
-Computes line in peaks, plus handles "hear what you're playin'" thing. */
-
-void processLineIn(float* inBuf, unsigned frame)
+void toInputChannels(float* outBuf, float* inBuf, unsigned bufferSize)
 {
 	if (!kernelAudio::isInputEnabled())
 		return;
 
-	/* input peak calculation (left chan only so far). */
-
-	if (inBuf[frame] * inVol > peakIn)
-		peakIn = inBuf[frame] * inVol;
-
-	/* "hear what you're playing" - process, copy and paste the input buffer
-	 * onto the output buffer */
-
-	if (inToOut) {
-		vChanInToOut[frame]   = inBuf[frame]   * inVol;
-		vChanInToOut[frame+1] = inBuf[frame+1] * inVol;
+	if (waitRec < conf::delayComp) {
+		waitRec += conf::channelsIn;
+		return;
 	}
-}
 
+	// For each InputChannel, if it's recording or monitoring, process
+	// de-interleaved buffer for the patched input. This writes the contents
+	// of the buffer to the virtual channel, process throught the VSTs and writes
+	// to the output buffer.
+	for (unsigned i=0; i<inputChannels.size(); i++) {
+		inputChannels[i]->process(outBuf, inBuf);
+	}
+
+	/*if (!mh::hasArmedSampleChannels() || !kernelAudio::isInputEnabled() || !recording)
+		return;*/
+
+	/* Delay comp: wait until waitRec reaches delayComp. WaitRec
+	 * returns to 0 in mixerHandler, as soon as the recording ends*/
+	/*
+	
+	vChanInput[inputTracker]   += inBuf[frame]   * inVol;
+	vChanInput[inputTracker+1] += inBuf[frame+1] * inVol;
+	inputTracker += 2;
+	if (inputTracker >= clock::getTotalFrames())
+		inputTracker = 0;*/
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -133,10 +118,11 @@ Cleans up every buffer, both in Mixer and in channels. */
 
 void clearAllBuffers(float* outBuf, unsigned bufferSize)
 {
-	memset(outBuf, 0, sizeof(float) * bufferSize);         // out
-	memset(vChanInToOut, 0, sizeof(float) * bufferSize);   // inToOut vChan
+	memset(outBuf, 0, sizeof(float) * bufferSize * 2);         // out
 
 	pthread_mutex_lock(&mutex_chans);
+	for (InputChannel* ichannel : inputChannels)
+		ichannel->clear();
 	for (Channel* channel : channels)
 		channel->clear();
 	pthread_mutex_unlock(&mutex_chans);
@@ -190,23 +176,6 @@ void doQuantize(unsigned frame)
 
 /* -------------------------------------------------------------------------- */
 
-/* sumChannels
-Sums channels, i.e. lets them add sample frames to their virtual channels.
-This is required for CHANNEL_SAMPLE only */
-
-void sumChannels(unsigned frame)
-{
-	pthread_mutex_lock(&mutex_chans);
-	for (unsigned k=0; k<channels.size(); k++) {
-		if (channels.at(k)->type == CHANNEL_SAMPLE)
-			static_cast<SampleChannel*>(channels.at(k))->sum(frame, clock::isRunning());
-	}
-	pthread_mutex_unlock(&mutex_chans);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 /* renderMetronome
 Generates metronome when needed and pastes it to the output buffer. */
 
@@ -247,13 +216,6 @@ void renderIO(float* outBuf, float* inBuf)
 		channel->preview(outBuf);
 	}
 	pthread_mutex_unlock(&mutex_chans);
-
-#ifdef WITH_VST
-	pthread_mutex_lock(&mutex_plugins);
-	pluginHost::processStack(outBuf, pluginHost::MASTER_OUT);
-	pluginHost::processStack(vChanInToOut, pluginHost::MASTER_IN);
-	pthread_mutex_unlock(&mutex_plugins);
-#endif
 }
 
 
@@ -287,23 +249,18 @@ void computePeak(float* outBuf, unsigned frame)
 	/* TODO it takes into account only left channel so far! */
 	if (outBuf[frame] > peakOut)
 		peakOut = outBuf[frame];
+
+	// TODO: calculate input peak (highets InputChannels peak)
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 /* finalizeOutput
-Last touches after the output has been rendered: apply inToOut if any, apply
-output volume. */
+Last touches after the output has been rendered: apply output volume. */
 
 void finalizeOutput(float* outBuf, unsigned frame)
 {
-	/* merge vChanInToOut, if enabled */
-
-	if (inToOut) {
-		outBuf[frame]   += vChanInToOut[frame];
-		outBuf[frame+1] += vChanInToOut[frame+1];
-	}
 	outBuf[frame]   *= outVol;
 	outBuf[frame+1] *= outVol;
 }
@@ -367,12 +324,10 @@ std::vector<Channel*> channels;
 
 bool   recording    = false;   // is recording something?
 bool   ready        = true;
-float *vChanInput   = nullptr; // virtual channel for recording
-float *vChanInToOut = nullptr; // virtual channel in->out bridge (hear what you're playin)
 float  outVol       = G_DEFAULT_OUT_VOL;
 float  inVol        = G_DEFAULT_IN_VOL;
+float  peakIn      = 0.0f;
 float  peakOut      = 0.0f;
-float  peakIn       = 0.0f;
 bool	 metronome    = false;
 int    waitRec      = 0;       // delayComp guard
 bool   docross      = false;	 // crossfade guard
@@ -385,12 +340,6 @@ bool tickPlay, tockPlay = false; // 1 = play, 0 = stop
  * position of the sample in the input side (recording) */
 
 int inputTracker = 0;
-
-/* inToOut
- * copy, process and paste the input into the output, in order to
- * obtain a "hear what you're playing" feature. */
-
-bool inToOut = false;
 
 pthread_mutex_t mutex_recs;
 pthread_mutex_t mutex_chans;
@@ -407,14 +356,6 @@ void init(int framesInSeq, int audioBufferSize)
 
 	allocVirtualInput(framesInSeq);
 
-	if (vChanInToOut != nullptr)
-		delete[] vChanInToOut;
-	vChanInToOut = new (std::nothrow) float[audioBufferSize * 2];
-	if (!vChanInToOut) {
-		gu_log("[Mixer::init] vChanInToOut alloc error!\n");	
-		return;
-	}
-
 	pthread_mutex_init(&mutex_recs, nullptr);
 	pthread_mutex_init(&mutex_chans, nullptr);
 	pthread_mutex_init(&mutex_plugins, nullptr);
@@ -428,12 +369,14 @@ void init(int framesInSeq, int audioBufferSize)
 
 void allocVirtualInput(int frames)
 {
-	if (vChanInput != nullptr)
-		delete[] vChanInput;
-	vChanInput = new (std::nothrow) float[frames];
+	/*if (vChanInput.size() > 0) {
+		for (int i = 0; i < vChanInput.size(); i++) delete[] vChanInput[i];
+	}
+	// TODO: this is probably gonna break on opaque-channels merge
+	for (int c = 0; c < conf::channelsIn; c++) vChanInput[c] = new (std::nothrow) float[frames];
 	if (!vChanInput)
 		gu_log("[Mixer::allocVirtualInput] vChanInput realloc error!\n");	
-	gu_log("[Mixer::allocVirtualInput] vChanInput ready, %d frames\n", frames);	
+	gu_log("[Mixer::allocVirtualInput] vChanInput ready, %d frames\n", frames);	*/
 }
 
 
@@ -452,16 +395,16 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 
 	float* outBuf = (float*) _outBuf;
 	float* inBuf  = kernelAudio::isInputEnabled() ? (float*) _inBuf : nullptr;
-	bufferSize   *= 2;     // stereo
-	peakOut       = 0.0f;  // reset peak calculator
-	peakIn        = 0.0f;  // reset peak calculator
+	peakOut       = 0.0f;
 
 	clearAllBuffers(outBuf, bufferSize);
 
-	for (unsigned j=0; j<bufferSize; j+=2) {
-		processLineIn(inBuf, j);
+	// Feeds InputChannels with inBuf and write processed output
+	// of monitoring channels to outBuf.
+	toInputChannels(outBuf, inBuf, bufferSize);
+
+	for (unsigned j=0; j<bufferSize*conf::channelsIn; j+=conf::channelsIn) {
 		if (clock::isRunning()) {
-			lineInRec(inBuf, j);
 			doQuantize(j);
 			testBar(j);
 			testFirstBeat(j);
@@ -470,7 +413,6 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 			testLastBeat();  // this test must be the last one
 			clock::sendMIDIsync();
 		}
-		sumChannels(j);
 	}
 
 	renderIO(outBuf, inBuf);
@@ -498,14 +440,16 @@ int close()
 	while (channels.size() > 0)
 		mh::deleteChannel(channels.at(0));
 
-	if (vChanInput != nullptr) {
-		delete[] vChanInput;
-		vChanInput = nullptr;
+	/*
+	if (vChanInput.size() > 0) {
+		for (int c = 0; c < vChanInput.size(); c++) 
+			{
+				delete[] vChanInput[c];
+				vChanInput = nullptr;
+			}
 	}
-	if (vChanInToOut != nullptr) {
-		delete[] vChanInToOut;
-		vChanInToOut = nullptr;
-	}
+	*/
+
 	return 1;
 }
 
@@ -539,7 +483,7 @@ void rewind()
 
 void mergeVirtualInput()
 {
-	assert(vChanInput != nullptr);
+	/*assert(vChanInput != nullptr);
 
 	for (Channel* ch : channels) {
 		if (ch->type == CHANNEL_MIDI)
@@ -548,7 +492,7 @@ void mergeVirtualInput()
 		if (sch->isArmed())
 			memcpy(sch->wave->getData(), vChanInput, clock::getTotalFrames() * sizeof(float));
 	}
-	memset(vChanInput, 0, clock::getTotalFrames() * sizeof(float)); // clear vchan
+	memset(vChanInput, 0, clock::getTotalFrames() * sizeof(float)); // clear vchan*/
 }
 
 

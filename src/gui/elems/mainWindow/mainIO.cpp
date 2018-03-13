@@ -51,11 +51,9 @@ geMainIO::geMainIO(int x, int y)
 	begin();
 
 #if defined(WITH_VST)
-	masterFxIn  = new geStatusButton  (x, y, 20, 20, fxOff_xpm, fxOn_xpm);
-	inVol		    = new geDial      (masterFxIn->x()+masterFxIn->w()+4, y, 20, 20);
+	inVol		    = new geDial      (x, y, 20, 20);
 	inMeter     = new geSoundMeter(inVol->x()+inVol->w()+4, y+4, 140, 12);
-	inToOut     = new geButton   (inMeter->x()+inMeter->w()+4, y+4, 12, 12, "", inputToOutputOff_xpm, inputToOutputOn_xpm);
-	outMeter    = new geSoundMeter(inToOut->x()+inToOut->w()+4, y+4, 140, 12);
+	outMeter    = new geSoundMeter(inMeter->x()+inMeter->w()+4, y+4, 140, 12);
 	outVol		  = new geDial      (outMeter->x()+outMeter->w()+4, y, 20, 20);
 	masterFxOut = new geStatusButton  (outVol->x()+outVol->w()+4, y, 20, 20, fxOff_xpm, fxOn_xpm);
 #else
@@ -76,9 +74,6 @@ geMainIO::geMainIO(int x, int y)
 
 #ifdef WITH_VST
 	masterFxOut->callback(cb_masterFxOut, (void*)this);
-	masterFxIn->callback(cb_masterFxIn, (void*)this);
-	inToOut->callback(cb_inToOut, (void*)this);
-	inToOut->type(FL_TOGGLE_BUTTON);
 #endif
 }
 
@@ -90,8 +85,6 @@ void geMainIO::cb_outVol     (Fl_Widget *v, void *p)  	{ ((geMainIO*)p)->__cb_ou
 void geMainIO::cb_inVol      (Fl_Widget *v, void *p)  	{ ((geMainIO*)p)->__cb_inVol(); }
 #ifdef WITH_VST
 void geMainIO::cb_masterFxOut(Fl_Widget *v, void *p)    { ((geMainIO*)p)->__cb_masterFxOut(); }
-void geMainIO::cb_masterFxIn (Fl_Widget *v, void *p)    { ((geMainIO*)p)->__cb_masterFxIn(); }
-void geMainIO::cb_inToOut    (Fl_Widget *v, void *p)    { ((geMainIO*)p)->__cb_inToOut(); }
 #endif
 
 
@@ -119,17 +112,7 @@ void geMainIO::__cb_inVol()
 #ifdef WITH_VST
 void geMainIO::__cb_masterFxOut()
 {
-	gu_openSubWindow(G_MainWin, new gdPluginList(pluginHost::MASTER_OUT), WID_FX_LIST);
-}
-
-void geMainIO::__cb_masterFxIn()
-{
-	gu_openSubWindow(G_MainWin, new gdPluginList(pluginHost::MASTER_IN), WID_FX_LIST);
-}
-
-void geMainIO::__cb_inToOut()
-{
-	mixer::inToOut = inToOut->value();
+	//gu_openSubWindow(G_MainWin, new gdPluginList(pluginHost::MASTER_OUT), WID_FX_LIST);
 }
 #endif
 
@@ -160,12 +143,6 @@ void geMainIO::setMasterFxOutFull(bool v)
   masterFxOut->redraw();
 }
 
-
-void geMainIO::setMasterFxInFull(bool v)
-{
-  masterFxIn->status = v;
-  masterFxIn->redraw();
-}
 
 #endif
 

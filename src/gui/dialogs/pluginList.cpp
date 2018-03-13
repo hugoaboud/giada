@@ -61,8 +61,8 @@ using namespace giada::m;
 using namespace giada::c;
 
 
-gdPluginList::gdPluginList(int stackType, Channel* ch)
-	: gdWindow(468, 204), ch(ch), stackType(stackType)
+gdPluginList::gdPluginList(Channel* ch)
+	: gdWindow(468, 204), ch(ch)
 {
 	if (conf::pluginListX)
 		resize(conf::pluginListX, conf::pluginListY, w(), h());
@@ -84,15 +84,9 @@ gdPluginList::gdPluginList(int stackType, Channel* ch)
 	/* TODO - awful stuff... we should subclass into gdPluginListChannel and
 	gdPluginListMaster */
 
-	if (stackType == pluginHost::MASTER_OUT)
-		label("Master Out Plugins");
-	else
-	if (stackType == pluginHost::MASTER_IN)
-		label("Master In Plugins");
-	else {
-		string l = "Channel " + gu_iToString(ch->index+1) + " Plugins";
-		copy_label(l.c_str());
-	}
+	
+	string l = "Channel " + gu_iToString(ch->index+1) + " Plugins";
+	copy_label(l.c_str());
 
 	gu_setFavicon(this);
 	show();
@@ -148,8 +142,7 @@ void gdPluginList::cb_addPlugin()
 	 * we add to gdPluginChooser. It does exactly what we need. */
 
 	gdPluginChooser* pc = new gdPluginChooser(conf::pluginChooserX,
-			conf::pluginChooserY, conf::pluginChooserW, conf::pluginChooserH,
-			stackType, ch);
+			conf::pluginChooserY, conf::pluginChooserW, conf::pluginChooserH, ch);
 	addSubWindow(pc);
 	pc->callback(cb_refreshList, (void*)this);	// 'this' refers to gdPluginList
 }
@@ -169,11 +162,11 @@ void gdPluginList::refreshList()
 	 * the 'add new' button. Warning: if ch == nullptr we are working with
 	 * master in/master out stacks. */
 
-	int numPlugins = pluginHost::countPlugins(stackType, ch);
+	int numPlugins = pluginHost::countPlugins(ch);
 	int i = 0;
 
 	while (i<numPlugins) {
-		Plugin   *pPlugin = pluginHost::getPluginByIndex(i, stackType, ch);
+		Plugin   *pPlugin = pluginHost::getPluginByIndex(i, ch);
 		gdPlugin *gdp     = new gdPlugin(this, pPlugin, list->x(), list->y()-list->yposition()+(i*24), 800);
 		list->add(gdp);
 		i++;
@@ -196,10 +189,9 @@ void gdPluginList::refreshList()
 
 	/* set 'full' flag to FX button */
 
-	/* TODO - awful stuff... we should subclass into gdPluginListChannel and
-	gdPluginListMaster */
+	/* TODO - generalize to channel */
 
-	if (stackType == pluginHost::MASTER_OUT) {
+	/*if (stackType == pluginHost::MASTER_OUT) {
 		G_MainWin->mainIO->setMasterFxOutFull(
 			pluginHost::countPlugins(stackType, ch) > 0);
 	}
@@ -211,7 +203,7 @@ void gdPluginList::refreshList()
 	else {
 		ch->guiChannel->fx->status = pluginHost::countPlugins(stackType, ch) > 0;
 		ch->guiChannel->fx->redraw();
-	}
+	}*/
 }
 
 
@@ -275,16 +267,15 @@ void gdPlugin::cb_shiftUp()
 {
 	/*nothing to do if there's only one plugin */
 
-	if (pluginHost::countPlugins(pParent->stackType, pParent->ch) == 1)
+	if (pluginHost::countPlugins(pParent->ch) == 1)
 		return;
 
-	int pluginIndex = pluginHost::getPluginIndex(pPlugin->getId(),
-		pParent->stackType, pParent->ch);
+	int pluginIndex = pluginHost::getPluginIndex(pPlugin->getId(), pParent->ch);
 
 	if (pluginIndex == 0)  // first of the stack, do nothing
 		return;
 
-	plugin::swapPlugins(pParent->ch, pluginIndex, pluginIndex-1, pParent->stackType);
+	plugin::swapPlugins(pParent->ch, pluginIndex, pluginIndex-1);
 	pParent->refreshList();
 }
 
@@ -296,16 +287,16 @@ void gdPlugin::cb_shiftDown()
 {
 	/*nothing to do if there's only one plugin */
 
-	if (pluginHost::countPlugins(pParent->stackType, pParent->ch) == 1)
+	if (pluginHost::countPlugins(pParent->ch) == 1)
 		return;
 
-	unsigned pluginIndex = pluginHost::getPluginIndex(pPlugin->getId(), pParent->stackType, pParent->ch);
-	unsigned stackSize   = (pluginHost::getStack(pParent->stackType, pParent->ch))->size();
+	unsigned pluginIndex = pluginHost::getPluginIndex(pPlugin->getId(), pParent->ch);
+	unsigned stackSize   = pParent->ch->plugins.size();
 
 	if (pluginIndex == stackSize-1)  // last one in the stack, do nothing
 		return;
 
-	plugin::swapPlugins(pParent->ch, pluginIndex, pluginIndex+1, pParent->stackType);
+	plugin::swapPlugins(pParent->ch, pluginIndex, pluginIndex+1);
 	pParent->refreshList();
 }
 
@@ -318,7 +309,7 @@ void gdPlugin::cb_removePlugin()
 	/* any subwindow linked to the plugin must be destroyed first */
 
 	pParent->delSubWindow(pPlugin->getId());
-	plugin::freePlugin(pParent->ch, pPlugin->getId(), pParent->stackType);
+	plugin::freePlugin(pParent->ch, pPlugin->getId());
 	pParent->refreshList();
 }
 

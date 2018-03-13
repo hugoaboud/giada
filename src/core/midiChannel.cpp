@@ -169,7 +169,7 @@ void MidiChannel::unsetMute(bool internal)
 void MidiChannel::process(float *outBuffer, float *inBuffer)
 {
 #ifdef WITH_VST
-	pluginHost::processStack(vChan, pluginHost::CHANNEL, this);
+	pluginHost::processStack(vChan, this);
 #endif
 
 	/* TODO - isn't this useful only if WITH_VST ? */

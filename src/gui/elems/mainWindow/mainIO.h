@@ -48,24 +48,18 @@ private:
 	geDial        *inVol;
 #ifdef WITH_VST
   geStatusButton *masterFxOut;
-  geStatusButton *masterFxIn;
-  geButton       *inToOut;
 #endif
 
 	static void cb_outVol     (Fl_Widget *v, void *p);
 	static void cb_inVol      (Fl_Widget *v, void *p);
 #ifdef WITH_VST
 	static void cb_masterFxOut(Fl_Widget *v, void *p);
-	static void cb_masterFxIn (Fl_Widget *v, void *p);
-	static void cb_inToOut    (Fl_Widget *v, void *p);
 #endif
 
 	inline void __cb_outVol     ();
 	inline void __cb_inVol      ();
 #ifdef WITH_VST
 	inline void __cb_masterFxOut();
-	inline void __cb_masterFxIn ();
-	inline void __cb_inToOut    ();
 #endif
 
 public:
@@ -78,7 +72,6 @@ public:
 	void setInVol (float v);
 #ifdef WITH_VST
 	void setMasterFxOutFull(bool v);
-	void setMasterFxInFull(bool v);
 #endif
 };
 

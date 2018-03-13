@@ -44,8 +44,8 @@ using namespace giada::m;
 using namespace giada::c;
 
 
-gdPluginChooser::gdPluginChooser(int X, int Y, int W, int H, int stackType, Channel *ch)
-  : gdWindow(X, Y, W, H, "Available plugins"), ch(ch), stackType(stackType)
+gdPluginChooser::gdPluginChooser(int X, int Y, int W, int H, Channel *ch)
+  : gdWindow(X, Y, W, H, "Available plugins"), ch(ch)
 {
   /* top area */
   Fl_Group *group_top = new Fl_Group(8, 8, w()-16, 20);
@@ -131,7 +131,7 @@ void gdPluginChooser::__cb_add()
   int index = browser->value() - 3; // subtract header lines
   if (index < 0)
     return;
-  plugin::addPlugin(ch, index, stackType);
+  plugin::addPlugin(ch, index);
   do_callback();
 }
 

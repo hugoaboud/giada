@@ -65,13 +65,13 @@ namespace
 {
 #ifdef WITH_VST
 
-int readPatchPlugins(vector<patch::plugin_t>* list, int type)
+int readPatchPlugins(vector<patch::plugin_t>* list)
 {
 	int ret = 1;
 	for (unsigned i=0; i<list->size(); i++) {
 		patch::plugin_t *ppl = &list->at(i);
 		// TODO use glue_addPlugin()
-		Plugin *plugin = pluginHost::addPlugin(ppl->path.c_str(), type,
+		Plugin *plugin = pluginHost::addPlugin(ppl->path.c_str(),
 				&mixer::mutex_plugins, nullptr);
 		if (plugin != nullptr) {
 			plugin->setBypass(ppl->bypass);
@@ -346,8 +346,8 @@ void readPatch()
 
 #ifdef WITH_VST
 
-	readPatchPlugins(&patch::masterInPlugins, pluginHost::MASTER_IN);
-	readPatchPlugins(&patch::masterOutPlugins, pluginHost::MASTER_OUT);
+	//readPatchPlugins(&patch::masterInPlugins, pluginHost::MASTER_IN);
+	//readPatchPlugins(&patch::masterOutPlugins, pluginHost::MASTER_OUT);
 
 #endif
 
