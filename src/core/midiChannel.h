@@ -41,6 +41,9 @@ class Patch;
 
 class MidiChannel : public Channel
 {
+private:
+	bool armed;
+
 public:
 
 	MidiChannel(int bufferSize);
@@ -74,6 +77,7 @@ public:
 	void receiveMidi(const giada::m::MidiEvent& midiEvent) override;
 	bool canInputRec() override;
 
+	bool isArmed() const;
 	/* sendMidi
 	 * send Midi event to the outside world. */
 

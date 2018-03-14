@@ -98,6 +98,14 @@ private:
 
 	std::function<void()> onPreviewEnd;
 
+	/* inputTracker
+	 * position of the sample in the input side (recording) */
+
+	int inputTracker;
+
+	bool armed;
+	bool recording;
+
 public:
 
 	SampleChannel(int bufferSize, bool inputMonitor);
@@ -109,7 +117,9 @@ public:
 	void process(float* outBuffer, float* inBuffer) override;
 	void preview(float* outBuffer) override;
 	void start(int frame, bool doQuantize, int quantize, bool mixerIsRunning,
-		bool forceStart, bool isUserGenerated) override;
+	bool forceStart, bool isUserGenerated) override;
+	void rec(int frame, bool doQuantize, int quantize, bool mixerIsRunning,
+	bool forceStart, bool isUserGenerated);
 	void kill(int frame) override;
 	void empty() override;
 	void stopBySeq(bool chansStopOnSeqHalt) override;
@@ -132,6 +142,8 @@ public:
 	int getShift() const;
 	float getBoost() const;	
 
+
+	
 	void setShift(int s);
 
 	void reset(int frame);
@@ -149,6 +161,9 @@ public:
 
 	void pushWave(Wave* w);
 
+	/* If wave is empty, creates a new */
+	void newWave();
+
 	/* getPosition
 	 * returns the position of an active sample. If EMPTY o MISSING
 	 * returns -1. */
@@ -161,7 +176,7 @@ public:
 
 	void sum(int frame, bool running);
 
-
+	bool isArmed() const;
 	void setPitch(float v);
 	float getPitch();
 	void setBegin(int f);

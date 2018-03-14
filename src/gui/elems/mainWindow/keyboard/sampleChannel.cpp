@@ -36,6 +36,7 @@
 #include "../../../../glue/recorder.h"
 #include "../../../../glue/storage.h"
 #include "../../../../utils/gui.h"
+#include "../../../../utils/log.h"
 #include "../../../dialogs/gd_mainWindow.h"
 #include "../../../dialogs/gd_keyGrabber.h"
 #include "../../../dialogs/sampleEditor.h"
@@ -236,7 +237,7 @@ geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
 	button->callback(cb_button, (void*)this);
 	button->when(FL_WHEN_CHANGED);   // do callback on keypress && on keyrelease
 
-	arm->type(FL_TOGGLE_BUTTON);
+	
 	arm->callback(cb_arm, (void*)this);
 
 #ifdef WITH_VST
@@ -276,12 +277,12 @@ void geSampleChannel::cb_readActions (Fl_Widget* v, void* p) { ((geSampleChannel
 
 void geSampleChannel::cb_button()
 {
-	using namespace giada;
+	using namespace giada::c;
 
 	if (button->value())    // pushed, max velocity (127 i.e. 0x7f)
-		c::io::keyPress(ch, Fl::event_ctrl(), Fl::event_shift(), 0x7F);
+		io::keyPress(ch, Fl::event_ctrl(), Fl::event_shift(), 0x7F);
 	else                    // released
-		c::io::keyRelease(ch, Fl::event_ctrl(), Fl::event_shift());
+		io::keyRelease(ch, Fl::event_ctrl(), Fl::event_shift());
 }
 
 
@@ -380,12 +381,13 @@ void geSampleChannel::refresh()
 	setColorsByStatus(ch->status, ch->recStatus);
 
 	if (static_cast<SampleChannel*>(ch)->wave != nullptr) {
-		if (m::mixer::recording && ch->isArmed())
+		if (m::mixer::recording)// && ch->isArmed())
 			mainButton->setInputRecordMode();
 		if (m::recorder::active) {
 			if (m::recorder::canRec(ch, m::clock::isRunning(), m::mixer::recording))
 				mainButton->setActionRecordMode();
 		}
+		arm->value(ch->recStatus != REC_STOPPED);
 		status->redraw(); // status invisible? sampleButton too (see below)
 	}
 	mainButton->redraw();

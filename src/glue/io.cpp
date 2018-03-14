@@ -146,6 +146,11 @@ void cleanPress(SampleChannel* ch, int velocity)
 	ch->start(0, true, m::clock::getQuantize(), m::clock::isRunning(), false, true);
 }
 
+void cleanRecPress(SampleChannel* ch)
+{
+	ch->rec(0, true, m::clock::getQuantize(), m::clock::isRunning(), false, true);
+}
+
 } // {anonymous}
 
 
@@ -225,6 +230,35 @@ void keyRelease(SampleChannel* ch, bool ctrl, bool shift)
 
 }
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+
+void recPress(Channel* ch, bool ctrl, bool shift)
+{
+	if (ch->type == CHANNEL_SAMPLE)
+		recPress(static_cast<SampleChannel*>(ch), ctrl, shift);
+	//else
+	//	recPress(static_cast<MidiChannel*>(ch), ctrl, shift);
+}
+
+/* -------------------------------------------------------------------------- */
+
+
+void recPress(SampleChannel* ch, bool ctrl, bool shift)
+{
+	/*if (ctrl)
+		ctrlRecPress(ch);
+	else if (shift)
+		shiftRecPress(ch);
+	else*/
+		cleanRecPress(ch);
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -297,7 +331,7 @@ void startStopInputRec(bool gui)
 		stopInputRec(gui);
 	else
 	if (!startInputRec(gui))
-		gdAlert("No channels armed/available for audio recording.");
+		gdAlert("No inputs available.");
 }
 
 
@@ -308,10 +342,7 @@ int startInputRec(bool gui)
 {
 	using namespace giada::m;
 
-	if (kernelAudio::getStatus() == false)
-		return false;
-
-	if (!mh::startInputRec()) {
+	if (kernelAudio::getStatus() == false || mixer::inputChannels.size() == 0 || !mh::startInputRec()) {
 		Fl::lock();
 		G_MainWin->mainTransport->updateRecInput(0);  // set it off, anyway
 		Fl::unlock();

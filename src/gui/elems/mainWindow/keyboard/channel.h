@@ -71,7 +71,7 @@ protected:
 		static void cb_openFxWindow(Fl_Widget* v, void* p);
 #endif
 	void cb_mute();
-	void cb_arm();
+	virtual void cb_arm();
 	void cb_solo();
 	void cb_changeVol();
 #ifdef WITH_VST

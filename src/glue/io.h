@@ -55,6 +55,14 @@ void keyPress  (MidiChannel*   ch, bool ctrl, bool shift);
 void keyRelease(Channel*       ch, bool ctrl, bool shift);
 void keyRelease(SampleChannel* ch, bool ctrl, bool shift);
 
+/* recPress
+ * handle the key pressure, either via mouse/keyboard or MIDI. If gui
+ * is true it means that the event comes from the main window (mouse,
+ * keyb or MIDI), otherwise the event comes from the action recorder. */
+
+void recPress  (Channel*       ch, bool ctrl, bool shift);
+void recPress  (SampleChannel* ch, bool ctrl, bool shift);
+
 /* start/stopActionRec
 Handles the action recording. If gui == true the signal comes from an user
 interaction, otherwise it's a MIDI/Jack/external signal. */

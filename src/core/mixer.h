@@ -106,11 +106,6 @@ extern bool  rewindWait;	   // rewind guard, if quantized
 extern int  tickTracker, tockTracker;
 extern bool tickPlay, tockPlay; // 1 = play, 0 = stop
 
-/* inputTracker
- * position of the sample in the input side (recording) */
-
-extern int inputTracker;
-
 extern pthread_mutex_t mutex_recs;
 extern pthread_mutex_t mutex_chans;
 extern pthread_mutex_t mutex_plugins;

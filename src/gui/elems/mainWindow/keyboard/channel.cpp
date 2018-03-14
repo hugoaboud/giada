@@ -31,6 +31,7 @@
 #include "../../../../core/graphics.h"
 #include "../../../../core/pluginHost.h"
 #include "../../../../utils/gui.h"
+#include "../../../../glue/io.h"
 #include "../../../../glue/channel.h"
 #include "../../../dialogs/gd_mainWindow.h"
 #include "../../../dialogs/pluginList.h"
@@ -74,7 +75,9 @@ void geChannel::cb_openFxWindow(Fl_Widget* v, void* p) { ((geChannel*)p)->cb_ope
 
 void geChannel::cb_arm()
 {
-	c::channel::toggleArm(ch, true);
+	using namespace giada::c;
+	io::recPress(ch, Fl::event_ctrl(), Fl::event_shift());
+	arm->value(ch->recStatus != REC_STOPPED);
 }
 
 

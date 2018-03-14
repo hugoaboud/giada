@@ -184,17 +184,6 @@ void freeChannel(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void toggleArm(Channel* ch, bool gui)
-{
-	ch->setArmed(!ch->isArmed());
-	if (!gui)
-		ch->guiChannel->arm->value(ch->isArmed());
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
 void toggleInputMonitor(Channel* ch)
 {
 	SampleChannel* sch = static_cast<SampleChannel*>(ch);

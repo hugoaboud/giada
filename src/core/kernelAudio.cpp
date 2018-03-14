@@ -148,9 +148,6 @@ int openDevice()
 
 	/* inDevice can be disabled */
 
-	printf("BAANNANANANANANAANANANANANAA\n");
-	printf("%d\n\n", conf::channelsIn);
-
 	if (conf::soundDeviceIn != -1) {
 		inParams.deviceId     = conf::soundDeviceIn;
 		inParams.nChannels    = conf::channelsIn < 1? 1 : conf::channelsIn;

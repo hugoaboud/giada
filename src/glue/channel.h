@@ -70,7 +70,6 @@ int cloneChannel(Channel* ch);
 Toggles or set several channel properties. If gui == true the signal comes from 
 a manual interaction on the GUI, otherwise it's a MIDI/Jack/external signal. */
 
-void toggleArm(Channel* ch, bool gui=true);
 void toggleInputMonitor(Channel* ch);
 void kill(Channel* ch);
 void toggleMute(Channel* ch, bool gui=true);

@@ -92,8 +92,6 @@ protected:
 	float volume_i; // internal volume
 	float volume_d; // delta volume (for envelope)
 	
-	bool armed;
-
 	std::string name;
 
 	float  peak = 0;
@@ -236,7 +234,6 @@ public:
 	bool isPlaying() const;
 	float getPan() const;
 	float getVolume() const;
-	bool isArmed() const;
 	bool isPreview() const;
 	int getMidiInFilter() const;
 	float getPeak() const;

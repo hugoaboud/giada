@@ -451,7 +451,7 @@ void rewindSequencer()
 
 bool startInputRec()
 {
-	int channelsReady = 0;
+	/*int channelsReady = 0;
 
 	for (Channel* channel : mixer::channels) {
 
@@ -460,7 +460,7 @@ bool startInputRec()
 
 		SampleChannel* ch = static_cast<SampleChannel*>(channel);
 
-		/* Allocate empty sample for the current channel. */
+		// Allocate empty sample for the current channel.
 
 		Wave* wave = nullptr;
 		int result = waveManager::createEmpty(clock::getTotalFrames(), 
@@ -480,13 +480,13 @@ bool startInputRec()
 	}
 
 	if (channelsReady > 0) {
-		mixer::recording = true;
+		mixer::recording = true;*/
 		/* start to write from the currentFrame, not the beginning */
 		/** FIXME: this should be done before wave allocation */
-		mixer::inputTracker = clock::getCurrentFrame();
+		/*mixer::inputTracker = clock::getCurrentFrame();
 		return true;
-	}
-	return false;
+	}*/
+	return true;
 }
 
 
@@ -507,11 +507,12 @@ void stopInputRec()
 
 bool hasArmedSampleChannels()
 {
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
+	// TODO: delete this method
+	/*for (unsigned i=0; i<mixer::channels.size(); i++) {
 		Channel *ch = mixer::channels.at(i);
 		if (ch->type == CHANNEL_SAMPLE && ch->isArmed())
 			return true;
-	}
+	}*/
 	return false;
 }
 

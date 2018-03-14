@@ -57,7 +57,6 @@ Channel::Channel(int type, int status, int bufferSize)
 	volume         (G_DEFAULT_VOL),
 	volume_i       (1.0f),
 	volume_d       (0.0f),
-	armed          (false),
 	type           (type),
 	status         (status),
 	key            (0),
@@ -203,7 +202,6 @@ int Channel::writePatch(int i, bool isProject)
 	pch.size            = guiChannel->getSize();
 	pch.name            = name;
 	pch.key             = key;
-	pch.armed           = armed;
 	pch.column          = guiChannel->getColumnIndex();
 	pch.mute            = mute;
 	pch.mute_s          = mute_s;
@@ -270,7 +268,6 @@ int Channel::readPatch(const string& path, int i, pthread_mutex_t* pluginMutex,
 	int ret = 1;
 	patch::channel_t* pch = &patch::channels.at(i);
 	key             = pch->key;
-	armed           = pch->armed;
 	type            = pch->type;
 	name            = pch->name;
 	index           = pch->index;
@@ -484,21 +481,6 @@ void Channel::setPreviewMode(int m)
 bool Channel::isPreview() const
 {
 	return previewMode != G_PREVIEW_NONE;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void Channel::setArmed(bool b)
-{
-	armed = b;
-}
-
-
-bool Channel::isArmed() const
-{
-	return armed;
 }
 
 

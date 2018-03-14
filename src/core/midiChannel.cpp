@@ -216,6 +216,12 @@ void MidiChannel::start(int frame, bool doQuantize, int quantize,
 	}
 }
 
+/* -------------------------------------------------------------------------- */
+
+bool MidiChannel::isArmed() const
+{
+	return armed;
+}
 
 /* -------------------------------------------------------------------------- */
 

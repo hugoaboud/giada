@@ -31,6 +31,7 @@
 #include "../utils/log.h"
 #include "../utils/fs.h"
 #include "../utils/string.h"
+#include "../gui/elems/mainWindow/keyboard/sampleChannel.h"
 #include "patch.h"
 #include "const.h"
 #include "conf.h"
@@ -62,6 +63,7 @@ SampleChannel::SampleChannel(int bufferSize, bool inputMonitor)
 		pitch            (G_DEFAULT_PITCH),
 		trackerPreview   (0),
 		shift            (0),
+		armed            (false),
 		wave             (nullptr),
 		tracker          (0),
 		mode             (G_DEFAULT_CHANMODE),
@@ -539,7 +541,15 @@ void SampleChannel::sum(int frame, bool running)
 void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 {
 	if (wave == nullptr)
+	{
+		if (recStatus == REC_WAITING) {
+			recStatus = REC_READING;
+			setReadActions(true, recsStopOnChanHalt);   // rec start
+			newWave();
+			((geSampleChannel*)guiChannel)->update();
+		}
 		return;
+	}
 
 	if (mode & LOOP_ANY) {
 
@@ -566,14 +576,13 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 		tracker = fillChan(vChan, tracker, frame);
 	}
 
+	if (recStatus == REC_READING) {
+		recStatus = REC_STOPPED;
+	}
+
 	if (recStatus == REC_ENDING) {
 		recStatus = REC_STOPPED;
 		setReadActions(false, recsStopOnChanHalt);  // rec stop
-	}
-	else
-	if (recStatus == REC_WAITING) {
-		recStatus = REC_READING;
-		setReadActions(true, recsStopOnChanHalt);   // rec start
 	}
 }
 
@@ -817,6 +826,12 @@ void SampleChannel::reset(int frame)
 		tracker = fillChan(vChan, tracker, frame);
 }
 
+/* -------------------------------------------------------------------------- */
+
+bool SampleChannel::isArmed() const
+{
+	return armed;
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -851,6 +866,26 @@ void SampleChannel::pushWave(Wave* w)
 	name   = wave->getBasename();
 }
 
+/* -------------------------------------------------------------------------- */
+
+
+void SampleChannel::newWave()
+{
+	if (wave != nullptr) return;
+	
+	Wave* w = nullptr;
+	int result = waveManager::createEmpty(clock::getTotalFrames(), 
+		conf::samplerate, string("TAKE-" + gu_iToString(patch::lastTakeId)), &w); 
+
+	if (result != G_RES_OK) {
+		gu_log("[newWave] unable to allocate new Wave in chan %s!\n", getName().c_str());
+	}
+
+	if (w!=nullptr) {
+		pushWave(w);
+		setName("TAKE-" + gu_iToString(patch::lastTakeId++)); // Increase lastTakeId 
+	}
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -997,6 +1032,7 @@ int SampleChannel::readPatch(const string& basePath, int i,
 
 	mode              = pch->mode;
 	boost             = pch->boost;
+	armed             = pch->armed;
 	readActions       = pch->recActive;
 	recStatus         = readActions ? REC_READING : REC_STOPPED;
 	midiInVeloAsVol   = pch->midiInVeloAsVol;
@@ -1042,6 +1078,14 @@ bool SampleChannel::canInputRec()
 void SampleChannel::start(int frame, bool doQuantize, int quantize,
 		bool mixerIsRunning, bool forceStart, bool isUserGenerated)
 {
+	if (recStatus != REC_STOPPED) {
+		if (recStatus == REC_READING) {
+			recStatus = REC_ENDING;
+			status = STATUS_WAIT;
+		}
+		return;
+	}
+
 	switch (status)	{
 		case STATUS_EMPTY:
 		case STATUS_MISSING:
@@ -1111,6 +1155,30 @@ void SampleChannel::start(int frame, bool doQuantize, int quantize,
 }
 
 
+void SampleChannel::rec(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
+{
+	if (status != STATUS_EMPTY) return;
+
+	switch (recStatus) {
+
+		case REC_ENDING:
+			return;
+
+		case REC_STOPPED:
+			recStatus = REC_WAITING;
+			return;
+
+		case REC_READING:
+			recStatus = REC_ENDING;
+			return;
+
+		case REC_WAITING:
+			recStatus = REC_STOPPED;
+			return;
+	}
+}
+
+
 /* -------------------------------------------------------------------------- */
 
 
@@ -1133,6 +1201,7 @@ int SampleChannel::writePatch(int i, bool isProject)
 	pch->begin             = begin;
 	pch->end               = end;
 	pch->boost             = boost;
+	pch->armed              = armed;
 	pch->recActive         = readActions;
 	pch->pitch             = pitch;
 	pch->inputMonitor      = inputMonitor;

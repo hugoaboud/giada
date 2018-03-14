@@ -130,7 +130,7 @@ void processChannels(const MidiEvent& midiEvent)
 		}		
 		else if (pure == ch->midiInArm) {
 			gu_log("  >>> arm ch=%d (pure=0x%X)\n", ch->index, pure);
-			c::channel::toggleArm(ch, false);
+			c::io::recPress(ch, false, false);
 		}
 		else if (pure == ch->midiInSolo) {
 			gu_log("  >>> solo ch=%d (pure=0x%X)\n", ch->index, pure);
