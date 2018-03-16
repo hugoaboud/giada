@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstring>
 #include <cassert>
+#include "sampleChannel.h"
 #include "../utils/log.h"
 #include "../utils/fs.h"
 #include "../utils/string.h"
@@ -44,15 +45,16 @@
 #include "mixerHandler.h"
 #include "kernelMidi.h"
 #include "kernelAudio.h"
-#include "sampleChannel.h"
+#include "resourceChannel.h"
+
 
 
 using std::string;
 using namespace giada::m;
 
 
-SampleChannel::SampleChannel(int bufferSize, bool inputMonitor)
-	: Channel          (CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize),
+SampleChannel::SampleChannel(int bufferSize)
+	: ResourceChannel          (CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize),
 		rsmp_state       (nullptr),
 		pChan            (nullptr),
 		vChanPreview     (nullptr),
@@ -63,7 +65,8 @@ SampleChannel::SampleChannel(int bufferSize, bool inputMonitor)
 		pitch            (G_DEFAULT_PITCH),
 		trackerPreview   (0),
 		shift            (0),
-		armed            (false),
+		inputTracker	 (0),
+		waitRec			 (0),
 		wave             (nullptr),
 		tracker          (0),
 		mode             (G_DEFAULT_CHANMODE),
@@ -73,10 +76,7 @@ SampleChannel::SampleChannel(int bufferSize, bool inputMonitor)
 		fadeoutOn        (false),
 		fadeoutVol       (1.0f),
 		fadeoutTracker   (0),
-		fadeoutStep      (G_DEFAULT_FADEOUT_STEP),
-		inputMonitor     (inputMonitor),
-		midiInReadActions(0x0),
-		midiInPitch      (0x0)
+		fadeoutStep      (G_DEFAULT_FADEOUT_STEP)
 {
 }
 
@@ -158,7 +158,7 @@ void SampleChannel::copy(const Channel* _src, pthread_mutex_t* pluginMutex)
 /* -------------------------------------------------------------------------- */
 
 
-void SampleChannel::clear()
+void SampleChannel::clearBuffers()
 {
 	/** TODO - these memsets may be done only if status PLAY (if below),
 	 * but it would require extra clearPChan calls when samples stop */
@@ -386,8 +386,7 @@ void SampleChannel::rewind()
 /* -------------------------------------------------------------------------- */
 
 
-void SampleChannel::parseAction(recorder::action* a, int localFrame,
-		int globalFrame, int quantize, bool mixerIsRunning)
+void SampleChannel::parseAction(recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning)
 {
 	if (readActions == false)
 		return;
@@ -395,7 +394,7 @@ void SampleChannel::parseAction(recorder::action* a, int localFrame,
 	switch (a->type) {
 		case G_ACTION_KEYPRESS:
 			if (mode & SINGLE_ANY)
-				start(localFrame, false, quantize, mixerIsRunning, false, false);
+				start(localFrame, false, mixerIsRunning, false, false);
 			break;
 		case G_ACTION_KEYREL:
 			if (mode & SINGLE_ANY)
@@ -540,10 +539,12 @@ void SampleChannel::sum(int frame, bool running)
 
 void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 {
+	gu_log("onzero\n");
 	if (wave == nullptr)
 	{
-		if (recStatus == REC_WAITING) {
+		if ((armed && mixer::recording) || recStatus == REC_WAITING) {
 			recStatus = REC_READING;
+			inputTracker = 0;
 			setReadActions(true, recsStopOnChanHalt);   // rec start
 			newWave();
 			((geSampleChannel*)guiChannel)->update();
@@ -578,11 +579,16 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 
 	if (recStatus == REC_READING) {
 		recStatus = REC_STOPPED;
+		waitRec = 0;
+		armed = false;
+		((geSampleChannel*)guiChannel)->update();
 	}
-
-	if (recStatus == REC_ENDING) {
+	else if (recStatus == REC_ENDING) {
 		recStatus = REC_STOPPED;
+		waitRec = 0;
+		armed = false;
 		setReadActions(false, recsStopOnChanHalt);  // rec stop
+		((geSampleChannel*)guiChannel)->update();
 	}
 }
 
@@ -732,6 +738,12 @@ float SampleChannel::getBoost() const
 	return boost;
 }
 
+/* -------------------------------------------------------------------------- */
+
+bool SampleChannel::isChainAlive() {
+	return inputMonitor || recStatus != REC_STOPPED || armed;
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -742,17 +754,6 @@ void SampleChannel::calcFadeoutStep()
 		fadeoutStep = ceil((end - tracker) / volume) * 2; /// or volume_i ???
 	else
 		fadeoutStep = G_DEFAULT_FADEOUT_STEP;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void SampleChannel::setReadActions(bool v, bool killOnFalse)
-{
-	readActions = v;
-	if (!readActions && killOnFalse)
-		kill(0);  /// FIXME - wrong frame value
 }
 
 
@@ -828,13 +829,6 @@ void SampleChannel::reset(int frame)
 
 /* -------------------------------------------------------------------------- */
 
-bool SampleChannel::isArmed() const
-{
-	return armed;
-}
-
-/* -------------------------------------------------------------------------- */
-
 
 void SampleChannel::empty()
 {
@@ -905,6 +899,21 @@ void SampleChannel::input(float* inBuffer)
 void SampleChannel::process(float* outBuffer, float* inBuffer)
 {
 	input(inBuffer);
+
+	// recording
+	if (recStatus == REC_READING) {
+		if (waitRec < conf::delayComp) {
+			waitRec++;
+		}
+		else {
+			for (int i=0; i < bufferSize; i++) {
+				wave->getData()[inputTracker] += inBuffer[i];
+				inputTracker++;
+				if (inputTracker >= clock::getTotalFrames())
+					inputTracker = 0;
+			}
+		}
+  	}
 
 #ifdef WITH_VST
 	pluginHost::processStack(vChan, this);
@@ -1075,8 +1084,7 @@ bool SampleChannel::canInputRec()
 /* -------------------------------------------------------------------------- */
 
 
-void SampleChannel::start(int frame, bool doQuantize, int quantize,
-		bool mixerIsRunning, bool forceStart, bool isUserGenerated)
+void SampleChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
 {
 	if (recStatus != REC_STOPPED) {
 		if (recStatus == REC_READING) {
@@ -1105,7 +1113,7 @@ void SampleChannel::start(int frame, bool doQuantize, int quantize,
 				sendMidiLplay();
 			}
 			else {
-				if (quantize > 0 && mixerIsRunning && doQuantize)
+				if (mixerIsRunning && doQuantize)
 					qWait = true;
 				else {
 					status = STATUS_PLAY;
@@ -1127,7 +1135,7 @@ void SampleChannel::start(int frame, bool doQuantize, int quantize,
 				setFadeOut(DO_STOP);
 			else
 			if (mode == SINGLE_RETRIG) {
-				if (quantize > 0 && mixerIsRunning && doQuantize)
+				if (mixerIsRunning && doQuantize)
 					qWait = true;
 				else
 					reset(frame);
@@ -1155,7 +1163,7 @@ void SampleChannel::start(int frame, bool doQuantize, int quantize,
 }
 
 
-void SampleChannel::rec(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
+void SampleChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
 {
 	if (status != STATUS_EMPTY) return;
 
@@ -1165,22 +1173,41 @@ void SampleChannel::rec(int frame, bool doQuantize, int quantize, bool mixerIsRu
 			return;
 
 		case REC_STOPPED:
-			recStatus = REC_WAITING;
+			if (mixer::recording) recStatus = REC_WAITING;
+			else armed = !armed;
 			return;
 
 		case REC_READING:
 			recStatus = REC_ENDING;
+			armed = false;
 			return;
 
 		case REC_WAITING:
 			recStatus = REC_STOPPED;
-			return;
+			waitRec = 0;
+			armed = false;
 	}
+	guiChannel->update();
 }
-
 
 /* -------------------------------------------------------------------------- */
 
+void SampleChannel::recStart() {
+	if (status == STATUS_EMPTY && recStatus == REC_STOPPED) {
+		recStatus = REC_WAITING;
+		guiChannel->update();
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+void SampleChannel::recStop() {
+	recStatus = REC_ENDING;
+	armed = false;
+	guiChannel->update();
+}
+
+/* -------------------------------------------------------------------------- */
 
 int SampleChannel::writePatch(int i, bool isProject)
 {

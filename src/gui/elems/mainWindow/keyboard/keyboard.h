@@ -35,10 +35,12 @@
 
 
 class Channel;
+class ResourceChannel;
 class geButton;
 class geColumn;
 class geChannel;
 class geSampleChannel;
+
 
 
 class geKeyboard : public Fl_Scroll
@@ -89,7 +91,7 @@ public:
 	Requires Channel (and not geChannel). If build is set to true, also generate 
 	the corresponding column if column (index) does not exist yet. */
 
-	geChannel* addChannel(int column, Channel* ch, int size, bool build=false);
+	geChannel* addChannel(int column, ResourceChannel* ch, int size, bool build=false);
 
 	/* addColumn
 	 * add a new column to the top of the stack. */

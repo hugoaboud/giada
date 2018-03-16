@@ -33,14 +33,17 @@
 using namespace giada::m;
 
 InputChannel::InputChannel(int bufferSize)
-	: Channel          (CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize)
+	: Channel          (bufferSize),
+	inputIndex(-1),
+	preMute(false),
+	columnChannel(nullptr)
 {
-	name = "Guitar";
+	name = "Input";
+	inputMonitor = conf::inputMonitorDefaultOn;
 }
 
 
 /* -------------------------------------------------------------------------- */
-
 
 InputChannel::~InputChannel()
 {}
@@ -49,24 +52,31 @@ InputChannel::~InputChannel()
 
 std::string InputChannel::getName() const
 {
-	return "i." + name;
+	return ">" + name + "<";
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-void InputChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {}
-void InputChannel::preview(float* outBuffer) {}
-void InputChannel::start(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) {}
-void InputChannel::stop() {}
-void InputChannel::kill(int frame) {}
-void InputChannel::empty() {}
-void InputChannel::stopBySeq(bool chansStopOnSeqHalt) {}
-void InputChannel::quantize(int index, int localFrame) {}
-void InputChannel::onZero(int frame, bool recsStopOnChanHalt) {}
-void InputChannel::onBar(int frame) {}
-void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, int quantize, bool mixerIsRunning){}
-void InputChannel::rewind() {}
+void InputChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
+	/*
+		TODO
+	*/
+}
+
+/* -------------------------------------------------------------------------- */
+
+void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning){
+	/*
+		TODO
+	*/
+}
+
+/* -------------------------------------------------------------------------- */
+
+/*
+	Mute / Pre-Mute
+*/
 
 void InputChannel::setMute  (bool internal) { 
 	preMute = false;
@@ -83,12 +93,14 @@ void InputChannel::unsetPreMute(bool internal) {
 	preMute = false;
 }
 
+/* -------------------------------------------------------------------------- */
 
-void InputChannel::clear() {
-	/** TODO - these memsets may be done only if status PLAY (if below),
-	 * but it would require extra clearPChan calls when samples stop */
+void InputChannel::clearBuffers()
+{
 	std::memset(vChan, 0, sizeof(float) * bufferSize);
 }
+
+/* -------------------------------------------------------------------------- */
 
 void InputChannel::input(float* inBuffer) {
 	for (int i=0; i<bufferSize; i++) {
@@ -97,14 +109,15 @@ void InputChannel::input(float* inBuffer) {
 	}
 }
 
-/*
-	inBuffer -> interleaved buffer of conf::channelsIn channels
-*/
+/* -------------------------------------------------------------------------- */
+
 void InputChannel::process(float* outBuffer, float* inBuffer) {
+	
 	/* If input monitor is on, copy input buffer to vChan: this enables the input
   monitoring. The vChan will be overwritten later by pluginHost::processStack. */
-	peak = 0;
-	if ((canInputRec() || inputMonitor) && inputIndex > -1)
+	bool chainAlive = isChainAlive();
+	gu_log("inputchainalive = %d\n",chainAlive);
+	if ((chainAlive || inputMonitor) && inputIndex > -1)
 	{
 		if (!preMute)
 	    	input(inBuffer);
@@ -112,22 +125,30 @@ void InputChannel::process(float* outBuffer, float* inBuffer) {
 	#ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
 	#endif
+	}
 
-		// TODO - Opaque channels' processing
-		if (inputMonitor) {
-		  	for (int j=0; j<bufferSize; j++) {
-				outBuffer[j*2]   += vChan[j] * volume * calcPanning(0);
-				outBuffer[j*2+1] +=	vChan[j] * volume * calcPanning(1);
-			}
-		}
-
-		// feed output ColumnChannel
-		if (columnChannel != nullptr && !preMute && !mute) {
-			columnChannel->input(vChan);
+	// TODO - Opaque channels' processing
+	if (inputMonitor) {
+	  	for (int j=0; j<bufferSize; j++) {
+			outBuffer[j*2]   += vChan[j] * volume * calcPanning(0);
+			outBuffer[j*2+1] +=	vChan[j] * volume * calcPanning(1);
 		}
 	}
+
+	// feed output ColumnChannel
+	if (chainAlive && columnChannel != nullptr && !preMute && !mute) {
+		columnChannel->input(vChan);
+	}
+
+	peak = 0;
 }
 
-bool InputChannel::canInputRec() {
-	return true;
+/* -------------------------------------------------------------------------- */
+
+bool InputChannel::isChainAlive() {
+	if (columnChannel == nullptr) {
+		if (!inputMonitor) return false;
+		return true;
+	}
+	return columnChannel->isChainAlive();
 }

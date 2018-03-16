@@ -38,6 +38,7 @@
 #include "../core/mixerHandler.h"
 #include "../core/mixer.h"
 #include "../core/midiChannel.h"
+#include "../core/columnChannel.h"
 #include "../core/clock.h"
 #include "../core/kernelMidi.h"
 #include "../core/kernelAudio.h"
@@ -200,9 +201,8 @@ void glue_setInVol(float v, bool gui)
 void glue_clearAllSamples()
 {
 	clock::stop();
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
-		mixer::channels.at(i)->empty();
-		mixer::channels.at(i)->guiChannel->reset();
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		mixer::columnChannels.at(i)->clearAllResources();
 	}
 	recorder::init();
 	return;

@@ -33,6 +33,7 @@
 
 
 class Channel;
+class ResourceChannel;
 class SampleChannel;
 class gdSampleEditor;
 
@@ -44,34 +45,34 @@ namespace channel
 /* addChannel
 Adds an empty new channel to the stack. Returns the new channel. */
 
-Channel* addChannel(int column, int type, int size);
+ResourceChannel* addChannel(int column, int type, int size);
 
 /* loadChannel
 Fills an existing channel with a wave. */
 
 int loadChannel(SampleChannel* ch, const std::string& fname);
 
+/* freeChannel
+Unloads the sample from a sample channel. */
+
+void freeChannel(ResourceChannel* ch);
+
 /* deleteChannel
 Removes a channel from Mixer. */
 
 void deleteChannel(Channel* ch);
 
-/* freeChannel
-Unloads the sample from a sample channel. */
-
-void freeChannel(Channel* ch);
-
 /* cloneChannel
 Makes an exact copy of Channel *ch. */
 
-int cloneChannel(Channel* ch);
+int cloneChannel(ResourceChannel* ch);
 
 /* toggle/set*
 Toggles or set several channel properties. If gui == true the signal comes from 
 a manual interaction on the GUI, otherwise it's a MIDI/Jack/external signal. */
 
 void toggleInputMonitor(Channel* ch);
-void kill(Channel* ch);
+void kill(ResourceChannel* ch);
 void toggleMute(Channel* ch, bool gui=true);
 void setSoloOn(Channel* ch, bool gui=true);
 void setSoloOff(Channel* ch, bool gui=true);
@@ -79,16 +80,16 @@ void toggleSolo(Channel* ch, bool gui=true);
 void setVolume(Channel* ch, float v, bool gui=true, bool editor=false);
 void setName(Channel* ch, const std::string& name);
 void setPitch(SampleChannel* ch, float val);
-void setPanning(SampleChannel* ch, float val);
+void setPanning(ResourceChannel* ch, float val);
 void setBoost(SampleChannel* ch, float val);
 
 /* toggleReadingRecs
 Handles the 'R' button. If gui == true the signal comes from an user interaction
 on the GUI, otherwise it's a MIDI/Jack/external signal. */
 
-void toggleReadingRecs(SampleChannel* ch, bool gui=true);
-void startReadingRecs(SampleChannel* ch, bool gui=true);
-void stopReadingRecs(SampleChannel* ch, bool gui=true);
+void toggleReadingRecs(ResourceChannel* ch, bool gui=true);
+void startReadingRecs(ResourceChannel* ch, bool gui=true);
+void stopReadingRecs(ResourceChannel* ch, bool gui=true);
 
 }}}; // giada::c::channel::
 

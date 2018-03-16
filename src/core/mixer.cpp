@@ -115,11 +115,11 @@ void clearAllBuffers(float* outBuf, unsigned bufferSize)
 
 	pthread_mutex_lock(&mutex_chans);
 	for (InputChannel* ichannel : inputChannels)
-		ichannel->clear();
+		ichannel->clearBuffers();
 	for (ColumnChannel* cchannel : columnChannels)
-		cchannel->clear();
+		cchannel->clearBuffers();
 	for (Channel* channel : channels)
-		channel->clear();
+		channel->clearBuffers();
 	pthread_mutex_unlock(&mutex_chans);
 }
 
@@ -138,7 +138,7 @@ void readActions(unsigned frame)
 				int index   = recorder::global.at(i).at(j)->chan;
 				Channel *ch = mh::getChannelByIndex(index);
 				ch->parseAction(recorder::global.at(i).at(j), frame,
-					clock::getCurrentFrame(), clock::getQuantize(), clock::isRunning());
+					clock::getCurrentFrame(), clock::isRunning());
 			}
 			break;
 		}
@@ -163,8 +163,11 @@ void doQuantize(unsigned frame)
 		rewind();
 	}
 	pthread_mutex_lock(&mutex_chans);
-	for (unsigned i=0; i<channels.size(); i++)
-		channels.at(i)->quantize(i, frame);
+	for (unsigned i=0; i<columnChannels.size(); i++) {
+		ColumnChannel* cch = columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++)
+			cch->getResource(j)->quantize(j, frame);
+	}
 	pthread_mutex_unlock(&mutex_chans);
 }
 
@@ -205,12 +208,12 @@ content to the output buffer). Process plugins too, if any. */
 
 void renderIO(float* outBuf, float* inBuf)
 {
-	pthread_mutex_lock(&mutex_chans);
+	/*pthread_mutex_lock(&mutex_chans);
 	for (Channel* channel : channels) {
 		channel->process(outBuf, inBuf);
 		channel->preview(outBuf);
 	}
-	pthread_mutex_unlock(&mutex_chans);
+	pthread_mutex_unlock(&mutex_chans);*/
 }
 
 
@@ -276,8 +279,11 @@ void testBar(unsigned frame)
 		tickPlay = true;
 
 	pthread_mutex_lock(&mutex_chans);
-	for (unsigned k=0; k<channels.size(); k++)
-		channels.at(k)->onBar(frame);
+	for (unsigned i=0; i<columnChannels.size(); i++) {
+		ColumnChannel* cch = columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++)
+			cch->getResource(j)->onBar(frame);
+	}
 	pthread_mutex_unlock(&mutex_chans);
 }
 
@@ -290,8 +296,11 @@ void testFirstBeat(unsigned frame)
 	if (!clock::isOnFirstBeat())
 		return;
 	pthread_mutex_lock(&mutex_chans);
-	for (unsigned k=0; k<channels.size(); k++)
-		channels.at(k)->onZero(frame, conf::recsStopOnChanHalt);
+	for (unsigned i=0; i<columnChannels.size(); i++) {
+		ColumnChannel* cch = columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++)
+			cch->getResource(j)->onZero(frame, conf::recsStopOnChanHalt);
+	}
 	pthread_mutex_unlock(&mutex_chans);
 }
 
@@ -457,8 +466,8 @@ int close()
 
 bool isSilent()
 {
-	for (unsigned i=0; i<channels.size(); i++)
-		if (channels.at(i)->status == STATUS_PLAY)
+	for (unsigned i=0; i<columnChannels.size(); i++)
+		if (columnChannels.at(i)->isSilent())
 			return false;
 	return true;
 }
@@ -471,27 +480,15 @@ void rewind()
 {
 	clock::rewind();
 	if (clock::isRunning())
-		for (Channel* ch : channels)
-			ch->rewind();
+		for (unsigned i=0; i<columnChannels.size(); i++) {
+		ColumnChannel* cch = columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++)
+			cch->getResource(j)->rewind();
+	}
 }
 
 
 /* -------------------------------------------------------------------------- */
-
-
-void mergeVirtualInput()
-{
-	/*assert(vChanInput != nullptr);
-
-	for (Channel* ch : channels) {
-		if (ch->type == CHANNEL_MIDI)
-			continue;
-		SampleChannel* sch = static_cast<SampleChannel*>(ch);
-		if (sch->isArmed())
-			memcpy(sch->wave->getData(), vChanInput, clock::getTotalFrames() * sizeof(float));
-	}
-	memset(vChanInput, 0, clock::getTotalFrames() * sizeof(float)); // clear vchan*/
-}
 
 
 }}}; // giada::m::mixer::

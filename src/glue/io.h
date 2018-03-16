@@ -37,6 +37,7 @@
 
 
 class Channel;
+class ResourceChannel;
 class SampleChannel;
 class MidiChannel;
 
@@ -49,10 +50,10 @@ namespace io
  * is true it means that the event comes from the main window (mouse,
  * keyb or MIDI), otherwise the event comes from the action recorder. */
 
-void keyPress  (Channel*       ch, bool ctrl, bool shift, int velocity);
+void keyPress  (ResourceChannel*       ch, bool ctrl, bool shift, int velocity);
 void keyPress  (SampleChannel* ch, bool ctrl, bool shift, int velocity);
 void keyPress  (MidiChannel*   ch, bool ctrl, bool shift);
-void keyRelease(Channel*       ch, bool ctrl, bool shift);
+void keyRelease(ResourceChannel*       ch, bool ctrl, bool shift);
 void keyRelease(SampleChannel* ch, bool ctrl, bool shift);
 
 /* recPress
@@ -60,7 +61,7 @@ void keyRelease(SampleChannel* ch, bool ctrl, bool shift);
  * is true it means that the event comes from the main window (mouse,
  * keyb or MIDI), otherwise the event comes from the action recorder. */
 
-void recPress  (Channel*       ch, bool ctrl, bool shift);
+void recPress  (ResourceChannel*       ch, bool ctrl, bool shift);
 void recPress  (SampleChannel* ch, bool ctrl, bool shift);
 
 /* start/stopActionRec
@@ -76,8 +77,8 @@ Handles the input recording (take). If gui == true the signal comes from an
 internal interaction on the GUI, otherwise it's a MIDI/Jack/external signal. */
 
 void startStopInputRec(bool gui=true);
-int  startInputRec    (bool gui=true);
-int  stopInputRec     (bool gui=true);
+bool  startInputRec    (bool gui=true);
+void  stopInputRec     (bool gui=true);
 
 }}} // giada::c::io::
 

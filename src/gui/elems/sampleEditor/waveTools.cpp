@@ -221,7 +221,7 @@ void geWaveTools::openMenu()
 		{0}
 	};
 
-	if (ch->status == STATUS_PLAY) {
+	if (ch->getStatus() == STATUS_PLAY) {
 		menu[(int)Menu::CUT].deactivate();
 		menu[(int)Menu::TRIM].deactivate();
 	}

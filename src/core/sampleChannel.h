@@ -31,14 +31,14 @@
 
 #include <functional>
 #include <samplerate.h>
-#include "channel.h"
+#include "resourceChannel.h"
 
 
 class Patch;
 class Wave;
 
 
-class SampleChannel : public Channel
+class SampleChannel : public ResourceChannel
 {
 private:
 
@@ -90,36 +90,33 @@ private:
 	int   end;
 	float boost;
 	float pitch;
-	int   trackerPreview;  // chan position for audio preview
+	int   trackerPreview;  // chan positip for audio preview
 	int   shift;
-
-	/* onPreviewEnd
-	A callback fired when audio preview ends. */
-
-	std::function<void()> onPreviewEnd;
 
 	/* inputTracker
 	 * position of the sample in the input side (recording) */
-
 	int inputTracker;
 
-	bool armed;
-	bool recording;
+	/* waitRec
+	 * delay compensation */
+	int waitRec;
 
 public:
 
-	SampleChannel(int bufferSize, bool inputMonitor);
+	SampleChannel(int bufferSize);
 	~SampleChannel();
 
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
-	void clear() override;
+	void clearBuffers() override;
+
 	void input(float* inBuffer) override;
 	void process(float* outBuffer, float* inBuffer) override;
 	void preview(float* outBuffer) override;
-	void start(int frame, bool doQuantize, int quantize, bool mixerIsRunning,
-	bool forceStart, bool isUserGenerated) override;
-	void rec(int frame, bool doQuantize, int quantize, bool mixerIsRunning,
-	bool forceStart, bool isUserGenerated);
+	
+	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
+	void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
+	void recStart() override;
+	void recStop() override;
 	void kill(int frame) override;
 	void empty() override;
 	void stopBySeq(bool chansStopOnSeqHalt) override;
@@ -127,22 +124,20 @@ public:
 	void rewind() override;
 	void setMute(bool internal) override;
 	void unsetMute(bool internal) override;
-  int readPatch(const std::string& basePath, int i, pthread_mutex_t* pluginMutex,
-    int samplerate, int rsmpQuality) override;
-	int writePatch(int i, bool isProject) override;
+  	int  readPatch(const std::string& basePath, int i, pthread_mutex_t* pluginMutex, int samplerate, int rsmpQuality) override;
+	int  writePatch(int i, bool isProject) override;
 	void quantize(int index, int localFrame) override;
 	void onZero(int frame, bool recsStopOnChanHalt) override;
 	void onBar(int frame) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame,
-			int quantize, bool mixerIsRunning) override;
+	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
 	bool canInputRec() override;
 	bool allocBuffers() override;
+
+	bool isChainAlive() override;
 
 	int getTrackerPreview() const;
 	int getShift() const;
 	float getBoost() const;	
-
-
 	
 	void setShift(int s);
 
@@ -176,7 +171,6 @@ public:
 
 	void sum(int frame, bool running);
 
-	bool isArmed() const;
 	void setPitch(float v);
 	float getPitch();
 	void setBegin(int f);
@@ -190,35 +184,22 @@ public:
 
 	void hardStop(int frame);
 
-	/* setReadActions
-	If enabled (v == true), recorder will read actions from this channel. If 
-	killOnFalse == true and disabled, will also kill the channel. */
-
-	void setReadActions(bool v, bool killOnFalse);
-
 	void setBoost(float v);
 
 	void setOnEndPreviewCb(std::function<void()> f);
 
-	Wave* wave;
-	int   tracker;         // chan position
-	int   mode;            // mode: see const.h
-	bool  qWait;           // quantizer wait
-	bool  fadeinOn;
-	float fadeinVol;
-	bool  fadeoutOn;
-	float fadeoutVol;      // fadeout volume
-	int   fadeoutTracker;  // tracker fadeout, xfade only
-	float fadeoutStep;     // fadeout decrease
-  int   fadeoutType;     // xfade or fadeout
-  int		fadeoutEnd;      // what to do when fadeout ends
-  bool  inputMonitor;
-
-	/* midi stuff */
-
-  bool     midiInVeloAsVol;
-  uint32_t midiInReadActions;
-  uint32_t midiInPitch;
+	Wave*	wave;
+	int		tracker;         // chan position
+	int		mode;            // mode: see const.h
+	bool	qWait;           // quantizer wait
+	bool	fadeinOn;
+	float	fadeinVol;
+	bool	fadeoutOn;
+	float	fadeoutVol;      // fadeout volume
+	int		fadeoutTracker;  // tracker fadeout, xfade only
+	float	fadeoutStep;     // fadeout decrease
+	int		fadeoutType;     // xfade or fadeout
+	int		fadeoutEnd;      // what to do when fadeout ends
 
 	/* const - what to do when a fadeout ends */
 

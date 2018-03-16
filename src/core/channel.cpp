@@ -49,36 +49,25 @@ using std::string;
 using namespace giada::m;
 
 
-Channel::Channel(int type, int status, int bufferSize)
+Channel::Channel(int bufferSize)
 : bufferSize     (bufferSize),
 	midiInFilter   (-1),
-	previewMode    (G_PREVIEW_NONE),
 	pan            (0.5f),
 	volume         (G_DEFAULT_VOL),
-	volume_i       (1.0f),
-	volume_d       (0.0f),
-	type           (type),
-	status         (status),
 	key            (0),
 	mute_i         (false),
 	mute_s         (false),
 	mute           (false),
 	solo           (false),
+	inputMonitor   (false),
 	hasActions     (false),
-	readActions    (false),
-	recStatus      (REC_STOPPED),
 	vChan          (nullptr),
 	guiChannel     (nullptr),
 	midiIn         (true),
-	midiInKeyPress (0x0),
-	midiInKeyRel   (0x0),
-	midiInKill     (0x0),
-	midiInArm      (0x0),
 	midiInVolume   (0x0),
 	midiInMute     (0x0),
 	midiInSolo     (0x0),
 	midiOutL       (false),
-	midiOutLplaying(0x0),
 	midiOutLmute   (0x0),
 	midiOutLsolo   (0x0)
 {
@@ -90,7 +79,6 @@ Channel::Channel(int type, int status, int bufferSize)
 
 Channel::~Channel()
 {
-	status = STATUS_OFF;
 	if (vChan != nullptr)
 		delete[] vChan;
 }
@@ -110,6 +98,12 @@ bool Channel::allocBuffers()
 	return true;
 }
 
+/* -------------------------------------------------------------------------- */
+
+void Channel::clearBuffers() {
+	std::memset(vChan, 0, sizeof(float) * bufferSize);
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -118,28 +112,18 @@ void Channel::copy(const Channel *src, pthread_mutex_t *pluginMutex)
 {
 	key             = src->key;
 	volume          = src->volume;
-	volume_i        = src->volume_i;
-	volume_d        = src->volume_d;
 	pan             = src->pan;
 	mute_i          = src->mute_i;
 	mute_s          = src->mute_s;
 	mute            = src->mute;
 	solo            = src->solo;
 	hasActions      = src->hasActions;
-	recStatus       = src->recStatus;
 	midiIn          = src->midiIn;
-	midiInKeyPress  = src->midiInKeyPress;
-	midiInKeyRel    = src->midiInKeyRel;
-	midiInKill      = src->midiInKill;
-	midiInArm       = src->midiInArm;
 	midiInVolume    = src->midiInVolume;
 	midiInMute      = src->midiInMute;
 	midiInSolo      = src->midiInSolo;
-	midiOutL        = src->midiOutL;
 	midiOutLplaying = src->midiOutLplaying;
-	midiOutLmute    = src->midiOutLmute;
-	midiOutLsolo    = src->midiOutLsolo;
-
+	
 	/* clone plugins */
 
 #ifdef WITH_VST
@@ -185,19 +169,9 @@ void Channel::sendMidiLmessage(uint32_t learn, const midimap::message_t& msg)
 /* -------------------------------------------------------------------------- */
 
 
-bool Channel::isPlaying() const
-{
-	return status & (STATUS_PLAY | STATUS_ENDING);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
 int Channel::writePatch(int i, bool isProject)
 {
 	patch::channel_t pch;
-	pch.type            = type;
 	pch.index           = index;
 	pch.size            = guiChannel->getSize();
 	pch.name            = name;
@@ -209,16 +183,11 @@ int Channel::writePatch(int i, bool isProject)
 	pch.volume          = volume;
 	pch.pan             = pan;
 	pch.midiIn          = midiIn;
-	pch.midiInKeyPress  = midiInKeyPress;
-	pch.midiInKeyRel    = midiInKeyRel;
-	pch.midiInKill      = midiInKill;
-	pch.midiInArm       = midiInArm;
 	pch.midiInVolume    = midiInVolume;
 	pch.midiInMute      = midiInMute;
 	pch.midiInFilter    = midiInFilter;
 	pch.midiInSolo      = midiInSolo;
 	pch.midiOutL        = midiOutL;
-	pch.midiOutLplaying = midiOutLplaying;
 	pch.midiOutLmute    = midiOutLmute;
 	pch.midiOutLsolo    = midiOutLsolo;
 
@@ -261,14 +230,12 @@ int Channel::writePatch(int i, bool isProject)
 
 /* -------------------------------------------------------------------------- */
 
-
 int Channel::readPatch(const string& path, int i, pthread_mutex_t* pluginMutex,
 	int samplerate, int rsmpQuality)
 {
 	int ret = 1;
 	patch::channel_t* pch = &patch::channels.at(i);
 	key             = pch->key;
-	type            = pch->type;
 	name            = pch->name;
 	index           = pch->index;
 	mute            = pch->mute;
@@ -277,15 +244,11 @@ int Channel::readPatch(const string& path, int i, pthread_mutex_t* pluginMutex,
 	volume          = pch->volume;
 	pan             = pch->pan;
 	midiIn          = pch->midiIn;
-	midiInKeyPress  = pch->midiInKeyPress;
-	midiInKeyRel    = pch->midiInKeyRel;
-	midiInKill      = pch->midiInKill;
 	midiInVolume    = pch->midiInVolume;
 	midiInMute      = pch->midiInMute;
 	midiInFilter    = pch->midiInFilter;
 	midiInSolo      = pch->midiInSolo;
 	midiOutL        = pch->midiOutL;
-	midiOutLplaying = pch->midiOutLplaying;
 	midiOutLmute    = pch->midiOutLmute;
 	midiOutLsolo    = pch->midiOutLsolo;
 
@@ -327,6 +290,11 @@ int Channel::readPatch(const string& path, int i, pthread_mutex_t* pluginMutex,
 	return ret;
 }
 
+/* -------------------------------------------------------------------------- */
+
+void Channel::setReadActions(bool r) {
+	readActions = r;
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -353,29 +321,6 @@ void Channel::sendMidiLsolo()
 		sendMidiLmessage(midiOutLsolo, midimap::soloOn);
 	else
 		sendMidiLmessage(midiOutLsolo, midimap::soloOff);
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void Channel::sendMidiLplay()
-{
-	if (!midiOutL || midiOutLplaying == 0x0)
-		return;
-	switch (status) {
-		case STATUS_OFF:
-			sendMidiLmessage(midiOutLplaying, midimap::stopped);
-			break;
-		case STATUS_PLAY:
-			sendMidiLmessage(midiOutLplaying, midimap::playing);
-			break;
-		case STATUS_WAIT:
-			sendMidiLmessage(midiOutLplaying, midimap::waiting);
-			break;
-		case STATUS_ENDING:
-			sendMidiLmessage(midiOutLplaying, midimap::stopping);
-	}
 }
 
 
@@ -436,24 +381,24 @@ float Channel::getPeak() const
 
 /* -------------------------------------------------------------------------- */
 
+void Channel::setMute  (bool internal) {
+	mute = true;
+}
+void Channel::unsetMute(bool internal) {
+	mute = false;
+}
+
+/* -------------------------------------------------------------------------- */
 
 void Channel::setVolume(float v)
 {
 	volume = v;
 }
 
-
-void Channel::setVolumeI(float v)
-{
-	volume_i = v;
-}
-
-
 float Channel::getVolume() const
 {
 	return volume;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -467,22 +412,6 @@ float Channel::calcPanning(int ch)
 	else  // channel 1
 		return pan; 
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void Channel::setPreviewMode(int m)
-{
-	previewMode = m;
-}
-
-
-bool Channel::isPreview() const
-{
-	return previewMode != G_PREVIEW_NONE;
-}
-
 
 /* -------------------------------------------------------------------------- */
 

@@ -32,7 +32,7 @@ using namespace giada::m;
 
 
 MasterChannel::MasterChannel(int bufferSize)
-	: Channel          (CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize)
+	: Channel          (bufferSize)
 {
 }
 

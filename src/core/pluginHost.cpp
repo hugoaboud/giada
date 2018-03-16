@@ -33,6 +33,7 @@
 #include "../utils/string.h"
 #include "const.h"
 #include "channel.h"
+#include "resourceChannel.h"
 #include "plugin.h"
 #include "pluginHost.h"
 
@@ -391,7 +392,7 @@ void processStack(float* buffer, Channel* ch)
 	Sample channels and Master in/out want audio data instead: let's convert the 
 	internal buffer from Giada to Juce. */
 
-	if (ch != nullptr && ch->type == CHANNEL_MIDI) 
+	if (ch != nullptr && static_cast<ResourceChannel*>(ch)->getType() == CHANNEL_MIDI) 
 		audioBuffer.clear();
 	else
 		for (int i=0; i<buffersize; i++) {

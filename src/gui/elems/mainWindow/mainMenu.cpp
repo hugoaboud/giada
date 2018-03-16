@@ -32,6 +32,7 @@
 #include "../../../core/conf.h"
 #include "../../../core/patch.h"
 #include "../../../core/channel.h"
+#include "../../../core/columnChannel.h"
 #include "../../../core/sampleChannel.h"
 #include "../../../utils/gui.h"
 #include "../../../glue/storage.h"
@@ -184,12 +185,17 @@ void geMainMenu::__cb_edit()
 			menu[1].activate();
 			break;
 		}
-	for (unsigned i=0; i<mixer::channels.size(); i++)
-		if (mixer::channels.at(i)->type == CHANNEL_SAMPLE)
-			if (((SampleChannel*)mixer::channels.at(i))->wave != nullptr) {
+
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		ColumnChannel* cch = mixer::columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++) {
+			SampleChannel* sch = static_cast<SampleChannel*>(cch->getResource(j));
+			if (sch != nullptr && sch->wave != nullptr) {
 				menu[0].activate();
 				break;
 			}
+		}
+	}
 
 	Fl_Menu_Button* b = new Fl_Menu_Button(0, 0, 100, 50);
 	b->box(G_CUSTOM_BORDER_BOX);

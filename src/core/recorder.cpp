@@ -111,7 +111,7 @@ bool canRec(Channel* ch, bool clockRunning, bool mixerRecording)
 	if (!active         ||
 		  !clockRunning   ||
 			 mixerRecording ||
-			(ch->type == CHANNEL_SAMPLE && ((SampleChannel*)ch)->wave == nullptr)
+			!((ResourceChannel*)ch)->canInputRec()
 		)
 		return false;
 	return true;

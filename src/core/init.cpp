@@ -41,6 +41,8 @@
 #include "const.h"
 #include "clock.h"
 #include "channel.h"
+#include "columnChannel.h"
+#include "resourceChannel.h"
 #include "mixerHandler.h"
 #include "patch.h"
 #include "conf.h"
@@ -194,12 +196,17 @@ void init_shutdown()
 	}
 
 	recorder::clearAll();
-  for (unsigned i=0; i<mixer::channels.size(); i++) {
-		mixer::channels.at(i)->hasActions  = false;
-		mixer::channels.at(i)->readActions = false;
-		//if (mixer::channels.at(i)->type == CHANNEL_SAMPLE)
-		//	((SampleChannel*)mixer::channels.at(i))->readActions = false;
+	
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		ColumnChannel* cch = mixer::columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++) {
+			cch->getResource(j)->hasActions  = false;
+			cch->getResource(j)->setReadActions(false, false);
+			//if (mixer::channels.at(i)->type == CHANNEL_SAMPLE)
+			//	((SampleChannel*)mixer::channels.at(i))->readActions = false;
+		}
 	}
+  	
 	gu_log("[init] Recorder cleaned up\n");
 
 #ifdef WITH_VST

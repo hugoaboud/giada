@@ -32,6 +32,7 @@
 #include "../core/clock.h"
 #include "../core/kernelMidi.h"
 #include "../core/channel.h"
+#include "../core/sampleChannel.h"
 #include "../core/recorder.h"
 #include "../utils/gui.h"
 #include "../utils/log.h"
@@ -51,7 +52,8 @@ namespace
 void updateChannel(geChannel* gch)
 {
 	gch->ch->hasActions = m::recorder::hasActions(gch->ch->index);
-	if (gch->ch->type == CHANNEL_SAMPLE && !gch->ch->hasActions)
+	SampleChannel* sch = static_cast<SampleChannel*>(gch->ch);
+	if (sch != nullptr && !gch->ch->hasActions)
 		static_cast<geSampleChannel*>(gch)->hideActionButton();
 	/* TODO - set mute=false */
 	gu_refreshActionEditor(); // refresh a.editor window, it could be open

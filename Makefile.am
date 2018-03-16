@@ -115,6 +115,8 @@ src/main.cpp                           \
 src/core/const.h                       \
 src/core/channel.h                     \
 src/core/channel.cpp                   \
+src/core/resourceChannel.h             \
+src/core/resourceChannel.cpp           \
 src/core/sampleChannel.h               \
 src/core/sampleChannel.cpp             \
 src/core/inputChannel.h                \

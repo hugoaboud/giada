@@ -90,7 +90,7 @@ int loadChannel(SampleChannel* ch, const string& fname)
 	/* Always stop a channel before loading a new sample in it. This will prevent
 	issues if tracker is outside the boundaries of the new sample -> segfault. */
 
-	if (ch->status & (STATUS_PLAY | STATUS_ENDING))
+	if (ch->getStatus() & (STATUS_PLAY | STATUS_ENDING))
 		ch->hardStop(0);
 
 	/* Save the patch and take the last browser's dir in order to re-use it the 
@@ -123,9 +123,9 @@ int loadChannel(SampleChannel* ch, const string& fname)
 /* -------------------------------------------------------------------------- */
 
 
-Channel* addChannel(int column, int type, int size)
+ResourceChannel* addChannel(int column, int type, int size)
 {
-	Channel* ch    = m::mh::addChannel(type);
+	ResourceChannel* ch    = m::mh::addChannel(type);
 	geChannel* gch = G_MainWin->keyboard->addChannel(column, ch, size);
 	ch->guiChannel = gch;
 	return ch;
@@ -157,9 +157,9 @@ void deleteChannel(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void freeChannel(Channel* ch)
+void freeChannel(ResourceChannel* ch)
 {
-	if (ch->status == STATUS_PLAY) {
+	if (ch->getStatus() == STATUS_PLAY) {
 		if (!gdConfirmWin("Warning", "This action will stop the channel: are you sure?"))
 			return;
 	}
@@ -194,11 +194,11 @@ void toggleInputMonitor(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-int cloneChannel(Channel* src)
+int cloneChannel(ResourceChannel* src)
 {
 	using namespace giada::m;
 
-	Channel* ch    = mh::addChannel(src->type);
+	ResourceChannel* ch    = mh::addChannel(src->getType());
 	geChannel* gch = G_MainWin->keyboard->addChannel(src->guiChannel->getColumnIndex(), 
 		ch, src->guiChannel->getSize());
 
@@ -254,7 +254,7 @@ void setPitch(SampleChannel* ch, float val)
 /* -------------------------------------------------------------------------- */
 
 
-void setPanning(SampleChannel* ch, float val)
+void setPanning(ResourceChannel* ch, float val)
 {
 	ch->setPan(val);
 	gdSampleEditor* gdEditor = static_cast<gdSampleEditor*>(gu_getSubwindow(G_MainWin, WID_SAMPLE_EDITOR));
@@ -277,7 +277,7 @@ void toggleMute(Channel* ch, bool gui)
 		if (!ch->mute) {
 			recorder::startOverdub(ch->index, G_ACTION_MUTES, clock::getCurrentFrame(),
 				kernelAudio::getRealBufSize());
-			ch->readActions = false;   // don't read actions while overdubbing
+			ch->setReadActions(false);   // don't read actions while overdubbing
 		}
 		else
 		 recorder::stopOverdub(clock::getCurrentFrame(), clock::getTotalFrames(),
@@ -306,7 +306,7 @@ void toggleSolo(Channel* ch, bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-void kill(Channel* ch)
+void kill(ResourceChannel* ch)
 {
 	ch->kill(0); // on frame 0: it's a user-generated event
 }
@@ -435,7 +435,7 @@ void setName(Channel* ch, const string& name)
 /* -------------------------------------------------------------------------- */
 
 
-void toggleReadingRecs(SampleChannel* ch, bool gui)
+void toggleReadingRecs(ResourceChannel* ch, bool gui)
 {
 
 	/* When you call startReadingRecs with conf::treatRecsAsLoops, the
@@ -446,7 +446,7 @@ void toggleReadingRecs(SampleChannel* ch, bool gui)
 	handle the case of when you press 'R', the channel goes into REC_WAITING and
 	then you press 'R' again to undo the status. */
 
-	if (ch->readActions || (!ch->readActions && ch->recStatus == REC_WAITING))
+	if (ch->getReadActions() || (!ch->getReadActions() && ch->getRecStatus() == REC_WAITING))
 		stopReadingRecs(ch, gui);
 	else
 		startReadingRecs(ch, gui);
@@ -456,17 +456,18 @@ void toggleReadingRecs(SampleChannel* ch, bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-void startReadingRecs(SampleChannel* ch, bool gui)
+void startReadingRecs(ResourceChannel* ch, bool gui)
 {
 	using namespace giada::m;
 
 	if (conf::treatRecsAsLoops)
-		ch->recStatus = REC_WAITING;
+		ch->recStart();
 	else
 		ch->setReadActions(true, conf::recsStopOnChanHalt);
 	if (!gui) {
 		Fl::lock();
-		static_cast<geSampleChannel*>(ch->guiChannel)->readActions->value(1);
+		// TODO: fix this mess (should not be commented)
+		//static_cast<geResourceChannel*>(ch->guiChannel)->readActions->value(1);
 		Fl::unlock();
 	}
 }
@@ -475,33 +476,34 @@ void startReadingRecs(SampleChannel* ch, bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-void stopReadingRecs(SampleChannel* ch, bool gui)
+void stopReadingRecs(ResourceChannel* ch, bool gui)
 {
 	using namespace giada::m;
 
 	/* First of all, if the clock is not running just stop and disable everything.
 	Then if "treatRecsAsLoop" wait until the sequencer reaches beat 0, so put the
 	channel in REC_ENDING status. */
-
+	int recStatus = ch->getRecStatus();
 	if (!clock::isRunning()) {
-		ch->recStatus = REC_STOPPED;
+		recStatus = REC_STOPPED;
 		ch->setReadActions(false, false);
 	}
 	else
-	if (ch->recStatus == REC_WAITING)
-		ch->recStatus = REC_STOPPED;
+	if (recStatus == REC_WAITING)
+		recStatus = REC_STOPPED;
 	else
-	if (ch->recStatus == REC_ENDING)
-		ch->recStatus = REC_READING;
+	if (recStatus == REC_ENDING)
+		recStatus = REC_READING;
 	else
 	if (conf::treatRecsAsLoops)
-		ch->recStatus = REC_ENDING;
+		recStatus = REC_ENDING;
 	else
 		ch->setReadActions(false, conf::recsStopOnChanHalt);
 
 	if (!gui) {
 		Fl::lock();
-		static_cast<geSampleChannel*>(ch->guiChannel)->readActions->value(0);
+		// TODO: fix this mess (should not be commented)
+		//static_cast<geResourceChannel*>(ch->guiChannel)->readActions->value(0);
 		Fl::unlock();
 	}
 }

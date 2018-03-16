@@ -26,6 +26,7 @@
 
 
 #include "../../../../core/sampleChannel.h"
+#include "../../../../core/resourceChannel.h"
 #include "../../../../core/mixerHandler.h"
 #include "../../../../glue/transport.h"
 #include "../../../../glue/io.h"
@@ -163,7 +164,7 @@ void geKeyboard::cb_addColumn(Fl_Widget* v, void* p)
 /* -------------------------------------------------------------------------- */
 
 
-geChannel* geKeyboard::addChannel(int colIndex, Channel* ch, int size, bool build)
+geChannel* geKeyboard::addChannel(int colIndex, ResourceChannel* ch, int size, bool build)
 {
 	geColumn* col = getColumnByIndex(colIndex);
 

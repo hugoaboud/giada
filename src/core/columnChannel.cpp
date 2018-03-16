@@ -25,15 +25,20 @@
  * -------------------------------------------------------------------------- */
 
 #include "const.h"
+#include "sampleChannel.h"
 #include "columnChannel.h"
 #include "pluginHost.h"
 #include "conf.h"
+#include "mixer.h"
+#include "clock.h"
+#include "../utils/log.h"
+#include "../gui/elems/mainWindow/keyboard/channel.h"
 
 using namespace giada::m;
 
 
 ColumnChannel::ColumnChannel(int bufferSize)
-	: Channel          (CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize)
+	: Channel(bufferSize)
 {
 }
 
@@ -56,60 +61,102 @@ std::string ColumnChannel::getName() const
 
 /* -------------------------------------------------------------------------- */
 
-void ColumnChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {}
-void ColumnChannel::preview(float* outBuffer) {}
-void ColumnChannel::start(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) {}
-void ColumnChannel::stop() {}
-void ColumnChannel::kill(int frame) {}
-void ColumnChannel::setMute  (bool internal) {}
-void ColumnChannel::unsetMute(bool internal) {}
-void ColumnChannel::empty() {}
-void ColumnChannel::stopBySeq(bool chansStopOnSeqHalt) {}
-void ColumnChannel::quantize(int index, int localFrame) {}
-void ColumnChannel::onZero(int frame, bool recsStopOnChanHalt) {}
-void ColumnChannel::onBar(int frame) {}
-void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, int quantize, bool mixerIsRunning){}
-void ColumnChannel::rewind() {}
-
-void ColumnChannel::clear() {
-	/** TODO - these memsets may be done only if status PLAY (if below),
-	 * but it would require extra clearPChan calls when samples stop */
-	std::memset(vChan, 0, sizeof(float) * bufferSize);
+void ColumnChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
+	/*
+		TODO
+	*/
 }
 
+void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning){
+	/*
+		TODO
+	*/
+}
+
+/* -------------------------------------------------------------------------- */
+
 void ColumnChannel::input(float* inBuffer) {
-	if (canInputRec() && index > -1) {
-		for (int i=0; i<bufferSize; i++) {
-			vChan[i] += inBuffer[i]; // add, don't overwrite (no raw memcpy)
-			if (vChan[i] > peak) peak = vChan[i];
+	for (int i=0; i<bufferSize; i++) {
+		vChan[i] += inBuffer[i];
+		if (vChan[i] > peak) peak = vChan[i];
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ColumnChannel::process(float* outBuffer, float* inBuffer) {
+	
+	if (isChainAlive()) {
+		for (unsigned i=0; i<resources.size(); i++) {
+			resources[i]->process(outBuffer, vChan);
+			resources[i]->preview(outBuffer);
+		}
+
+	#ifdef WITH_VST
+		pluginHost::processStack(outBuffer, this);
+	#endif
+
+		for (int i=0; i<bufferSize; i++)
+			outBuffer[i] *= volume;
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+
+bool ColumnChannel::isChainAlive() {
+	for (unsigned i = 0; i < resources.size(); i++) if (resources[i]->isChainAlive()) return true;
+	return false;
+}
+
+/* -------------------------------------------------------------------------- */
+
+ResourceChannel* ColumnChannel::getResource(int index) {
+	return resources[index];
+}
+
+void ColumnChannel::addResource(ResourceChannel* sample) {
+	resources.push_back(sample);
+}
+
+unsigned ColumnChannel::getResourceCount() {
+	return resources.size();
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ColumnChannel::recArmedResources() {
+	gu_log("recArmedResources\n");
+	for (unsigned i=0; i<resources.size(); i++) {
+		ResourceChannel* ch = mixer::columnChannels[i]->getResource(i);
+		if (ch->isArmed() && ch->getRecStatus() == REC_STOPPED) {
+			ch->recStart();
 		}
 	}
 }
 
-void ColumnChannel::process(float* outBuffer, float* inBuffer) {
-	for (unsigned i=0; i<samples.size(); i++) {
-		samples[i]->process(outBuffer, vChan);
-		samples[i]->preview(outBuffer);
+void ColumnChannel::stopRecResources() {
+	for (unsigned i=0; i<resources.size(); i++) {
+		ResourceChannel* ch = mixer::columnChannels[i]->getResource(i);
+		if (ch->isArmed() || ch->getRecStatus() != REC_STOPPED) {
+			ch->recStop();
+		}
+	}	
+}
+
+void ColumnChannel::clearAllResources() {
+	for (unsigned i = 0; i < resources.size(); i++) {
+		resources.at(i)->empty();
+		resources.at(i)->guiChannel->reset();
 	}
-
-#ifdef WITH_VST
-	pluginHost::processStack(outBuffer, this);
-#endif
-
-	for (int i=0; i<bufferSize; i++)
-		outBuffer[i] *= volume;
-
 }
 
-bool ColumnChannel::canInputRec() {
-	for (unsigned i = 0; i < samples.size(); i++) if (samples[i]->isArmed()) return true;
-	return false;
+bool ColumnChannel::isSilent() {
+	for (unsigned i = 0; i < resources.size(); i++) {
+		int status = resources.at(i)->getStatus();
+		if (status == STATUS_PLAY || status == STATUS_ENDING) return false;
+	}
+	return true;
 }
 
-SampleChannel* ColumnChannel::getSample(int index) {
-	return samples[index];
-}
-
-void ColumnChannel::addSample(SampleChannel* sample) {
-	samples.push_back(sample);
-}
+/* -------------------------------------------------------------------------- */

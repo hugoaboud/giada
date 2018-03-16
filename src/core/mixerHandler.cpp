@@ -46,6 +46,7 @@
 #include "kernelAudio.h"
 #include "midiMapConf.h"
 #include "inputChannel.h"
+#include "resourceChannel.h"
 #include "sampleChannel.h"
 #include "columnChannel.h"
 #include "midiChannel.h"
@@ -155,9 +156,9 @@ int getNewChanIndex()
 bool uniqueSamplePath(const SampleChannel* skip, const string& path)
 {
 	for (const Channel* ch : mixer::channels) {
-		if (skip == ch || ch->type != CHANNEL_SAMPLE) // skip itself and MIDI channels
-			continue;
 		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
+		if (skip == ch || (sch != nullptr)) // skip itself and MIDI channels
+			continue;
 		if (sch->wave != nullptr && path == sch->wave->getPath())
 			return false;
 	}
@@ -189,8 +190,7 @@ InputChannel* addInputChannel()
 	}
 
 	ch->index = getNewInputChanIndex();
-	gu_log("[addChannel] channel index=%d added, type=%d, total=%d\n",
-		ch->index, ch->type, mixer::channels.size());
+	gu_log("[addChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
 }
 
@@ -229,8 +229,7 @@ ColumnChannel* addColumnChannel() {
 
 	ch->index = getNewColumnChanIndex();
 	ch->setName(("Column " + std::to_string(ch->index)).c_str());
-	gu_log("[addChannel] column channel index=%d added, type=%d, total=%d\n",
-		ch->index, ch->type, mixer::channels.size());
+	gu_log("[addChannel] column channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
 }
 
@@ -271,13 +270,13 @@ ColumnChannel* getColumnChannelByIndex(int index) {
 
 /* -------------------------------------------------------------------------- */
 
-Channel* addChannel(int type)
+ResourceChannel* addChannel(int type)
 {
-	Channel* ch;
+	ResourceChannel* ch;
 	int bufferSize = kernelAudio::getRealBufSize()*2;
 
 	if (type == CHANNEL_SAMPLE)
-		ch = new SampleChannel(bufferSize, conf::inputMonitorDefaultOn);
+		ch = new SampleChannel(bufferSize);
 	else
 		ch = new MidiChannel(bufferSize);
 
@@ -295,8 +294,7 @@ Channel* addChannel(int type)
 	}
 
 	ch->index = getNewChanIndex();
-	gu_log("[addChannel] channel index=%d added, type=%d, total=%d\n",
-		ch->index, ch->type, mixer::channels.size());
+	gu_log("[addChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
 }
 
@@ -332,11 +330,15 @@ int deleteChannel(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-Channel* getChannelByIndex(int index)
+ResourceChannel* getChannelByIndex(int index)
 {
-	for (unsigned i=0; i<mixer::channels.size(); i++)
-		if (mixer::channels.at(i)->index == index)
-			return mixer::channels.at(i);
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		ColumnChannel* cch = mixer::columnChannels.at(i);
+		for (unsigned j=0; j<cch->getResourceCount(); j++) {
+			if (cch->getResource(j)->index == index)
+				return cch->getResource(j);
+		}
+	}
 	gu_log("[getChannelByIndex] channel at index %d not found!\n", index);
 	return nullptr;
 }
@@ -347,13 +349,12 @@ Channel* getChannelByIndex(int index)
 
 bool hasLogicalSamples()
 {
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
-		if (mixer::channels.at(i)->type != CHANNEL_SAMPLE)
-			continue;
-		SampleChannel *ch = static_cast<SampleChannel*>(mixer::channels.at(i));
-		if (ch->wave && ch->wave->isLogical())
+	// TODO: Fix this (call from columnchannels)
+	/*for (unsigned i=0; i<mixer::channels.size(); i++) {
+		SampleChannel *sch = static_cast<SampleChannel*>(mixer::channels.at(i));
+		if (sch != nullptr && sch->wave && sch->wave->isLogical())
 			return true;
-	}
+	}*/
 	return false;
 }
 
@@ -363,14 +364,13 @@ bool hasLogicalSamples()
 
 bool hasEditedSamples()
 {
-	for (unsigned i=0; i<mixer::channels.size(); i++)
+	// TODO: Fix this (call from columnchannels)
+	/*for (unsigned i=0; i<mixer::channels.size(); i++)
 	{
-		if (mixer::channels.at(i)->type != CHANNEL_SAMPLE)
-			continue;
-		SampleChannel *ch = static_cast<SampleChannel*>(mixer::channels.at(i));
-		if (ch->wave && ch->wave->isEdited())
+		SampleChannel *sch = static_cast<SampleChannel*>(mixer::channels.at(i));
+		if (sch != nullptr && sch->wave && sch->wave->isEdited())
 			return true;
-	}
+	}*/
 	return false;
 }
 
@@ -380,9 +380,10 @@ bool hasEditedSamples()
 
 void stopSequencer()
 {
+	// TODO: Fix this (call from columnchannels)
 	clock::stop();
-	for (unsigned i=0; i<mixer::channels.size(); i++)
-		mixer::channels.at(i)->stopBySeq(conf::chansStopOnSeqHalt);
+	//for (unsigned i=0; i<mixer::channels.size(); i++)
+	//	mixer::channels.at(i)->stopBySeq(conf::chansStopOnSeqHalt);
 }
 
 
@@ -449,44 +450,14 @@ void rewindSequencer()
 /* -------------------------------------------------------------------------- */
 
 
-bool startInputRec()
+void startInputRec()
 {
-	/*int channelsReady = 0;
+	gu_log("[mh] start input rec\n");
+	mixer::recording = true;
 
-	for (Channel* channel : mixer::channels) {
-
-		if (!channel->canInputRec())
-			continue;
-
-		SampleChannel* ch = static_cast<SampleChannel*>(channel);
-
-		// Allocate empty sample for the current channel.
-
-		Wave* wave = nullptr;
-		int result = waveManager::createEmpty(clock::getTotalFrames(), 
-			conf::samplerate, string("TAKE-" + gu_iToString(patch::lastTakeId)), &wave); 
-		if (result != G_RES_OK) {
-			gu_log("[startInputRec] unable to allocate new Wave in chan %d!\n",
-				ch->index);
-			continue;
-		}
-
-		ch->pushWave(wave);
-		ch->setName("TAKE-" + gu_iToString(patch::lastTakeId++)); // Increase lastTakeId 
-		channelsReady++;
-
-		gu_log("[startInputRec] start input recs using chan %d with size %d "
-			"frame=%d\n", ch->index, clock::getTotalFrames(), mixer::inputTracker);
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		mixer::columnChannels[i]->recArmedResources();
 	}
-
-	if (channelsReady > 0) {
-		mixer::recording = true;*/
-		/* start to write from the currentFrame, not the beginning */
-		/** FIXME: this should be done before wave allocation */
-		/*mixer::inputTracker = clock::getCurrentFrame();
-		return true;
-	}*/
-	return true;
 }
 
 
@@ -495,10 +466,12 @@ bool startInputRec()
 
 void stopInputRec()
 {
-	mixer::mergeVirtualInput();
+	gu_log("[mh] stop input rec\n");
 	mixer::recording = false;
-	mixer::waitRec = 0; // in case delay compensation is in use
-	gu_log("[mh] stop input recs\n");
+
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		mixer::columnChannels[i]->stopRecResources();
+	}
 }
 
 

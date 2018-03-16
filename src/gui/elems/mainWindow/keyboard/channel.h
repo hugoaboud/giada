@@ -32,7 +32,7 @@
 #include <FL/Fl_Group.H>
 
 
-class Channel;
+class ResourceChannel;
 class geIdButton;
 class geChannelStatus;
 class geButton;
@@ -100,7 +100,7 @@ protected:
 
 public:
 
-	geChannel(int x, int y, int w, int h, int type, Channel* ch);
+	geChannel(int x, int y, int w, int h, int type, ResourceChannel* ch);
 
 	/* reset
 	 * reset channel to initial status. */
@@ -136,7 +136,7 @@ public:
 
 	int getSize();
 
-	Channel* ch;
+	ResourceChannel* ch;
  
 	geIdButton*      button;
 	geChannelStatus* status;

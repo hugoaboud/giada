@@ -253,7 +253,7 @@ geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
 	mainButton->callback(cb_openMenu, (void*)this);
 
 	readActions->type(FL_TOGGLE_BUTTON);
-	readActions->value(ch->readActions);
+	readActions->value(ch->getReadActions());
 	readActions->callback(cb_readActions, (void*)this);
 
 	vol->callback(cb_changeVol, (void*)this);
@@ -328,7 +328,7 @@ void geSampleChannel::cb_openMenu()
 		{0}
 	};
 
-	if (ch->status & (STATUS_EMPTY | STATUS_MISSING)) {
+	if (ch->getStatus() & (STATUS_EMPTY | STATUS_MISSING)) {
 		rclick_menu[(int) Menu::EXPORT_SAMPLE].deactivate();
 		rclick_menu[(int) Menu::EDIT_SAMPLE].deactivate();
 		rclick_menu[(int) Menu::FREE_CHANNEL].deactivate();
@@ -374,22 +374,20 @@ void geSampleChannel::cb_readActions()
 void geSampleChannel::refresh()
 {
 	using namespace giada;
-	
+
 	if (!mainButton->visible()) // mainButton invisible? status too (see below)
 		return;
 
-	setColorsByStatus(ch->status, ch->recStatus);
-
-	if (static_cast<SampleChannel*>(ch)->wave != nullptr) {
+	setColorsByStatus(ch->getStatus(), ch->getRecStatus());
+	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {	
 		if (m::mixer::recording)// && ch->isArmed())
 			mainButton->setInputRecordMode();
 		if (m::recorder::active) {
 			if (m::recorder::canRec(ch, m::clock::isRunning(), m::mixer::recording))
 				mainButton->setActionRecordMode();
 		}
-		arm->value(ch->recStatus != REC_STOPPED);
-		status->redraw(); // status invisible? sampleButton too (see below)
 	}
+	status->redraw(); // status invisible? sampleButton too (see below)
 	mainButton->redraw();
 }
 
@@ -413,7 +411,7 @@ void geSampleChannel::update()
 {
 	const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
 
-	switch (sch->status) {
+	switch (sch->getStatus()) {
 		case STATUS_EMPTY:
 			mainButton->label("-- no sample --");
 			break;
@@ -428,6 +426,12 @@ void geSampleChannel::update()
 				mainButton->label(sch->getName().c_str());
 			break;
 	}
+
+	gu_log("armed: %d\n",sch->isArmed());
+	gu_log("recStatus: %x\n",sch->getRecStatus());
+	gu_log("value: %d\n",sch->isArmed() || sch->getRecStatus() != REC_STOPPED);
+	arm->value(sch->isArmed() || sch->getRecStatus() != REC_STOPPED);
+	arm->redraw();
 
 	/* Update channels. If you load a patch with recorded actions, the 'R' button 
 	must be shown. Moreover if the actions are active, the 'R' button must be 
@@ -447,8 +451,6 @@ void geSampleChannel::update()
 
 	mainButton->setKey(sch->key);
 
-	arm->value(sch->isArmed());
-
 #ifdef WITH_VST
 	fx->status = sch->plugins.size() > 0;
 	fx->redraw();
@@ -461,7 +463,7 @@ void geSampleChannel::update()
 
 void geSampleChannel::showActionButton()
 {
-	readActions->value(static_cast<SampleChannel*>(ch)->readActions);
+	readActions->value(static_cast<SampleChannel*>(ch)->getReadActions());
 	readActions->show();
 	packWidgets();
 	redraw();

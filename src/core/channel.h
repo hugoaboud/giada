@@ -76,29 +76,21 @@ protected:
 
 	int bufferSize;
 
-  /* midiInFilter
-  Which MIDI channel should be filtered out when receiving MIDI messages. -1
-  means 'all'. */
+	/* midiInFilter
+	Which MIDI channel should be filtered out when receiving MIDI messages. -1
+	means 'all'. */
 
-  int midiInFilter;
-
-	/* previewMode
-	Whether the channel is in audio preview mode or not. */
-
-	int previewMode;
+  	int midiInFilter;
 
 	float pan;
 	float volume;   // global volume
-	float volume_i; // internal volume
-	float volume_d; // delta volume (for envelope)
+	float peak;
 	
 	std::string name;
 
-	float  peak = 0;
-
 public:
 
-	Channel(int type, int status, int bufferSize);
+	Channel(int bufferSize);
 
 	virtual ~Channel();
 
@@ -113,6 +105,11 @@ public:
 	virtual int readPatch(const std::string& basePath, int i,
     pthread_mutex_t* pluginMutex, int samplerate, int rsmpQuality);
 
+	/* isChainAlive
+	Checks whether it's necessary to input/process audio (at some point in the
+	chain, monitoring/recording requires this channel audio). */
+	virtual bool isChainAlive() = 0;
+
 	/* input
 	Merges vChannels into buffer. Warning:
 	inBuffer might be nullptr if no input devices are available for recording. */
@@ -125,63 +122,12 @@ public:
 
 	virtual void process(float* outBuffer, float* inBuffer) = 0;
 
-	/* Preview
-	Makes itself audibile for audio preview, such as Sample Editor or other
-	tools. */
-
-	virtual void preview(float* outBuffer) = 0;
-
-	/* start
-	Action to do when channel starts. doQuantize = false (don't quantize)
-	when Mixer is reading actions from Recorder. If isUserGenerated means that
-	the channel has been started by a human key press and not a pre-recorded
-	action. */
-
-	virtual void start(int frame, bool doQuantize, int quantize,
-			bool mixerIsRunning, bool forceStart, bool isUserGenerated) = 0;
-
-	/* stop
-	What to do when channel is stopped normally (via key or MIDI). */
-
-	virtual void stop() = 0;
-
-	/* kill
-	What to do when channel stops abruptly. */
-
-	virtual void kill(int frame) = 0;
-
 	/* mute
 	What to do when channel is muted. If internal == true, set internal mute 
 	without altering main mute. */
 
-	virtual void setMute  (bool internal) = 0;
-	virtual void unsetMute(bool internal) = 0;
-
-	/* empty
-	Frees any associated resources (e.g. waveform for SAMPLE). */
-
-	virtual void empty() = 0;
-
-	/* stopBySeq
-	What to do when channel is stopped by sequencer. */
-
-	virtual void stopBySeq(bool chansStopOnSeqHalt) = 0;
-
-	/* quantize
-	Starts channel according to quantizer. Index = array index of mixer::channels, 
-	used by recorder. LocalFrame = frame within the current buffer.  */
-
-	virtual void quantize(int index, int localFrame) = 0;
-
-	/* onZero
-	What to do when frame goes to zero, i.e. sequencer restart. */
-
-	virtual void onZero(int frame, bool recsStopOnChanHalt) = 0;
-
-	/* onBar
-	What to do when a bar has passed. */
-
-	virtual void onBar(int frame) = 0;
+	virtual void setMute  (bool internal);
+	virtual void unsetMute(bool internal);
 
 	/* parseAction
 	Does something on a recorded action. Parameters:
@@ -189,28 +135,8 @@ public:
 	  - localFrame  - frame number of the processed buffer
 	  - globalFrame - actual frame in Mixer */
 
-	 // TODO - quantize is useless!
-
 	virtual void parseAction(giada::m::recorder::action* a, int localFrame,
-    int globalFrame, int quantize, bool mixerIsRunning) = 0;
-
-	/* rewind
-	Rewinds channel when rewind button is pressed. */
-
-	virtual void rewind() = 0;
-
-	/* clear
-	Clears all memory buffers. This is actually useful to sample channels only. 
-	TODO - please rename it to clearBuffers. */
-
-	virtual void clear() = 0;
-
-	/* canInputRec
-	Tells whether a channel can accept and handle input audio. Always false for
-	Midi channels, true for Sample channels only if they don't contain a
-	sample yet.*/
-
-	virtual bool canInputRec() = 0;
+    int globalFrame, bool mixerIsRunning) = 0;
 
 	/* writePatch
 	Fills a patch with channel values. Returns the index of the last 
@@ -229,20 +155,22 @@ public:
 
 	virtual bool allocBuffers();
 
-	virtual std::string getName() const;
+	/* clear
+	Clears all memory buffers. */
 
-	bool isPlaying() const;
-	float getPan() const;
-	float getVolume() const;
-	bool isPreview() const;
-	int getMidiInFilter() const;
-	float getPeak() const;
+	virtual void clearBuffers();
 
 	/* isMidiAllowed
 	Given a MIDI channel 'c' tells whether this channel should be allowed to receive
 	and process MIDI events on MIDI channel 'c'. */
 
 	bool isMidiInAllowed(int c) const;
+
+	/* setReadActions
+	If enabled (v == true), recorder will read actions from this channel. If 
+	killOnFalse == true and disabled, will also kill the channel. */
+
+	virtual void setReadActions(bool v);
 
 	/* sendMidiL*
 	 * send MIDI lightning events to a physical device. */
@@ -251,13 +179,16 @@ public:
 	void sendMidiLsolo();
 	void sendMidiLplay();
 
+	void setName(const std::string& s);
 	void setPan(float v);
 	void setVolume(float v);
-	void setVolumeI(float v);
-	void setArmed(bool b);
-	void setName(const std::string& s);
-	void setPreviewMode(int m);
 	void setMidiInFilter(int c);
+
+	virtual std::string getName() const;
+	float 	getPan() const;
+	float 	getVolume() const;
+	float 	getPeak() const;
+	int 	getMidiInFilter() const;
 
 #ifdef WITH_VST
 
@@ -271,40 +202,35 @@ public:
 
 #endif
 
-	int    index;                 // unique id
-	int    type;                  // midi or sample
-	int    status;                // status: see const.h
-	int    key;                   // keyboard button
-	bool   mute_i;                // internal mute
-	bool 	 mute_s;                // previous mute status after being solo'd
-	bool   mute;                  // global mute
-	bool   solo;
-  bool   hasActions;            // has something recorded
-  bool   readActions;           // read what's recorded
-	int 	 recStatus;             // status of recordings (waiting, ending, ...)
-	float* vChan;                 // virtual channel
-  geChannel* guiChannel;        // pointer to a gChannel object, part of the GUI
+	int		index;			// unique id
+	int 	key;			// keyboard button
+	bool	mute_i;			// internal mute
+	bool	mute_s;			// previous mute status after being solo'd
+	bool	mute;			// global mute
+	bool	solo;			// global solo
+	bool	inputMonitor;	// input monitor (copies processed input to output)
+	bool	hasActions;		// has something recorded
+	bool	readActions;	// read what's recorded
+	float*	vChan;			// virtual channel
+  	
+  	geChannel* guiChannel;	// pointer to a gChannel object, part of the GUI
 
 	// TODO - midi structs, please
 
-  bool     midiIn;              // enable midi input
-  uint32_t midiInKeyPress;
-  uint32_t midiInKeyRel;
-  uint32_t midiInKill;
-  uint32_t midiInArm;
-  uint32_t midiInVolume;
-  uint32_t midiInMute;
-  uint32_t midiInSolo;
+	bool		midiIn;              // enable midi input
+	uint32_t	midiInVolume;
+	uint32_t	midiInMute;
+	uint32_t	midiInSolo;
 
 	/*  midiOutL*
 	 * Enable MIDI lightning output, plus a set of midi lighting event to be sent
 	 * to a device. Those events basically contains the MIDI channel, everything
 	 * else gets stripped out. */
 
-	bool     midiOutL;
-  uint32_t midiOutLplaying;
-  uint32_t midiOutLmute;
-  uint32_t midiOutLsolo;
+	bool		midiOutL;
+	uint32_t	midiOutLplaying;
+	uint32_t	midiOutLmute;
+	uint32_t	midiOutLsolo;
 
 #ifdef WITH_VST
   std::vector <Plugin*> plugins;

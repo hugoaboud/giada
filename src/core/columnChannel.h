@@ -28,45 +28,43 @@
 #ifndef G_COLUMN_CHANNEL_H
 #define G_COLUMN_CHANNEL_H
 
-#include "sampleChannel.h"
 #include "channel.h"
+
+class ResourceChannel;
 
 class ColumnChannel : public Channel
 {
 private:
 
-	std::vector <SampleChannel*> samples;
+	/* ResourceChannel stack */
+	std::vector <ResourceChannel*> resources;
 
 public:
 
 	ColumnChannel(int bufferSize);
 	~ColumnChannel();
 
+	/* Channel inherit*/
+
 	std::string getName() const override;
-
-	SampleChannel* getSample(int index);
-	void addSample(SampleChannel* sample);
-
 	void process(float* outBuffer, float* inBuffer) override;
 	void input(float* inBuffer) override;
-
 	void copy(const Channel *src, pthread_mutex_t *pluginMutex) override;
-	void preview(float* outBuffer) override;
-	void start(int frame, bool doQuantize, int quantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
-	void stop() override;
-	void kill(int frame) override;
-	void setMute  (bool internal) override;
-	void unsetMute(bool internal) override;
-	void empty() override;
-	void stopBySeq(bool chansStopOnSeqHalt) override;
-	void quantize(int index, int localFrame) override;
-	void onZero(int frame, bool recsStopOnChanHalt) override;
-	void onBar(int frame) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, int quantize, bool mixerIsRunning) override;
-	void rewind() override;
-	void clear() override;
-	bool canInputRec() override;
+	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
+	bool isChainAlive() override;
 
+	/* */
+
+	ResourceChannel* getResource(int index);
+	void 			 addResource(ResourceChannel* resource);
+	unsigned 		 getResourceCount();
+
+	/* ResourceChannel stack methods */
+
+	void recArmedResources();
+	void stopRecResources();
+	void clearAllResources();
+	bool isSilent();
 };
 
 

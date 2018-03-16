@@ -32,14 +32,14 @@
 #ifdef WITH_VST
 	#include "../deps/juce-config.h"
 #endif
-#include "channel.h"
+#include "resourceChannel.h"
 
 
 class MidiMapConf;
 class Patch;
 
 
-class MidiChannel : public Channel
+class MidiChannel : public ResourceChannel
 {
 private:
 	bool armed;
@@ -53,12 +53,11 @@ public:
   uint8_t midiOutChan;       // midi output channel
 
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
-	void clear() override;
+	void clearBuffers() override;
 	void input(float *inBuffer) override;
 	void process(float* outBuffer, float *inBuffer) override;
 	void preview(float* outBuffer) override;
-	void start(int frame, bool doQuantize, int quantize, bool mixerIsRunning,
-		bool forceStart, bool isUserGenerated) override;
+	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
 	void kill(int frame) override;
 	void empty() override;
 	void stopBySeq(bool chansStopOnSeqHalt) override;
@@ -72,12 +71,17 @@ public:
 	void quantize(int index, int localFrame) override;
 	void onZero(int frame, bool recsStopOnChanHalt) override;
 	void onBar(int frame) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame,
-		int quantize, bool mixerIsRunning) override;
+	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
 	void receiveMidi(const giada::m::MidiEvent& midiEvent) override;
 	bool canInputRec() override;
-
+	bool isChainAlive() override;
 	bool isArmed() const;
+
+
+	void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
+	void recStart() override;
+	void recStop() override;
+
 	/* sendMidi
 	 * send Midi event to the outside world. */
 

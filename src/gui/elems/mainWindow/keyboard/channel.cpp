@@ -28,9 +28,11 @@
 #include <FL/Fl.H>
 #include "../../../../core/const.h"
 #include "../../../../core/channel.h"
+#include "../../../../core/resourceChannel.h"
 #include "../../../../core/graphics.h"
 #include "../../../../core/pluginHost.h"
 #include "../../../../utils/gui.h"
+#include "../../../../utils/log.h"
 #include "../../../../glue/io.h"
 #include "../../../../glue/channel.h"
 #include "../../../dialogs/gd_mainWindow.h"
@@ -50,7 +52,7 @@ extern gdMainWindow* G_MainWin;
 using namespace giada;
 
 
-geChannel::geChannel(int X, int Y, int W, int H, int type, Channel* ch)
+geChannel::geChannel(int X, int Y, int W, int H, int type, ResourceChannel* ch)
  : Fl_Group(X, Y, W, H, nullptr),
 	 ch      (ch),
 	 type    (type)
@@ -77,7 +79,7 @@ void geChannel::cb_arm()
 {
 	using namespace giada::c;
 	io::recPress(ch, Fl::event_ctrl(), Fl::event_shift());
-	arm->value(ch->recStatus != REC_STOPPED);
+	update();
 }
 
 

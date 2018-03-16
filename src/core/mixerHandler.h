@@ -35,6 +35,7 @@
 class Channel;
 class InputChannel;
 class ColumnChannel;
+class ResourceChannel;
 class SampleChannel;
 
 
@@ -97,7 +98,7 @@ ColumnChannel* getColumnChannelByIndex(int i);
 /* addChannel
 Adds a new channel of type 'type' into mixer's stack. */
 
-Channel* addChannel(int type);
+ResourceChannel* addChannel(int type);
 
 /* deleteChannel
 Completely removes a channel from the stack. */
@@ -107,7 +108,7 @@ int deleteChannel(Channel* ch);
 /* getChannelByIndex
 Returns channel with given index 'i'. */
 
-Channel* getChannelByIndex(int i);
+ResourceChannel* getChannelByIndex(int i);
 
 /* hasLogicalSamples
 True if 1 or more samples are logical (memory only, such as takes) */
@@ -141,7 +142,7 @@ void readPatch();
 Creates a new empty wave in the first available channels. Returns false if
 something went wrong. */
 
-bool startInputRec();
+void startInputRec();
 
 void stopInputRec();
 

@@ -56,6 +56,7 @@ gdActionEditor::gdActionEditor(Channel *chan)
 		zoom   (100),
 		coverX (0)
 {
+	ResourceChannel* rch = static_cast<ResourceChannel*>(chan);
 	if (conf::actionEditorW) {
 		resize(conf::actionEditorX, conf::actionEditorY, conf::actionEditorW, conf::actionEditorH);
 		zoom = conf::actionEditorZoom;
@@ -70,20 +71,23 @@ gdActionEditor::gdActionEditor(Channel *chan)
 
 	upperArea->begin();
 
-	if (chan->type == CHANNEL_SAMPLE) {
-	  actionType = new geChoice(8, 8, 80, 20);
-	  gridTool   = new geGridTool(actionType->x()+actionType->w()+4, 8, this);
-		actionType->add("key press");
-		actionType->add("key release");
-		actionType->add("kill chan");
-		actionType->value(0);
+	if (rch != nullptr) {
+		if (rch->getType() == CHANNEL_SAMPLE) {
+		  actionType = new geChoice(8, 8, 80, 20);
+		  gridTool   = new geGridTool(actionType->x()+actionType->w()+4, 8, this);
+			actionType->add("key press");
+			actionType->add("key release");
+			actionType->add("kill chan");
+			actionType->value(0);
 
-		SampleChannel *ch = (SampleChannel*) chan;
-		if (ch->mode == SINGLE_PRESS || ch->mode & LOOP_ANY)
-		actionType->deactivate();
-	}
-	else {
-		gridTool = new geGridTool(8, 8, this);
+
+			SampleChannel *ch = (SampleChannel*) chan;
+			if (ch->mode == SINGLE_PRESS || ch->mode & LOOP_ANY)
+			actionType->deactivate();
+		}
+		else {
+			gridTool = new geGridTool(8, 8, this);
+		}
 	}
 
 		geBox *b1   = new geBox(gridTool->x()+gridTool->w()+4, 8, 300, 20);    // padding actionType - zoomButtons
@@ -99,35 +103,37 @@ gdActionEditor::gdActionEditor(Channel *chan)
 
 	scroller = new geScroll(8, 36, w()-16, h()-44);
 
-	if (chan->type == CHANNEL_SAMPLE) {
+	if (rch != nullptr) {
+		if (rch->getType() == CHANNEL_SAMPLE) {
 
-		SampleChannel *ch = (SampleChannel*) chan;
+			SampleChannel *ch = (SampleChannel*) chan;
 
-		ac = new geActionEditor  (scroller->x(), upperArea->y()+upperArea->h()+8, this, ch);
-		mc = new geMuteEditor    (scroller->x(), ac->y()+ac->h()+8, this);
-		vc = new geEnvelopeEditor(scroller->x(), mc->y()+mc->h()+8, this, G_ACTION_VOLUME, G_RANGE_FLOAT, "volume");
-		scroller->add(ac);
-		//scroller->add(new geResizerBar(ac->x(), ac->y()+ac->h(), scroller->w(), 8));
-		scroller->add(mc);
-		//scroller->add(new geResizerBar(mc->x(), mc->y()+mc->h(), scroller->w(), 8));
-		scroller->add(vc);
-		//scroller->add(new geResizerBar(vc->x(), vc->y()+vc->h(), scroller->w(), 8));
+			ac = new geActionEditor  (scroller->x(), upperArea->y()+upperArea->h()+8, this, ch);
+			mc = new geMuteEditor    (scroller->x(), ac->y()+ac->h()+8, this);
+			vc = new geEnvelopeEditor(scroller->x(), mc->y()+mc->h()+8, this, G_ACTION_VOLUME, G_RANGE_FLOAT, "volume");
+			scroller->add(ac);
+			//scroller->add(new geResizerBar(ac->x(), ac->y()+ac->h(), scroller->w(), 8));
+			scroller->add(mc);
+			//scroller->add(new geResizerBar(mc->x(), mc->y()+mc->h(), scroller->w(), 8));
+			scroller->add(vc);
+			//scroller->add(new geResizerBar(vc->x(), vc->y()+vc->h(), scroller->w(), 8));
 
-		/* fill volume envelope with actions from recorder */
+			/* fill volume envelope with actions from recorder */
 
-		vc->fill();
+			vc->fill();
 
-		/* if channel is LOOP_ANY, deactivate it: a loop mode channel cannot
-		 * hold keypress/keyrelease actions */
+			/* if channel is LOOP_ANY, deactivate it: a loop mode channel cannot
+			 * hold keypress/keyrelease actions */
 
-		if (ch->mode & LOOP_ANY)
-			ac->deactivate();
-	}
-	else {
-		pr = new geNoteEditor(scroller->x(), upperArea->y()+upperArea->h()+8, this);
-		scroller->add(pr);
-		/* TODO - avoid magic number 30 for minimum height */
-		scroller->add(new geResizerBar(pr->x(), pr->y()+pr->h(), scroller->w(), 30, 8));
+			if (ch->mode & LOOP_ANY)
+				ac->deactivate();
+		}
+		else {
+			pr = new geNoteEditor(scroller->x(), upperArea->y()+upperArea->h()+8, this);
+			scroller->add(pr);
+			/* TODO - avoid magic number 30 for minimum height */
+			scroller->add(new geResizerBar(pr->x(), pr->y()+pr->h(), scroller->w(), 30, 8));
+		}
 	}
 
 	end();
@@ -188,17 +194,20 @@ void gdActionEditor::__cb_zoomIn()
 
 	update();
 
-	if (chan->type == CHANNEL_SAMPLE) {
-		ac->size(totalWidth, ac->h());
-		mc->size(totalWidth, mc->h());
-		vc->size(totalWidth, vc->h());
-		ac->updateActions();
-		mc->updateActions();
-		vc->updateActions();
-	}
-	else {
-		pr->size(totalWidth, pr->h());
-		pr->updateActions();
+	ResourceChannel* rch = static_cast<ResourceChannel*>(chan);
+	if (rch != nullptr) {
+		if (rch->getType() == CHANNEL_SAMPLE) {
+			ac->size(totalWidth, ac->h());
+			mc->size(totalWidth, mc->h());
+			vc->size(totalWidth, vc->h());
+			ac->updateActions();
+			mc->updateActions();
+			vc->updateActions();
+		}
+		else {
+			pr->size(totalWidth, pr->h());
+			pr->updateActions();
+		}
 	}
 
 	/* scroll to pointer */
@@ -222,17 +231,20 @@ void gdActionEditor::__cb_zoomOut()
 
 	update();
 
-	if (chan->type == CHANNEL_SAMPLE) {
-		ac->size(totalWidth, ac->h());
-		mc->size(totalWidth, mc->h());
-		vc->size(totalWidth, vc->h());
-		ac->updateActions();
-		mc->updateActions();
-		vc->updateActions();
-	}
-	else {
-		pr->size(totalWidth, pr->h());
-		pr->updateActions();
+	ResourceChannel* rch = static_cast<ResourceChannel*>(chan);
+	if (rch != nullptr) {
+		if (rch->getType() == CHANNEL_SAMPLE) {
+			ac->size(totalWidth, ac->h());
+			mc->size(totalWidth, mc->h());
+			vc->size(totalWidth, vc->h());
+			ac->updateActions();
+			mc->updateActions();
+			vc->updateActions();
+		}
+		else {
+			pr->size(totalWidth, pr->h());
+			pr->updateActions();
+		}
 	}
 
 	/* scroll to pointer */

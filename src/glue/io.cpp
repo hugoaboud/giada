@@ -44,6 +44,7 @@
 #include "../core/channel.h"
 #include "../core/clock.h"
 #include "../core/sampleChannel.h"
+#include "../core/columnChannel.h"
 #include "../core/midiChannel.h"
 #include "main.h"
 #include "channel.h"
@@ -92,8 +93,8 @@ void shiftPress(SampleChannel* ch)
 	}
 	else {
 		if (ch->hasActions) {
-			if (m::clock::isRunning() || ch->status == STATUS_OFF)
-				ch->readActions ? c::channel::stopReadingRecs(ch) : c::channel::startReadingRecs(ch);
+			if (m::clock::isRunning() || ch->getStatus() == STATUS_OFF)
+				ch->getReadActions() ? c::channel::stopReadingRecs(ch) : c::channel::startReadingRecs(ch);
 			else
 				ch->kill(0);  // on frame 0: user-generated event
 		}
@@ -119,7 +120,7 @@ void cleanPress(SampleChannel* ch, int velocity)
 		if (ch->mode == SINGLE_PRESS) {
 			m::recorder::startOverdub(ch->index, G_ACTION_KEYS, m::clock::getCurrentFrame(),
 				m::kernelAudio::getRealBufSize());
-			ch->readActions = false;   // don't read actions while overdubbing
+			ch->setReadActions(false, false);   // don't read actions while overdubbing
 		}
 		else {
 			m::recorder::rec(ch->index, G_ACTION_KEYPRESS, m::clock::getCurrentFrame());
@@ -132,7 +133,7 @@ void cleanPress(SampleChannel* ch, int velocity)
 			kills it right away (because the sample is playing). Fix: call ch->start
 			only if you are not recording anything, i.e. let Mixer play it. */
 
-			if (ch->readActions)
+			if (ch->getReadActions())
 				return;
 		}
 	}
@@ -143,12 +144,12 @@ void cleanPress(SampleChannel* ch, int velocity)
 	if (ch->mode & SINGLE_ANY && ch->midiInVeloAsVol)
 		ch->setVolumeI(u::math::map((float)velocity, 0.0f, 127.0f, 0.0f, 1.0f));
 
-	ch->start(0, true, m::clock::getQuantize(), m::clock::isRunning(), false, true);
+	ch->start(0, true, m::clock::isRunning(), false, true);
 }
 
 void cleanRecPress(SampleChannel* ch)
 {
-	ch->rec(0, true, m::clock::getQuantize(), m::clock::isRunning(), false, true);
+	ch->rec(0, true, m::clock::isRunning(), false, true);
 }
 
 } // {anonymous}
@@ -159,9 +160,9 @@ void cleanRecPress(SampleChannel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void keyPress(Channel* ch, bool ctrl, bool shift, int velocity)
+void keyPress(ResourceChannel* ch, bool ctrl, bool shift, int velocity)
 {
-	if (ch->type == CHANNEL_SAMPLE)
+	if (ch->getType() == CHANNEL_SAMPLE)
 		keyPress(static_cast<SampleChannel*>(ch), ctrl, shift, velocity);
 	else
 		keyPress(static_cast<MidiChannel*>(ch), ctrl, shift);
@@ -171,9 +172,9 @@ void keyPress(Channel* ch, bool ctrl, bool shift, int velocity)
 /* -------------------------------------------------------------------------- */
 
 
-void keyRelease(Channel* ch, bool ctrl, bool shift)
+void keyRelease(ResourceChannel* ch, bool ctrl, bool shift)
 {
-	if (ch->type == CHANNEL_SAMPLE)
+	if (ch->getType() == CHANNEL_SAMPLE)
 		keyRelease(static_cast<SampleChannel*>(ch), ctrl, shift);
 }
 
@@ -189,7 +190,7 @@ void keyPress(MidiChannel* ch, bool ctrl, bool shift)
 	if (shift)
 		ch->kill(0);        // on frame 0: user-generated event
 	else
-		ch->start(0, true, m::clock::getQuantize(), m::clock::isRunning(), false, true); // on frame 0: user-generated event
+		ch->start(0, true, m::clock::isRunning(), false, true); // on frame 0: user-generated event
 }
 
 
@@ -235,9 +236,9 @@ void keyRelease(SampleChannel* ch, bool ctrl, bool shift)
 /* -------------------------------------------------------------------------- */
 
 
-void recPress(Channel* ch, bool ctrl, bool shift)
+void recPress(ResourceChannel* ch, bool ctrl, bool shift)
 {
-	if (ch->type == CHANNEL_SAMPLE)
+	if (ch->getType() == CHANNEL_SAMPLE)
 		recPress(static_cast<SampleChannel*>(ch), ctrl, shift);
 	//else
 	//	recPress(static_cast<MidiChannel*>(ch), ctrl, shift);
@@ -302,14 +303,17 @@ void stopActionRec(bool gui)
 	m::recorder::active = false;
 	m::recorder::sortActions();
 
-	for (Channel* ch : m::mixer::channels)
-	{
-		if (ch->type == CHANNEL_MIDI)
-			continue;
-		SampleChannel* sch = static_cast<SampleChannel*>(ch);
-		G_MainWin->keyboard->setChannelWithActions(static_cast<geSampleChannel*>(sch->guiChannel));
-		if (!sch->readActions && sch->hasActions)
-			c::channel::startReadingRecs(sch, false);
+	for (unsigned i=0; i < m::mixer::columnChannels.size(); i++) {
+		ColumnChannel* cch = m::mixer::columnChannels.at(i);
+		for (unsigned j=0; j < cch->getResourceCount(); j++)
+		{
+			SampleChannel* sch = static_cast<SampleChannel*>(cch->getResource(j));
+			if (sch->getType() == CHANNEL_MIDI)
+				continue;
+			G_MainWin->keyboard->setChannelWithActions(static_cast<geSampleChannel*>(sch->guiChannel));
+			if (!sch->getReadActions() && sch->hasActions)
+				c::channel::startReadingRecs(sch, false);
+		}
 	}
 
 	if (!gui) {
@@ -338,16 +342,18 @@ void startStopInputRec(bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-int startInputRec(bool gui)
+bool startInputRec(bool gui)
 {
 	using namespace giada::m;
 
-	if (kernelAudio::getStatus() == false || mixer::inputChannels.size() == 0 || !mh::startInputRec()) {
+	if (kernelAudio::getStatus() == false || mixer::inputChannels.size() == 0) {
 		Fl::lock();
 		G_MainWin->mainTransport->updateRecInput(0);  // set it off, anyway
 		Fl::unlock();
 		return false;
 	}
+
+	mh::startInputRec();
 
 	if (!clock::isRunning())
 		glue_startSeq(false); // update gui anyway
@@ -371,7 +377,7 @@ int startInputRec(bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-int stopInputRec(bool gui)
+void stopInputRec(bool gui)
 {
 	using namespace giada::m;
 	
@@ -383,12 +389,10 @@ int stopInputRec(bool gui)
 	beat. */
 
 	for (Channel* ch : mixer::channels) {
-		if (ch->type == CHANNEL_MIDI)
-			continue;
 		SampleChannel* sch = static_cast<SampleChannel*>(ch);
-		if (sch->mode & (LOOP_ANY) && sch->status == STATUS_OFF && sch->isArmed())
-			sch->start(clock::getCurrentFrame(), true, clock::getQuantize(),
-				clock::isRunning(), true, true);
+		if (sch == nullptr) continue;
+		if (sch->mode & (LOOP_ANY) && sch->getStatus() == STATUS_OFF && sch->isArmed())
+			sch->start(clock::getCurrentFrame(), true, clock::isRunning(), true, true);
 	}
 
 	Fl::lock();
@@ -396,8 +400,6 @@ int stopInputRec(bool gui)
 			G_MainWin->mainTransport->updateRecInput(0);
 		G_MainWin->mainTimer->setLock(false);
 	Fl::unlock();
-
-	return 1;
 }
 
 }}} // giada::c::io::

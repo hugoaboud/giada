@@ -27,7 +27,7 @@
 
 #include "../utils/log.h"
 #include "midiChannel.h"
-#include "channel.h"
+#include "resourceChannel.h"
 #include "patch.h"
 #include "const.h"
 #include "clock.h"
@@ -44,7 +44,7 @@ using namespace giada::m;
 
 
 MidiChannel::MidiChannel(int bufferSize)
-	: Channel    (CHANNEL_MIDI, STATUS_OFF, bufferSize),
+	: ResourceChannel    (CHANNEL_MIDI, STATUS_OFF, bufferSize),
 		midiOut    (false),
 		midiOutChan(MIDI_CHANS[0])
 {
@@ -114,7 +114,7 @@ void MidiChannel::quantize(int index, int localFrame) {}
 
 
 void MidiChannel::parseAction(recorder::action *a, int localFrame,
-		int globalFrame, int quantize, bool mixerIsRunning)
+		int globalFrame, bool mixerIsRunning)
 {
 	if (a->type == G_ACTION_MIDI)
 		sendMidi(a, localFrame/2);
@@ -196,8 +196,7 @@ void MidiChannel::preview(float *outBuffer)
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::start(int frame, bool doQuantize, int quantize,
-		bool mixerIsRunning, bool forceStart, bool isUserGenerated)
+void MidiChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
 {
 	switch (status) {
 		case STATUS_PLAY:
@@ -356,6 +355,12 @@ void MidiChannel::receiveMidi(const MidiEvent& midiEvent)
 	}
 }
 
+/* -------------------------------------------------------------------------- */
+
+bool MidiChannel::isChainAlive() {
+	return false;
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -369,4 +374,10 @@ bool MidiChannel::canInputRec()
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::clear() {}
+void MidiChannel::clearBuffers() {}
+
+/* -------------------------------------------------------------------------- */
+
+void MidiChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) {}
+void MidiChannel::recStart() {}
+void MidiChannel::recStop() {}

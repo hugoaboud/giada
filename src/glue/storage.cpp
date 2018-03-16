@@ -360,12 +360,9 @@ void glue_saveProject(void* data)
 
 	for (const Channel* ch : mixer::channels) {
 
-		if (ch->type == CHANNEL_MIDI)
-			continue;
-
 		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
 
-		if (sch->wave == nullptr)
+		if (sch == nullptr || sch->wave == nullptr)
 			continue;
 
 		sch->wave->setPath(glue_makeUniqueSamplePath__(fullPath, sch));

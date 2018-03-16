@@ -212,18 +212,19 @@ void geColumn::repositionChannels()
 /* -------------------------------------------------------------------------- */
 
 
-geChannel* geColumn::addChannel(Channel* ch, int size)
+geChannel* geColumn::addChannel(ResourceChannel* ch, int size)
 {
 	geChannel* gch = nullptr;
 
 	/* All geChannels are added with y=0. That's not a problem, they will be 
 	repositioned later on during geColumn::resize(). */
 
-	if (ch->type == CHANNEL_SAMPLE)
+	if (ch->getType() == CHANNEL_SAMPLE)
 		gch = new geSampleChannel(x(), 0, w(), size, static_cast<SampleChannel*>(ch));
 	else
 		gch = new geMidiChannel(x(), 0, w(), size, static_cast<MidiChannel*>(ch));
 
+	channel->addResource(ch);
 	add(gch);
 
 	repositionChannels();
