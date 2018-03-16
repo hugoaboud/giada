@@ -75,7 +75,6 @@ float tick[TICKSIZE] = {
 	0.069639,  0.031320
 };
 
-
 /* -------------------------------------------------------------------------- */
 
 /* feed
@@ -198,24 +197,6 @@ void renderMetronome(float* outBuf, unsigned frame)
 		}
 	}
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-/* renderIO
-Final processing stage. Take each channel and process it (i.e. copy its
-content to the output buffer). Process plugins too, if any. */
-
-void renderIO(float* outBuf, float* inBuf)
-{
-	/*pthread_mutex_lock(&mutex_chans);
-	for (Channel* channel : channels) {
-		channel->process(outBuf, inBuf);
-		channel->preview(outBuf);
-	}
-	pthread_mutex_unlock(&mutex_chans);*/
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -356,34 +337,11 @@ pthread_mutex_t mutex_plugins;
 
 void init(int framesInSeq, int audioBufferSize)
 {
-	/* Allocate virtual input channels. vChanInput has variable size: it depends
-	on how many frames there are in sequencer. */
-
-	allocVirtualInput(framesInSeq);
-
 	pthread_mutex_init(&mutex_recs, nullptr);
 	pthread_mutex_init(&mutex_chans, nullptr);
 	pthread_mutex_init(&mutex_plugins, nullptr);
-
 	rewind();
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void allocVirtualInput(int frames)
-{
-	/*if (vChanInput.size() > 0) {
-		for (int i = 0; i < vChanInput.size(); i++) delete[] vChanInput[i];
-	}
-	// TODO: this is probably gonna break on opaque-channels merge
-	for (int c = 0; c < conf::channelsIn; c++) vChanInput[c] = new (std::nothrow) float[frames];
-	if (!vChanInput)
-		gu_log("[Mixer::allocVirtualInput] vChanInput realloc error!\n");	
-	gu_log("[Mixer::allocVirtualInput] vChanInput ready, %d frames\n", frames);	*/
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -404,11 +362,6 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 
 	clearAllBuffers(outBuf, bufferSize);
 
-	// >Feeds InputChannels with inBuf and write processed output
-	// of monitoring channels to outBuf.
-	//
-	routeAudio(outBuf, inBuf, bufferSize);
-
 	// Read actions and test for quantize, bars and beats
 	for (unsigned j=0; j<bufferSize*conf::channelsIn; j+=conf::channelsIn) {
 		if (clock::isRunning()) {
@@ -422,7 +375,9 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 		}
 	}
 
-	renderIO(outBuf, inBuf);
+	// inBuf -> Input Channels -> Column Channels ->
+	// -> Resource Channels -> Column Channels -> _outBuf
+	routeAudio(outBuf, inBuf, bufferSize);
 
 	/* post processing */
 

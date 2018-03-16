@@ -85,20 +85,18 @@ void ColumnChannel::input(float* inBuffer) {
 /* -------------------------------------------------------------------------- */
 
 void ColumnChannel::process(float* outBuffer, float* inBuffer) {
-	
-	if (isChainAlive()) {
-		for (unsigned i=0; i<resources.size(); i++) {
-			resources[i]->process(outBuffer, vChan);
-			resources[i]->preview(outBuffer);
-		}
 
-	#ifdef WITH_VST
-		pluginHost::processStack(outBuffer, this);
-	#endif
-
-		for (int i=0; i<bufferSize; i++)
-			outBuffer[i] *= volume;
+	for (unsigned i=0; i<resources.size(); i++) {
+		resources[i]->process(outBuffer, vChan);
+		resources[i]->preview(outBuffer);
 	}
+
+#ifdef WITH_VST
+	pluginHost::processStack(outBuffer, this);
+#endif
+
+	for (int i=0; i<bufferSize; i++)
+		outBuffer[i] *= volume;
 }
 
 /* -------------------------------------------------------------------------- */

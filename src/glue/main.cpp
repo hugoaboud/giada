@@ -78,7 +78,6 @@ void glue_setBpm(const char *v1, const char *v2)
 	float oldBpmF = clock::getBpm();
 	clock::setBpm(bpmF);
 	recorder::updateBpm(oldBpmF, bpmF, clock::getQuanto());
-	mixer::allocVirtualInput(clock::getTotalFrames());
 
 #ifdef __linux__
 	kernelAudio::jackSetBpm(clock::getBpm());
@@ -124,7 +123,6 @@ void glue_setBeats(int beats, int bars, bool expand)
 	clock::setBeats(beats);
 	clock::setBars(bars);
 	clock::updateFrameBars();
-	mixer::allocVirtualInput(clock::getTotalFrames());
 
 	/* Update recorded actions, if 'expand' required and an expansion is taking
 	place. */

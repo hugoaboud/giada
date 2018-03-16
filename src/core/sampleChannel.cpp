@@ -741,7 +741,7 @@ float SampleChannel::getBoost() const
 /* -------------------------------------------------------------------------- */
 
 bool SampleChannel::isChainAlive() {
-	return inputMonitor || recStatus != REC_STOPPED || armed;
+	return inputMonitor || recStatus != REC_STOPPED;
 }
 
 
@@ -889,8 +889,6 @@ void SampleChannel::input(float* inBuffer)
   input monitor is on, copy input buffer to vChan: this enables the input
   monitoring. The vChan will be overwritten later by pluginHost::processStack,
   so that you would record "clean" audio (i.e. not plugin-processed). */
-
-	if (armed && inBuffer && inputMonitor)
     for (int i=0; i<bufferSize; i++)
       vChan[i] += inBuffer[i]; // add, don't overwrite (no raw memcpy)
 }
@@ -898,22 +896,25 @@ void SampleChannel::input(float* inBuffer)
 
 void SampleChannel::process(float* outBuffer, float* inBuffer)
 {
-	input(inBuffer);
-
-	// recording
-	if (recStatus == REC_READING) {
-		if (waitRec < conf::delayComp) {
-			waitRec++;
-		}
-		else {
-			for (int i=0; i < bufferSize; i++) {
-				wave->getData()[inputTracker] += inBuffer[i];
-				inputTracker++;
-				if (inputTracker >= clock::getTotalFrames())
-					inputTracker = 0;
+	if (isChainAlive())  {
+		input(inBuffer);
+		// recording
+		if (recStatus == REC_READING) {
+			if (waitRec < conf::delayComp) {
+				waitRec++;
 			}
-		}
+			else {
+				for (int i=0; i < bufferSize; i++) {
+					wave->getData()[inputTracker] += inBuffer[i];
+					inputTracker++;
+					if (inputTracker >= clock::getTotalFrames())
+						inputTracker = 0;
+				}
+			}
+	  	}
   	}
+  	
+  	if (!isPlaying()) return;
 
 #ifdef WITH_VST
 	pluginHost::processStack(vChan, this);

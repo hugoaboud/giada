@@ -45,12 +45,6 @@ namespace mixer
 {
 void init(int framesInSeq, int audioBufferSize);
 
-/* allocVirtualInput
-Allocates new memory for the virtual input channel. Call this whenever you 
-shrink or resize the sequencer. */
-
-void allocVirtualInput(int frames);
-
 int close();
 
 /* masterPlay

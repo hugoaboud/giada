@@ -430,7 +430,6 @@ void readPatch()
 	very likely). */
 
 	mixer::rewind();
-	mixer::allocVirtualInput(clock::getTotalFrames());
 	mixer::ready = true;
 }
 
