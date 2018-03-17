@@ -55,20 +55,19 @@
 
 extern gdMainWindow* G_MainWin;
 
+#define INPUTLIST_W 849
 
 using std::string;
 using namespace giada::m;
 using namespace giada::c;
 
-int _w = 849;
-
 gdInputList::gdInputList()
-	: gdWindow(_w, 204)
+	: gdWindow(INPUTLIST_W, 204)
 {
 	if (conf::inputListX)
 		resize(conf::inputListX, conf::inputListY, w(), h());
 
-	list = new Fl_Scroll(8, 8, _w, 188);
+	list = new Fl_Scroll(8, 8, INPUTLIST_W, 188);
 	list->type(Fl_Scroll::VERTICAL);
 	list->scrollbar.color(G_COLOR_GREY_2);
 	list->scrollbar.selection_color(G_COLOR_GREY_4);
@@ -173,7 +172,7 @@ void gdInputList::refreshList()
 	}
 
 	int addInputY = numInputs == 0 ? 90 : list->y()-list->yposition()+(i*24);
-	addInput = new geButton(8, addInputY, _w-16, 20, "-- add new input --");
+	addInput = new geButton(8, addInputY, INPUTLIST_W-16, 20, "-- add new input --");
 	addInput->callback(cb_addInput, (void*)this);
 	list->add(addInput);
 
@@ -181,9 +180,9 @@ void gdInputList::refreshList()
 	 * Scrollbar.width = 20 + 4(margin) */
 
 	if (i>7)
-		size(_w+24, h());
+		size(INPUTLIST_W+24, h());
 	else
-		size(_w, h());
+		size(INPUTLIST_W, h());
 
 	redraw();
 }

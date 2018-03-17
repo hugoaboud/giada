@@ -205,6 +205,8 @@ src/gui/dialogs/pluginList.h	         \
 src/gui/dialogs/pluginList.cpp         \
 src/gui/dialogs/inputList.h	         \
 src/gui/dialogs/inputList.cpp         \
+src/gui/dialogs/columnList.h	         \
+src/gui/dialogs/columnList.cpp         \
 src/gui/dialogs/pluginWindow.h	       \
 src/gui/dialogs/pluginWindow.cpp       \
 src/gui/dialogs/sampleEditor.h         \

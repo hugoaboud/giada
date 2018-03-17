@@ -47,16 +47,9 @@ public:
 	void copy(const Channel *src, pthread_mutex_t *pluginMutex) override;
 	void input(float* inBuffer) override;
 	void process(float* outBuffer, float* inBuffer) override;
-	void setMute  (bool internal) override;
-	void unsetMute(bool internal) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
 	void clearBuffers() override;
 	bool isChainAlive() override;
-
-	/* */
-
-	void setPreMute(bool internal);
-	void unsetPreMute(bool internal);
 
 	int				inputIndex;
 	bool			preMute;

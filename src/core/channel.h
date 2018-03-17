@@ -122,12 +122,15 @@ public:
 
 	virtual void process(float* outBuffer, float* inBuffer) = 0;
 
-	/* mute
+	/* mute / premute
 	What to do when channel is muted. If internal == true, set internal mute 
-	without altering main mute. */
+	without altering main mute. 
+	Pre: before FX*/
 
 	virtual void setMute  (bool internal);
 	virtual void unsetMute(bool internal);
+	virtual void setPreMute(bool internal);
+	virtual void unsetPreMute(bool internal);
 
 	/* parseAction
 	Does something on a recorded action. Parameters:
@@ -207,6 +210,7 @@ public:
 	bool	mute_i;			// internal mute
 	bool	mute_s;			// previous mute status after being solo'd
 	bool	mute;			// global mute
+	bool	pre_mute;	    // global pre mute
 	bool	solo;			// global solo
 	bool	inputMonitor;	// input monitor (copies processed input to output)
 	bool	hasActions;		// has something recorded

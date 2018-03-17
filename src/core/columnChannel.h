@@ -65,6 +65,9 @@ public:
 	void stopRecResources();
 	void clearAllResources();
 	bool isSilent();
+
+	/* Output */
+	int	outputIndex;
 };
 
 

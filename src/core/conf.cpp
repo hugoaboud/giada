@@ -92,6 +92,8 @@ void sanitize()
 	if (pluginListY < 0) pluginListY = 0;
 	if (inputListX < 0) inputListX = 0;
 	if (inputListY < 0) inputListY = 0;
+	if (columnListX < 0) columnListX = 0;
+	if (columnListY < 0) columnListY = 0;
 #ifdef WITH_VST
 	if (pluginChooserX < 0) pluginChooserX = 0;
 	if (pluginChooserY < 0) pluginChooserY = 0;
@@ -235,6 +237,9 @@ int pluginListY = 0;
 
 int inputListX = 0;
 int inputListY = 0;
+
+int columnListX = 0;
+int columnListY = 0;
 
 int configX = 0;
 int configY = 0;

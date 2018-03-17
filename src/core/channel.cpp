@@ -381,11 +381,19 @@ float Channel::getPeak() const
 
 /* -------------------------------------------------------------------------- */
 
-void Channel::setMute  (bool internal) {
+void Channel::setMute  (bool internal) { 
+	pre_mute = false;
 	mute = true;
 }
-void Channel::unsetMute(bool internal) {
+void Channel::unsetMute(bool internal) { 
+	mute = false; 
+}
+void Channel::setPreMute  (bool internal) { 
+	pre_mute = true;
 	mute = false;
+}
+void Channel::unsetPreMute(bool internal) { 
+	pre_mute = false;
 }
 
 /* -------------------------------------------------------------------------- */

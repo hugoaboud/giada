@@ -109,6 +109,7 @@ extern int midiInputX, midiInputY, midiInputW, midiInputH;
 extern int pianoRollY, pianoRollH;
 extern int pluginListX, pluginListY;
 extern int inputListX, inputListY;
+extern int columnListX, columnListY;
 extern int configX, configY;
 extern int bpmX, bpmY;
 extern int beatsX, beatsY;

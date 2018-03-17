@@ -38,7 +38,8 @@ using namespace giada::m;
 
 
 ColumnChannel::ColumnChannel(int bufferSize)
-	: Channel(bufferSize)
+	: Channel(bufferSize),
+	outputIndex(-1)
 {
 }
 
@@ -55,7 +56,7 @@ ColumnChannel::~ColumnChannel()
 
 std::string ColumnChannel::getName() const
 {
-	return "c." + name;
+	return "c " + name;
 }
 
 
@@ -76,6 +77,7 @@ void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, i
 /* -------------------------------------------------------------------------- */
 
 void ColumnChannel::input(float* inBuffer) {
+	if (pre_mute || mute) return;
 	for (int i=0; i<bufferSize; i++) {
 		vChan[i] += inBuffer[i];
 		if (vChan[i] > peak) peak = vChan[i];
@@ -86,9 +88,19 @@ void ColumnChannel::input(float* inBuffer) {
 
 void ColumnChannel::process(float* outBuffer, float* inBuffer) {
 
-	for (unsigned i=0; i<resources.size(); i++) {
-		resources[i]->process(outBuffer, vChan);
-		resources[i]->preview(outBuffer);
+	if (mute) return;
+
+	if (!pre_mute) {
+		for (unsigned i=0; i<resources.size(); i++) {
+			resources[i]->process(outBuffer, vChan);
+			resources[i]->preview(outBuffer);
+		}
+	}
+
+	if (inputMonitor) {
+		for (int i=0; i<bufferSize; i++) {
+			outBuffer[i] += vChan[i];
+		}
 	}
 
 #ifdef WITH_VST
@@ -103,6 +115,7 @@ void ColumnChannel::process(float* outBuffer, float* inBuffer) {
 
 
 bool ColumnChannel::isChainAlive() {
+	if (inputMonitor) return true;
 	for (unsigned i = 0; i < resources.size(); i++) if (resources[i]->isChainAlive()) return true;
 	return false;
 }

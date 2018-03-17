@@ -61,7 +61,7 @@ int deleteInputChannel(InputChannel* ch);
 /* getInputChannelCount
 Get how many inputs are on stack. */
 
-int getInputChannelCount();
+unsigned getInputChannelCount();
 
 /* getInputChannelByIndex
 Returns channel with given index 'i'. */
@@ -85,7 +85,7 @@ int deleteColumnChannel(ColumnChannel* ch);
 /* getColumnChannelCount
 Get how many inputs are on stack. */
 
-int getColumnChannelCount();
+unsigned getColumnChannelCount();
 
 /* getColumnChannelByIndex
 Returns column channel with given index 'i'. */

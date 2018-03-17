@@ -487,7 +487,7 @@ void geTabAudio::save()
 
 	conf::soundDeviceOut = kernelAudio::getDeviceByName(sounddevOut->text(sounddevOut->value()));
 	conf::soundDeviceIn  = kernelAudio::getDeviceByName(sounddevIn->text(sounddevIn->value()));
-	conf::channelsOut    = channelsOut->value();
+	conf::channelsOut    = 2;channelsOut->value();
 	
 	// TODO: select multiple inputs and store count in channelsIn
 	conf::channelsIn     = 2;//channelsIn->value();

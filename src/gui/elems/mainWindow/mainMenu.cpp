@@ -47,6 +47,7 @@
 #include "../../dialogs/browser/browserSave.h"
 #include "../../dialogs/midiIO/midiInputMaster.h"
 #include "../../dialogs/inputList.h"
+#include "../../dialogs/columnList.h"
 #include "keyboard/keyboard.h"
 #include "mainMenu.h"
 
@@ -167,6 +168,7 @@ void geMainMenu::__cb_edit()
 {
 	Fl_Menu_Item menu[] = {
 		{"Input channels"},
+		{"Column channels"},
 		{"Clear all samples"},
 		{"Clear all actions"},
 		{"Remove empty columns"},
@@ -178,11 +180,11 @@ void geMainMenu::__cb_edit()
 	/* clear all actions disabled if no recs, clear all samples disabled
 	 * if no samples. */
 
-	menu[1].deactivate();
+	menu[3].deactivate();
 
 	for (unsigned i=0; i<mixer::channels.size(); i++)
 		if (mixer::channels.at(i)->hasActions) {
-			menu[1].activate();
+			menu[3].activate();
 			break;
 		}
 
@@ -191,7 +193,7 @@ void geMainMenu::__cb_edit()
 		for (unsigned j=0; j<cch->getResourceCount(); j++) {
 			SampleChannel* sch = static_cast<SampleChannel*>(cch->getResource(j));
 			if (sch != nullptr && sch->wave != nullptr) {
-				menu[0].activate();
+				menu[2].activate();
 				break;
 			}
 		}
@@ -208,6 +210,11 @@ void geMainMenu::__cb_edit()
 
 	if (strcmp(m->label(), "Input channels") == 0) {
 		gu_openSubWindow(G_MainWin, new gdInputList(), WID_INPUT_LIST);
+		return;
+	}
+
+	if (strcmp(m->label(), "Column channels") == 0) {
+		gu_openSubWindow(G_MainWin, new gdColumnList(), WID_COLUMN_LIST);
 		return;
 	}
 	

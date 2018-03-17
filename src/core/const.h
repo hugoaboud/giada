@@ -246,7 +246,8 @@
 /* -- menus ----------------------------------------------------------------- */
 #define INPUTCHANNEL_RENAME 0x01
 #define INPUTCHANNEL_REMOVE 0x02
-
+#define COLUMNCHANNEL_RENAME 0x01
+#define COLUMNCHANNEL_REMOVE 0x02
 
 /* -- unique IDs of mainWin's subwindows ------------------------------------ */
 /* -- wid > 0 are reserved by gg_keyboard ----------------------------------- */
@@ -262,6 +263,7 @@
 #define WID_KEY_GRABBER   -10
 #define WID_SAMPLE_NAME   -11
 #define WID_INPUT_LIST    -12
+#define WID_COLUMN_LIST   -13
 
 
 

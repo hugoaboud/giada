@@ -52,7 +52,7 @@ InputChannel::~InputChannel()
 
 std::string InputChannel::getName() const
 {
-	return ">" + name + "<";
+	return "i " + name;
 }
 
 
@@ -70,27 +70,6 @@ void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, in
 	/*
 		TODO
 	*/
-}
-
-/* -------------------------------------------------------------------------- */
-
-/*
-	Mute / Pre-Mute
-*/
-
-void InputChannel::setMute  (bool internal) { 
-	preMute = false;
-	mute = true;
-}
-void InputChannel::unsetMute(bool internal) { 
-	mute = false; 
-}
-void InputChannel::setPreMute  (bool internal) { 
-	preMute = true;
-	mute = false;
-}
-void InputChannel::unsetPreMute(bool internal) { 
-	preMute = false;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -116,7 +95,6 @@ void InputChannel::process(float* outBuffer, float* inBuffer) {
 	/* If input monitor is on, copy input buffer to vChan: this enables the input
   monitoring. The vChan will be overwritten later by pluginHost::processStack. */
 	bool chainAlive = isChainAlive();
-	gu_log("inputchainalive = %d\n",chainAlive);
 	if ((chainAlive || inputMonitor) && inputIndex > -1)
 	{
 		if (!preMute)

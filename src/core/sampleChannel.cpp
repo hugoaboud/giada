@@ -539,7 +539,6 @@ void SampleChannel::sum(int frame, bool running)
 
 void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 {
-	gu_log("onzero\n");
 	if (wave == nullptr)
 	{
 		if ((armed && mixer::recording) || recStatus == REC_WAITING) {
@@ -921,9 +920,8 @@ void SampleChannel::process(float* outBuffer, float* inBuffer)
 #endif
 
 	// TODO - Opaque channels' processing
-  for (int j=0; j<bufferSize; j++) {
-		outBuffer[j]   += vChan[j]   * volume * calcPanning(0) * boost;
-		outBuffer[j+1] += vChan[j]   * volume * calcPanning(1) * boost;
+  for (int i=0; i<bufferSize; i++) {
+		outBuffer[i]   += vChan[i]   * volume * boost;
 	}
 }
 
