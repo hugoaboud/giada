@@ -1,5 +1,5 @@
-/* -----------------------------------------------------------------------------
  *
+ /* -----------------------------------------------------------------------------
  * Giada - Your Hardcore Loopmachine
  *
  * -----------------------------------------------------------------------------
@@ -62,7 +62,7 @@ gdActionEditor::gdActionEditor(Channel *chan)
 		zoom = conf::actionEditorZoom;
 	}
 
-	totalWidth = (int) std::ceil(clock::getFramesInSequencer() / (float) zoom);
+	totalWidth = (int) std::ceil(clock::getFramesInSeq() / (float) zoom);
 
 	/* container with zoom buttons and the action type selector. Scheme of
 	 * the resizable boxes: |[--b1--][actionType][--b2--][+][-]| */
@@ -266,10 +266,10 @@ void gdActionEditor::__cb_zoomOut()
 
 void gdActionEditor::update()
 {
-	totalWidth = (int) ceilf(clock::getFramesInSequencer() / (float) zoom);
+	totalWidth = (int) ceilf(clock::getFramesInSeq() / (float) zoom);
 	if (totalWidth < scroller->w()) {
 		totalWidth = scroller->w();
-		zoom = (int) ceilf(clock::getFramesInSequencer() / (float) totalWidth);
+		zoom = (int) ceilf(clock::getFramesInSeq() / (float) totalWidth);
 		scroller->scroll_to(0, scroller->yposition());
 	}
 }

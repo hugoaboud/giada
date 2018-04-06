@@ -25,10 +25,32 @@
  * -------------------------------------------------------------------------- */
 
 
-#include "channel.h"
+#ifndef G_CHANNEL_MANAGER_H
+#define G_CHANNEL_MANAGER_H
 
-geChannel::geChannel(int X, int Y, int W, int H, Channel* ch)
- : Fl_Group(X, Y, W, H, nullptr),
- 	ch (ch)
+
+#include <string>
+
+
+class Channel;
+class SampleChannel;
+class MidiChannel;
+
+
+namespace giada {
+namespace m {
+namespace channelManager
 {
-}
+int create(int type, int bufferSize, bool inputMonitorOn, Channel** out);
+
+int  writePatch(const Channel* ch, bool isProject);
+void writePatch(const SampleChannel* ch, bool isProject, int index);
+void writePatch(const MidiChannel* ch, bool isProject, int index);
+
+void readPatch(Channel* ch, int index);
+void readPatch(SampleChannel* ch, const std::string& basePath, int index);
+void readPatch(MidiChannel* ch, int index);
+}}}; // giada::m::channelManager
+
+
+#endif

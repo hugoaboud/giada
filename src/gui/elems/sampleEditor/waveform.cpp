@@ -302,7 +302,7 @@ void geWaveform::drawStartEndPoints()
 
 void geWaveform::drawPlayHead()
 {
-	int p = frameToPixel(m_ch->getTrackerPreview()) + x();
+	int p = frameToPixel(m_ch->trackerPreview) + x();
 	fl_color(G_COLOR_LIGHT_2);
 	fl_line(p, y() + 1, p, y() + h() - 2);
 }
@@ -621,7 +621,7 @@ void geWaveform::clearSel()
 
 void geWaveform::setZoom(int type)
 {
-	if (!alloc(type == ZOOM_IN ? m_data.size * 2 : m_data.size / 2)) 
+	if (!alloc(type == ZOOM_IN ? m_data.size * G_GUI_ZOOM_FACTOR : m_data.size / G_GUI_ZOOM_FACTOR)) 
 		return;
 
 	size(m_data.size, h());

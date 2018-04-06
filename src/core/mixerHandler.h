@@ -111,13 +111,13 @@ Returns channel with given index 'i'. */
 ResourceChannel* getResourceChannelByIndex(int i);
 
 /* hasLogicalSamples
-True if 1 or more samples are logical (memory only, such as takes) 
+True if 1 or more samples are logical (memory only, such as takes)
 TODO: fix this*/
 
 bool hasLogicalSamples();
 
 /* hasEditedSamples
-True if 1 or more samples was edited via gEditor 
+True if 1 or more samples was edited via gEditor
 TODO: fix this*/
 
 bool hasEditedSamples();
@@ -129,14 +129,13 @@ void stopSequencer();
 
 void rewindSequencer();
 
-/* uniqueSolo
- * true if ch is the only solo'd channel in mixer.
- TODO: fix this */
+/* updateSoloCount
+Updates the number of solo-ed channels in mixer. */
 
-bool uniqueSolo(Channel* ch);
+void updateSoloCount();
 
 /* loadPatch
-Loads a path or a project (if isProject) into Mixer. If isProject, path must 
+Loads a path or a project (if isProject) into Mixer. If isProject, path must
 contain the address of the project folder. */
 
 void readPatch();
@@ -157,7 +156,7 @@ bool uniqueSamplePath(const SampleChannel* skip, const std::string& p);
 
 /* hasArmedSampleChannels
 Tells whether Mixer has one or more sample channels armed for input
-recording. 
+recording.
 TODO: fix this */
 
 bool hasArmedSampleChannels();

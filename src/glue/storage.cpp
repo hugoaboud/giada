@@ -182,7 +182,7 @@ static bool glue_savePatch__(const string &fullPath, const string &name,
 static string glue_makeSamplePath__(const string& base, const Wave* w, int k)
 {
 	return base + G_SLASH + w->getBasename(false) + "-" + gu_iToString(k) + "." +  w->getExtension();
-} 
+}
 
 
 static string glue_makeUniqueSamplePath__(const string& base, const SampleChannel* ch)
@@ -261,49 +261,49 @@ void glue_loadPatch(void* data)
 		return;
 	}
 
-	/* Close all other windows. This prevents segfault if plugin windows GUIs are 
+	/* Close all other windows. This prevents segfault if plugin windows GUIs are
 	open. */
 
 	gu_closeAllSubwindows();
 
-	/* Reset the system. False(1): don't update the gui right now. False(2): do 
+	/* Reset the system. False(1): don't update the gui right now. False(2): do
 	not create empty columns. */
 
 	glue_resetToInitState(false, false);
 
 	browser->setStatusBar(0.1f);
 
-	/* Add common stuff, columns and channels. Also increment the progress bar by 
+	/* Add common stuff, columns and channels. Also increment the progress bar by
 	0.8 / total_channels steps.  */
 
 	// TODO: fix this
 	/*
 	float steps = 0.8 / patch::channels.size();
-	
+
 	for (const patch::column_t& col : patch::columns) {
 		G_MainWin->keyboard->addColumn(col.width);
 		unsigned k = 0;
 		for (const patch::channel_t& pch : patch::channels) {
 			if (pch.column == col.index) {
 				Channel* ch = c::channel::addChannel(pch.column, pch.type, pch.size);
-				ch->readPatch(basePath, k, &mixer::mutex_plugins, conf::samplerate,
-					conf::rsmpQuality);
+				ch->readPatch(basePath, k);
 			}
 			browser->setStatusBar(steps);
 			k++;
 		}
 	}*/
 
-	/* Fill Mixer. */
+	/* Prepare Mixer. */
 
+	mh::updateSoloCount();
 	mh::readPatch();
 
-	/* Let recorder recompute the actions' positions if the current 
+	/* Let recorder recompute the actions' positions if the current
 	samplerate != patch samplerate. */
 
 	recorder::updateSamplerate(conf::samplerate, patch::samplerate);
 
-	/* Save patchPath by taking the last dir of the broswer, in order to reuse it 
+	/* Save patchPath by taking the last dir of the broswer, in order to reuse it
 	the next time. */
 
 	conf::patchPath = gu_dirname(fullPath);
@@ -355,12 +355,16 @@ void glue_saveProject(void* data)
 
 	gu_log("[glue_saveProject] Project dir created: %s\n", fullPath.c_str());
 
-	/* Copy all samples inside the folder. Takes and logical ones are saved via 
-	glue_saveSample(). Update the new sample path: everything now comes from the 
-	project folder (folderPath). Also make sure the file path is unique inside the 
+	/* Copy all samples inside the folder. Takes and logical ones are saved via
+	glue_saveSample(). Update the new sample path: everything now comes from the
+	project folder (folderPath). Also make sure the file path is unique inside the
 	project folder.*/
 
+	//TODO: fix this
 	for (const Channel* ch : mixer::channels) {
+
+		if (ch->type == G_CHANNEL_MIDI)
+			continue;
 
 		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
 
@@ -371,7 +375,7 @@ void glue_saveProject(void* data)
 
 		gu_log("[glue_saveProject] Save file to %s\n", sch->wave->getPath().c_str());
 
-		waveManager::save(sch->wave, sch->wave->getPath()); // TODO - error checking	
+		waveManager::save(sch->wave, sch->wave->getPath()); // TODO - error checking
 	}
 
 	string gptcPath = fullPath + G_SLASH + name + ".gptc";
@@ -393,7 +397,7 @@ void glue_loadSample(void* data)
 	if (fullPath.empty())
 		return;
 
-	int res = c::channel::loadChannel(static_cast<SampleChannel*>(browser->getChannel()), 
+	int res = c::channel::loadChannel(static_cast<SampleChannel*>(browser->getChannel()),
 		fullPath);
 
 	if (res == G_RES_OK) {
@@ -409,7 +413,7 @@ void glue_loadSample(void* data)
 /* -------------------------------------------------------------------------- */
 
 
-void glue_saveSample(void *data)
+void glue_saveSample(void* data)
 {
 	using namespace giada::m;
 

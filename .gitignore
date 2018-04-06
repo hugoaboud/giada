@@ -63,3 +63,7 @@ giada.files
 giada.includes
 /.idea/
 /CMakeLists.txt
+
+node_modules/
+package-lock.json
+vgcore*

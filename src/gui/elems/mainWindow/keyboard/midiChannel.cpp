@@ -116,22 +116,22 @@ void menuCallback(Fl_Widget* w, void* v)
 		case Menu::RESIZE_H1:
 			gch->changeSize(G_GUI_CHANNEL_H_1);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
-			break;		
+			break;
 		case Menu::RESIZE_H2:
 			gch->changeSize(G_GUI_CHANNEL_H_2);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
-			break;		
+			break;
 		case Menu::RESIZE_H3:
 			gch->changeSize(G_GUI_CHANNEL_H_3);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
-			break;		
+			break;
 		case Menu::RESIZE_H4:
 			gch->changeSize(G_GUI_CHANNEL_H_4);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
 			break;
 		case Menu::CLONE_CHANNEL:
 			c::channel::cloneResourceChannel((ResourceChannel*)gch->ch);
-			break;		
+			break;
 		case Menu::RENAME_CHANNEL:
 			gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
 			break;
@@ -148,7 +148,7 @@ void menuCallback(Fl_Widget* w, void* v)
 
 
 geMidiChannel::geMidiChannel(int X, int Y, int W, int H, MidiChannel* ch)
-	: geResourceChannel(X, Y, W, H, CHANNEL_MIDI, ch)
+	: geResourceChannel(X, Y, W, H, G_CHANNEL_MIDI, ch)
 {
 	begin();
 
@@ -215,7 +215,7 @@ void geMidiChannel::cb_openMenu(Fl_Widget* v, void* p) { ((geMidiChannel*)p)->cb
 void geMidiChannel::cb_button()
 {
 	using namespace giada;
-	
+
 	if (button->value())
 		c::io::keyPress(static_cast<MidiChannel*>(ch), Fl::event_ctrl(), Fl::event_shift());
 }
@@ -291,24 +291,24 @@ void geMidiChannel::update()
 {
 	const MidiChannel* mch = static_cast<const MidiChannel*>(ch);
 
-	string label; 
-	if (mch->getName().empty())
+	string label;
+	if (mch->name.empty())
 		label = "-- MIDI --";
 	else
-		label = mch->getName().c_str();
+		label = mch->name.c_str();
 
-	if (mch->midiOut) 
+	if (mch->midiOut)
 		label += " (ch " + gu_iToString(mch->midiOutChan + 1) + " out)";
 
 	mainButton->label(label.c_str());
 
-	vol->value(mch->getVolume());
+	vol->value(mch->volume);
 	mute->value(mch->mute);
 	solo->value(mch->solo);
 
 	mainButton->setKey(mch->key);
 
-	arm->value(mch->isArmed());
+	arm->value(mch->armed);
 
 #ifdef WITH_VST
 	fx->status = mch->plugins.size() > 0;

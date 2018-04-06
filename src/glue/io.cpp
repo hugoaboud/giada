@@ -57,7 +57,7 @@ extern gdMainWindow* G_MainWin;
 
 namespace giada {
 namespace c     {
-namespace io 
+namespace io
 {
 namespace
 {
@@ -81,7 +81,7 @@ void shiftPress(SampleChannel* ch)
 			else kill chan. */
 
 	if (m::recorder::active) {
-		if (!m::clock::isRunning()) 
+		if (!m::clock::isRunning())
 			return;
 		ch->kill(0); // on frame 0: user-generated event
 		if (m::recorder::canRec(ch, m::clock::isRunning(), m::mixer::recording) &&
@@ -110,7 +110,7 @@ void shiftPress(SampleChannel* ch)
 void cleanPress(SampleChannel* ch, int velocity)
 {
 	/* Record now if the quantizer is off, otherwise let mixer to handle it when a
-	quantoWait has passed. Moreover, KEYPRESS and KEYREL are meaningless for loop 
+	quantoWait has passed. Moreover, KEYPRESS and KEYREL are meaningless for loop
 	modes. */
 
 	if (m::clock::getQuantize() == 0 &&
@@ -126,8 +126,8 @@ void cleanPress(SampleChannel* ch, int velocity)
 			m::recorder::rec(ch->index, G_ACTION_KEYPRESS, m::clock::getCurrentFrame());
 			ch->hasActions = true;
 
-			/* Why return here? You record an action and then you call ch->start: 
-			Mixer, which is on another thread, reads your newly recorded action if you 
+			/* Why return here? You record an action and then you call ch->start:
+			Mixer, which is on another thread, reads your newly recorded action if you
 			have readActions == true, and then ch->start kicks in right after it.
 			The result: Mixer plays the channel (due to the new action) but ch->start
 			kills it right away (because the sample is playing). Fix: call ch->start
@@ -162,7 +162,7 @@ void cleanRecPress(SampleChannel* ch)
 
 void keyPress(ResourceChannel* ch, bool ctrl, bool shift, int velocity)
 {
-	if (ch->getType() == CHANNEL_SAMPLE)
+	if (ch->type == G_CHANNEL_SAMPLE)
 		keyPress(static_cast<SampleChannel*>(ch), ctrl, shift, velocity);
 	else
 		keyPress(static_cast<MidiChannel*>(ch), ctrl, shift);
@@ -174,7 +174,7 @@ void keyPress(ResourceChannel* ch, bool ctrl, bool shift, int velocity)
 
 void keyRelease(ResourceChannel* ch, bool ctrl, bool shift)
 {
-	if (ch->getType() == CHANNEL_SAMPLE)
+	if (ch->type == G_CHANNEL_SAMPLE)
 		keyRelease(static_cast<SampleChannel*>(ch), ctrl, shift);
 }
 
@@ -224,7 +224,7 @@ void keyRelease(SampleChannel* ch, bool ctrl, bool shift)
 	 * other mode the KEY REL is meaningless. */
 
 	if (ch->mode == SINGLE_PRESS && recorder::canRec(ch, clock::isRunning(), mixer::recording))
-		recorder::stopOverdub(clock::getCurrentFrame(), clock::getTotalFrames(),
+		recorder::stopOverdub(clock::getCurrentFrame(), clock::getFramesInLoop(),
 			&mixer::mutex_recs);
 
 	/* the GUI update is done by gui_refresh() */
@@ -307,9 +307,9 @@ void stopActionRec(bool gui)
 		ColumnChannel* cch = m::mixer::columnChannels.at(i);
 		for (unsigned j=0; j < cch->getResourceCount(); j++)
 		{
-			SampleChannel* sch = static_cast<SampleChannel*>(cch->getResource(j));
-			if (sch->getType() == CHANNEL_MIDI)
+			if (cch->type == G_CHANNEL_MIDI)
 				continue;
+			SampleChannel* sch = static_cast<SampleChannel*>(cch->getResource(j));
 			G_MainWin->keyboard->setChannelWithActions(static_cast<geSampleChannel*>(sch->guiChannel));
 			if (!sch->getReadActions() && sch->hasActions)
 				c::channel::startReadingRecs(sch, false);
@@ -381,7 +381,7 @@ bool startInputRec(bool gui)
 void stopInputRec(bool gui)
 {
 	using namespace giada::m;
-	
+
 	mh::stopInputRec();
 
 	/* Start all sample channels in loop mode that were armed, i.e. that were
@@ -390,10 +390,12 @@ void stopInputRec(bool gui)
 	beat. */
 
 	for (Channel* ch : mixer::channels) {
+		if (ch->type == G_CHANNEL_MIDI)
+			continue;
 		SampleChannel* sch = static_cast<SampleChannel*>(ch);
-		if (sch == nullptr) continue;
-		if (sch->mode & (LOOP_ANY) && sch->getStatus() == STATUS_OFF && sch->isArmed())
-			sch->start(clock::getCurrentFrame(), true, clock::isRunning(), true, true);
+		if (sch->mode & (LOOP_ANY) && sch->status == STATUS_OFF && sch->armed)
+			sch->start(clock::getCurrentFrame(), true, clock::getQuantize(),
+				clock::isRunning(), true, true);
 	}
 
 	Fl::lock();

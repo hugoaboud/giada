@@ -60,21 +60,21 @@ gdMidiInputChannel::gdMidiInputChannel(Channel* ch)
 	size_range(G_DEFAULT_MIDI_INPUT_UI_W, G_DEFAULT_MIDI_INPUT_UI_H);
 
 	ResourceChannel* rch = static_cast<ResourceChannel*>(ch);
-	int extra = (rch != nullptr && rch->getType() == CHANNEL_SAMPLE) ? 28 : 0;
+	int extra = (rch != nullptr && rch->getType() == G_CHANNEL_SAMPLE) ? 28 : 0;
 
 	Fl_Group* groupHeader = new Fl_Group(G_GUI_OUTER_MARGIN, G_GUI_OUTER_MARGIN, w(), 20 + extra);
 	groupHeader->begin();
 
-		enable = new geCheck(G_GUI_OUTER_MARGIN, G_GUI_OUTER_MARGIN, 120, G_GUI_UNIT, 
+		enable = new geCheck(G_GUI_OUTER_MARGIN, G_GUI_OUTER_MARGIN, 120, G_GUI_UNIT,
 			"Enable MIDI input");
 		channel = new geChoice(enable->x()+enable->w()+44, G_GUI_OUTER_MARGIN, 120, G_GUI_UNIT);
-		veloAsVol = new geCheck(G_GUI_OUTER_MARGIN, enable->y()+enable->h()+G_GUI_OUTER_MARGIN 	, 120, G_GUI_UNIT, 
+		veloAsVol = new geCheck(G_GUI_OUTER_MARGIN, enable->y()+enable->h()+G_GUI_OUTER_MARGIN 	, 120, G_GUI_UNIT,
 			"Velocity drives volume (one-shot only)");
 
 	groupHeader->resizable(nullptr);
 	groupHeader->end();
 
-	container = new geScroll(G_GUI_OUTER_MARGIN, groupHeader->y()+groupHeader->h()+G_GUI_OUTER_MARGIN, 
+	container = new geScroll(G_GUI_OUTER_MARGIN, groupHeader->y()+groupHeader->h()+G_GUI_OUTER_MARGIN,
 		w()-16, h()-72-extra);
 	container->begin();
 
@@ -99,9 +99,9 @@ gdMidiInputChannel::gdMidiInputChannel(Channel* ch)
 	enable->value(ch->midiIn);
 	enable->callback(cb_enable, (void*)this);
 
-	if (rch != nullptr && rch->getType() == CHANNEL_SAMPLE) {
+	if (rch != nullptr && rch->getType() == G_CHANNEL_SAMPLE) {
 		veloAsVol->value(static_cast<SampleChannel*>(ch)->midiInVeloAsVol);
-		veloAsVol->callback(cb_veloAsVol, (void*)this);	
+		veloAsVol->callback(cb_veloAsVol, (void*)this);
 	}
 	else
 		veloAsVol->hide();
@@ -123,7 +123,7 @@ gdMidiInputChannel::gdMidiInputChannel(Channel* ch)
 	channel->add("Channel 14");
 	channel->add("Channel 15");
 	channel->add("Channel 16");
-	channel->value(ch->getMidiInFilter() == -1 ? 0 : ch->getMidiInFilter() + 1);
+	channel->value(ch->midiInFilter == -1 ? 0 : ch->midiInFilter + 1);
 	channel->callback(cb_setChannel, (void*)this);
 
 	resizable(container);
@@ -160,7 +160,7 @@ void gdMidiInputChannel::addChannelLearners()
 
 		geBox *header = new geBox(0, 0, LEARNER_WIDTH, 20, "channel");
 		header->box(FL_BORDER_BOX);
-	
+
 		if (rch != nullptr) {
 			new geMidiLearner(0, 0, LEARNER_WIDTH, "key press",   cb_learn, &rch->midiInKeyPress, ch);
 			new geMidiLearner(0, 0, LEARNER_WIDTH, "key release", cb_learn, &rch->midiInKeyRel, ch);
@@ -170,10 +170,10 @@ void gdMidiInputChannel::addChannelLearners()
 		new geMidiLearner(0, 0, LEARNER_WIDTH, "mute",        cb_learn, &ch->midiInMute, ch);
 		new geMidiLearner(0, 0, LEARNER_WIDTH, "solo",        cb_learn, &ch->midiInSolo, ch);
 		new geMidiLearner(0, 0, LEARNER_WIDTH, "volume",      cb_learn, &ch->midiInVolume, ch);
-		if (rch != nullptr && rch->getType() == CHANNEL_SAMPLE) {
-			new geMidiLearner(0, 0, LEARNER_WIDTH, "pitch", cb_learn, 
+		if (rch != nullptr && rch->getType() == G_CHANNEL_SAMPLE) {
+			new geMidiLearner(0, 0, LEARNER_WIDTH, "pitch", cb_learn,
 				&rch->midiInPitch, ch);
-			new geMidiLearner(0, 0, LEARNER_WIDTH, "read actions", cb_learn, 
+			new geMidiLearner(0, 0, LEARNER_WIDTH, "read actions", cb_learn,
 				&rch->midiInReadActions, ch);
 		}
 
@@ -244,8 +244,6 @@ void gdMidiInputChannel::cb_veloAsVol()
 
 void gdMidiInputChannel::cb_setChannel()
 {
-	ch->setMidiInFilter(channel->value() == 0 ? -1 : channel->value() - 1);
-	gu_log("[gdMidiInputChannel] Set MIDI channel to %d\n", 
-		ch->getMidiInFilter());
+	ch->midiInFilter = channel->value() == 0 ? -1 : channel->value() - 1;
+	gu_log("[gdMidiInputChannel] Set MIDI channel to %d\n", ch->midiInFilter);
 }
-

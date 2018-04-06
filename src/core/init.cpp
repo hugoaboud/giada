@@ -83,7 +83,7 @@ void init_prepareKernelAudio()
 {
   kernelAudio::openDevice();
   clock::init(conf::samplerate, conf::midiTCfps);
-	mixer::init(clock::getTotalFrames(), kernelAudio::getRealBufSize());
+	mixer::init(clock::getFramesInLoop(), kernelAudio::getRealBufSize());
 	recorder::init();
 
 #ifdef WITH_VST
@@ -196,17 +196,6 @@ void init_shutdown()
 	}
 
 	recorder::clearAll();
-	
-	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
-		ColumnChannel* cch = mixer::columnChannels.at(i);
-		for (unsigned j=0; j<cch->getResourceCount(); j++) {
-			cch->getResource(j)->hasActions  = false;
-			cch->getResource(j)->setReadActions(false, false);
-			//if (mixer::channels.at(i)->type == CHANNEL_SAMPLE)
-			//	((SampleChannel*)mixer::channels.at(i))->readActions = false;
-		}
-	}
-  	
 	gu_log("[init] Recorder cleaned up\n");
 
 #ifdef WITH_VST

@@ -133,6 +133,8 @@ src/core/midiMapConf.h                 \
 src/core/midiMapConf.cpp               \
 src/core/midiEvent.h                   \
 src/core/midiEvent.cpp                 \
+src/core/audioBuffer.h                 \
+src/core/audioBuffer.cpp               \
 src/core/conf.h                        \
 src/core/conf.cpp                      \
 src/core/kernelAudio.h                 \
@@ -165,6 +167,8 @@ src/core/clock.h                       \
 src/core/clock.cpp                     \
 src/core/waveManager.h                 \
 src/core/waveManager.cpp               \
+src/core/channelManager.h              \
+src/core/channelManager.cpp            \
 src/glue/main.h                        \
 src/glue/main.cpp                      \
 src/glue/io.h                          \
@@ -403,6 +407,7 @@ tests/pluginHost.cpp         \
 tests/utils.cpp              \
 tests/recorder.cpp           \
 tests/waveFx.cpp             \
+tests/audioBuffer.cpp        \
 src/core/conf.cpp            \
 src/core/wave.cpp            \
 src/core/waveManager.cpp     \
@@ -412,6 +417,7 @@ src/core/patch.cpp           \
 src/core/plugin.cpp          \
 src/core/storager.cpp        \
 src/core/recorder.cpp        \
+src/core/audioBuffer.cpp     \
 src/utils/fs.cpp             \
 src/utils/string.cpp         \
 src/utils/time.cpp           \

@@ -1,5 +1,5 @@
-/* -----------------------------------------------------------------------------
  *
+ /* -----------------------------------------------------------------------------
  * Giada - Your Hardcore Loopmachine
  *
  * -----------------------------------------------------------------------------
@@ -40,7 +40,8 @@
 #include "../gui/elems/sampleEditor/rangeTool.h"
 #include "../gui/elems/sampleEditor/waveform.h"
 #include "../gui/elems/mainWindow/keyboard/keyboard.h"
-#include "../gui/elems/mainWindow/keyboard/resourceChannel.h"
+#include "../gui/elems/mainWindow/keyboard/channel.h"
+#include "../gui/elems/mainWindow/keyboard/sampleChannel.h"
 #include "../gui/elems/mainWindow/keyboard/channelButton.h"
 #include "../utils/gui.h"
 #include "../utils/fs.h"
@@ -53,7 +54,6 @@
 #include "../core/conf.h"
 #include "../core/wave.h"
 #include "../core/channel.h"
-#include "../core/columnChannel.h"
 #include "../core/sampleChannel.h"
 #include "../core/midiChannel.h"
 #include "../core/plugin.h"
@@ -70,52 +70,8 @@ using std::string;
 
 namespace giada {
 namespace c     {
-namespace channel 
+namespace channel
 {
-namespace
-{
-bool soloSession__ = false;
-} // {anonymous}
-
-
-/* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
-
-/* -------------------------------------------------------------------------- */
-
-
-ColumnChannel* addColumnChannel(int width)
-{
-	ColumnChannel* col = m::mh::addColumnChannel();
-	geColumn* gcol = G_MainWin->keyboard->addColumn(col, width);
-	col->guiChannel = (geChannel*) gcol;
-	return col;
-}
-
-/* -------------------------------------------------------------------------- */
-
-void deleteColumnChannel(ColumnChannel* cch)
-{
-	using namespace giada::m;
-
-	if (!gdConfirmWin("Warning", "Delete column: are you sure?"))
-		return;
-	
-#ifdef WITH_VST
-	pluginHost::freeStack(&mixer::mutex_plugins, cch);
-#endif
-	mh::deleteColumnChannel(cch);
-	Fl::lock();
-	//G_MainWin->keyboard->deleteColumn((geColumn*)cch->guiChannel);
-	Fl::flush();
-	Fl::unlock();
-	gu_closeAllSubwindows();
-}
-
-/* -------------------------------------------------------------------------- */
-
-
 int loadChannel(SampleChannel* ch, const string& fname)
 {
 	using namespace giada::m;
@@ -126,20 +82,20 @@ int loadChannel(SampleChannel* ch, const string& fname)
 	if (ch->getStatus() & (STATUS_PLAY | STATUS_ENDING))
 		ch->hardStop(0);
 
-	/* Save the patch and take the last browser's dir in order to re-use it the 
+	/* Save the patch and take the last browser's dir in order to re-use it the
 	next time. */
 
 	conf::samplePath = gu_dirname(fname);
 
 	Wave* wave = nullptr;
-	int result = waveManager::create(fname, &wave); 
+	int result = waveManager::create(fname, &wave);
 	if (result != G_RES_OK)
 		return result;
 
 	if (wave->getRate() != conf::samplerate) {
 		gu_log("[loadChannel] input rate (%d) != system rate (%d), conversion needed\n",
 			wave->getRate(), conf::samplerate);
-		result = waveManager::resample(wave, conf::rsmpQuality, conf::samplerate); 
+		result = waveManager::resample(wave, conf::rsmpQuality, conf::samplerate);
 		if (result != G_RES_OK) {
 			delete wave;
 			return result;
@@ -156,11 +112,10 @@ int loadChannel(SampleChannel* ch, const string& fname)
 /* -------------------------------------------------------------------------- */
 
 
-ResourceChannel* addResourceChannel(ColumnChannel* col, int type, int size)
+ResourceChannel* addChannel(int column, int type, int size)
 {
-	printf("col %p\n",col);
-	ResourceChannel* ch    = m::mh::addResourceChannel(col, type);
-	geChannel* gch = G_MainWin->keyboard->addChannel(col, ch, size);
+	ResourceChannel* ch    = m::mh::addChannel(type);
+	geChannel* gch = G_MainWin->keyboard->addChannel(column, ch, size);
 	ch->guiChannel = gch;
 	return ch;
 }
@@ -169,7 +124,7 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type, int size)
 /* -------------------------------------------------------------------------- */
 
 
-void deleteResourceChannel(ResourceChannel* ch)
+void deleteChannel(Channel* ch)
 {
 	using namespace giada::m;
 
@@ -183,7 +138,7 @@ void deleteResourceChannel(ResourceChannel* ch)
 	Fl::lock();
 	G_MainWin->keyboard->deleteChannel(ch->guiChannel);
 	Fl::unlock();
-	mh::deleteResourceChannel(ch);
+	mh::deleteChannel(ch);
 	gu_closeAllSubwindows();
 }
 
@@ -191,7 +146,7 @@ void deleteResourceChannel(ResourceChannel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void freeResourceChannel(ResourceChannel* ch)
+void freeChannel(ResourceChannel* ch)
 {
 	if (ch->getStatus() == STATUS_PLAY) {
 		if (!gdConfirmWin("Warning", "This action will stop the channel: are you sure?"))
@@ -218,6 +173,17 @@ void freeResourceChannel(ResourceChannel* ch)
 /* -------------------------------------------------------------------------- */
 
 
+void toggleArm(Channel* ch, bool gui)
+{
+	ch->armed = !ch->armed;
+	if (!gui)
+		ch->guiChannel->arm->value(ch->armed);
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
 void toggleInputMonitor(Channel* ch)
 {
 	SampleChannel* sch = static_cast<SampleChannel*>(ch);
@@ -228,12 +194,13 @@ void toggleInputMonitor(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-int cloneResourceChannel(ResourceChannel* src)
+int cloneChannel(ResourceChannel* src)
 {
 	using namespace giada::m;
 
-	ResourceChannel* ch    = mh::addResourceChannel(src->column, src->getType());
-	geChannel* gch = G_MainWin->keyboard->addChannel(src->column, ch, ((geResourceChannel*)src->guiChannel)->getSize());
+	ResourceChannel* ch    = mh::addChannel(src->getType());
+	geChannel* gch = G_MainWin->keyboard->addChannel(src->guiChannel->getColumnIndex(),
+		ch, src->guiChannel->getSize());
 
 	ch->guiChannel = gch;
 	ch->copy(src, &mixer::mutex_plugins);
@@ -248,7 +215,7 @@ int cloneResourceChannel(ResourceChannel* src)
 
 void setVolume(Channel* ch, float v, bool gui, bool editor)
 {
-	ch->setVolume(v);
+	ch->volume = v;
 
 	/* Changing channel volume? Update wave editor (if it's shown). */
 
@@ -313,7 +280,7 @@ void toggleMute(Channel* ch, bool gui)
 			ch->setReadActions(false);   // don't read actions while overdubbing
 		}
 		else
-		 recorder::stopOverdub(clock::getCurrentFrame(), clock::getTotalFrames(),
+		 recorder::stopOverdub(clock::getCurrentFrame(), clock::getFramesInLoop(),
 			&mixer::mutex_recs);
 	}
 
@@ -352,42 +319,12 @@ void setSoloOn(Channel* ch, bool gui)
 {
 	using namespace giada::m;
 
-	/* if there's no solo session, store mute configuration of all chans
-	 * and start the session */
-
-	if (!soloSession__) {
-		for (unsigned i=0; i<mixer::channels.size(); i++) {
-			Channel *och = mixer::channels.at(i);
-			och->mute_s  = och->mute;
-		}
-		soloSession__ = true;
-	}
-
 	ch->solo = !ch->solo;
-	ch->sendMidiLsolo();
-
-	/* mute all other channels and unmute this (if muted) */
-
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
-		Channel *och = mixer::channels.at(i);
-		if (!och->solo && !och->mute) {
-			och->setMute(false);
-			Fl::lock();
-			och->guiChannel->mute->value(true);
-			Fl::unlock();
-		}
-	}
-
-	if (ch->mute) {
-		ch->unsetMute(false);
-		Fl::lock();
-		ch->guiChannel->mute->value(false);
-		Fl::unlock();
-	}
+	mh::updateSoloCount();
 
 	if (!gui) {
 		Fl::lock();
-		ch->guiChannel->solo->value(1);
+		ch->guiChannel->solo->value(ch->solo);
 		Fl::unlock();
 	}
 }
@@ -396,47 +333,9 @@ void setSoloOn(Channel* ch, bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-void setSoloOff(Channel* ch, bool gui)
+void kill(Channel* ch)
 {
-	using namespace giada::m;
-
-	/* if this is uniqueSolo, stop solo session and restore mute status,
-	 * else mute this */
-
-	if (mh::uniqueSolo(ch)) {
-		soloSession__ = false;
-		for (unsigned i=0; i<mixer::channels.size(); i++) {
-			Channel *och = mixer::channels.at(i);
-			if (och->mute_s) {
-				och->setMute(false);
-				Fl::lock();
-				och->guiChannel->mute->value(true);
-				Fl::unlock();
-			}
-			else {
-				och->unsetMute(false);
-				Fl::lock();
-				och->guiChannel->mute->value(false);
-				Fl::unlock();
-			}
-			och->mute_s = false;
-		}
-	}
-	else {
-		ch->setMute(false);
-		Fl::lock();
-		ch->guiChannel->mute->value(true);
-		Fl::unlock();
-	}
-
-	ch->solo = !ch->solo;
-	ch->sendMidiLsolo();
-
-	if (!gui) {
-		Fl::lock();
-		ch->guiChannel->solo->value(0);
-		Fl::unlock();
-	}
+	ch->kill(0); // on frame 0: it's a user-generated event
 }
 
 
@@ -460,7 +359,7 @@ void setBoost(SampleChannel* ch, float val)
 
 void setName(Channel* ch, const string& name)
 {
-	ch->setName(name);
+	ch->name = name;
 	ch->guiChannel->update();
 }
 

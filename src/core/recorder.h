@@ -29,12 +29,9 @@
 #define G_RECORDER_H
 
 
-#ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
-	#include <stdint.h>
-#else
-	#include <cstdint>
-#endif
+#include <cstdint>
 #include <vector>
+#include <functional>
 #include <pthread.h>
 
 
@@ -100,7 +97,7 @@ bool hasActions(int chanIndex);
 /* canRec
  * can a channel rec an action? Call this one BEFORE rec(). */
 
-bool canRec(Channel *ch, bool clockRunning, bool mixerRecording);
+bool canRec(Channel* ch, bool clockRunning, bool mixerRecording);
 
 /* rec
  * record an action. */
@@ -121,14 +118,14 @@ void clearAction(int chan, char action);
  * delete ONE action. Useful in the action editor. 'type' can be a mask. */
 
 void deleteAction(int chan, int frame, char type, bool checkValues,
-  pthread_mutex_t *mixerMutex, uint32_t iValue=0, float fValue=0.0);
+  pthread_mutex_t* mixerMutex, uint32_t iValue=0, float fValue=0.0);
 
 /* deleteActions
 Deletes A RANGE of actions from frame_a to frame_b in channel 'chan' of type
 'type' (can be a bitmask). Exclusive range (frame_a, frame_b). */
 
 void deleteActions(int chan, int frame_a, int frame_b, char type,
-  pthread_mutex_t *mixerMutex);
+  pthread_mutex_t* mixerMutex);
 
 /* clearAll
  * delete everything. */
@@ -183,6 +180,11 @@ pressing Mute button on a channel with some existing mute actions. */
 
 void startOverdub(int chan, char action, int frame, unsigned bufferSize);
 void stopOverdub(int currentFrame, int totalFrames, pthread_mutex_t *mixerMutex);
+
+/* forEachAction
+Applies a read-only callback on each action recorded. */
+
+void forEachAction(std::function<void(const action*)> f);
 }}}; // giada::m::recorder::
 
 #endif

@@ -27,15 +27,14 @@
 
 #include "../utils/log.h"
 #include "midiChannel.h"
+#include "channelManager.h"
 #include "resourceChannel.h"
 #include "patch.h"
 #include "const.h"
 #include "clock.h"
 #include "conf.h"
 #include "mixer.h"
-#ifdef WITH_VST
-	#include "pluginHost.h"
-#endif
+#include "pluginHost.h"
 #include "kernelMidi.h"
 
 
@@ -44,7 +43,7 @@ using namespace giada::m;
 
 
 MidiChannel::MidiChannel(int bufferSize)
-	: ResourceChannel    (CHANNEL_MIDI, STATUS_OFF, bufferSize),
+	: ResourceChannel    (G_CHANNEL_MIDI, STATUS_OFF, bufferSize),
 		midiOut    (false),
 		midiOutChan(MIDI_CHANS[0])
 {
@@ -60,10 +59,10 @@ MidiChannel::~MidiChannel() {}
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::copy(const Channel *_src, pthread_mutex_t *pluginMutex)
+void MidiChannel::copy(const Channel* src_, pthread_mutex_t* pluginMutex)
 {
-	Channel::copy(_src, pluginMutex);
-	MidiChannel *src = (MidiChannel *) _src;
+	Channel::copy(src_, pluginMutex);
+	const MidiChannel* src = static_cast<const MidiChannel*>(src_);
 	midiOut     = src->midiOut;
 	midiOutChan = src->midiOutChan;
 }
@@ -107,7 +106,7 @@ void MidiChannel::empty() {}
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::quantize(int index, int localFrame) {}
+void MidiChannel::quantize(int index, int localFrame, int globalFrame) {}
 
 
 /* -------------------------------------------------------------------------- */
@@ -117,7 +116,7 @@ void MidiChannel::parseAction(recorder::action *a, int localFrame,
 		int globalFrame, bool mixerIsRunning)
 {
 	if (a->type == G_ACTION_MIDI)
-		sendMidi(a, localFrame/2);
+		sendMidi(a, localFrame);
 }
 
 
@@ -170,24 +169,23 @@ void MidiChannel::input(float *inBuffer) {}
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::process(float *outBuffer, float *inBuffer)
+void MidiChannel::process(giada::m::AudioBuffer& out, const giada::m::AudioBuffer& in)
 {
 #ifdef WITH_VST
 	pluginHost::processStack(vChan, this);
 #endif
 
 	/* TODO - isn't this useful only if WITH_VST ? */
-	for (int j=0; j<bufferSize; j+=2) {
-		outBuffer[j]   += vChan[j]   * volume; // * panLeft;   future?
-		outBuffer[j+1] += vChan[j+1] * volume; // * panRight;  future?
-	}
+	for (int i=0; i<out.countFrames(); i++)
+		for (int j=0; j<out.countChannels(); j++)
+			out[i][j] += vChan[i][j] * volume;
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::preview(float *outBuffer)
+void MidiChannel::preview(giada::m::AudioBuffer& out)
 {
 	// No preview for MIDI channels (for now).
 }
@@ -251,24 +249,17 @@ void MidiChannel::kill(int frame)
 /* -------------------------------------------------------------------------- */
 
 
-int MidiChannel::readPatch(const string &basePath, int i,
-		pthread_mutex_t *pluginMutex, int samplerate, int rsmpQuality)
+void MidiChannel::readPatch(const string& basePath, int i)
 {
-	Channel::readPatch("", i, pluginMutex, samplerate, rsmpQuality);
-
-	patch::channel_t *pch = &patch::channels.at(i);
-
-	midiOut     = pch->midiOut;
-	midiOutChan = pch->midiOutChan;
-
-	return G_RES_OK;
+	Channel::readPatch("", i);
+	channelManager::readPatch(this, i);
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::sendMidi(recorder::action *a, int localFrame)
+void MidiChannel::sendMidi(recorder::action* a, int localFrame)
 {
 	if (status & (STATUS_PLAY | STATUS_ENDING) && !mute) {
 		if (midiOut)
@@ -309,15 +300,10 @@ void MidiChannel::rewind()
 /* -------------------------------------------------------------------------- */
 
 
-int MidiChannel::writePatch(int i, bool isProject)
+void MidiChannel::writePatch(int i, bool isProject)
 {
-	int pchIndex = Channel::writePatch(i, isProject);
-	patch::channel_t *pch = &patch::channels.at(pchIndex);
-
-	pch->midiOut     = midiOut;
-	pch->midiOutChan = midiOutChan;
-
-	return 0;
+	Channel::writePatch(i, isProject);
+	channelManager::writePatch(this, isProject, i);
 }
 
 

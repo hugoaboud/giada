@@ -88,8 +88,8 @@ void menuCallback(Fl_Widget* w, void* v)
 }
 
 geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent, ColumnChannel *channel)
-	: geChannel(X, Y, W, H, channel), 
-		m_parent(parent), 
+	: geChannel(X, Y, W, H, channel),
+		m_parent(parent),
 		m_index (index)
 {
 	/* geColumn does a bit of a mess: we pass a pointer to its m_parent (geKeyboard) and
@@ -105,7 +105,7 @@ geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent, Co
 		m_titleBtn = new geButton(x(), y(), w(), G_GUI_UNIT, channel->getName().c_str());
 	end();
 
-	m_resizer = new geResizerBar(x()+w(), y(), G_GUI_OUTER_MARGIN * 2, h(), 
+	m_resizer = new geResizerBar(x()+w(), y(), G_GUI_OUTER_MARGIN * 2, h(),
 		G_MIN_COLUMN_WIDTH, geResizerBar::HORIZONTAL);
 	m_parent->add(m_resizer);
 
@@ -151,7 +151,7 @@ int geColumn::handle(int e)
 			for (string& path : paths) {
 				gu_log("[geColumn::handle] loading %s...\n", path.c_str());
 				SampleChannel* c = static_cast<SampleChannel*>(c::channel::addResourceChannel(
-					channel, CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
+					channel, G_CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
 				result = c::channel::loadChannel(c, gu_stripFileUrl(path));
 				if (result != G_RES_OK) {
 					deleteChannel(c->guiChannel);
@@ -185,7 +185,7 @@ void geColumn::resize(int X, int Y, int W, int H)
 	for (int i=0; i<children(); i++) {
 		Fl_Widget* wgCurr = child(i);
 		Fl_Widget* wgPrev = i == 0 ? nullptr : child(i - 1);
-		wgCurr->resize(X, (wgPrev == nullptr ? Y : wgPrev->y() + wgPrev->h() + G_GUI_INNER_MARGIN), 
+		wgCurr->resize(X, (wgPrev == nullptr ? Y : wgPrev->y() + wgPrev->h() + G_GUI_INNER_MARGIN),
 			W, wgCurr->h());
 	}
 
@@ -253,10 +253,10 @@ geChannel* geColumn::addChannel(ResourceChannel* ch, int size)
 {
 	geChannel* gch = nullptr;
 
-	/* All geChannels are added with y=0. That's not a problem, they will be 
+	/* All geChannels are added with y=0. That's not a problem, they will be
 	repositioned later on during geColumn::resize(). */
 
-	if (ch->getType() == CHANNEL_SAMPLE)
+	if (ch->type == G_CHANNEL_SAMPLE)
 		gch = new geSampleChannel(x(), 0, w(), size, static_cast<SampleChannel*>(ch));
 	else
 		gch = new geMidiChannel(x(), 0, w(), size, static_cast<MidiChannel*>(ch));

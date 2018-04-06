@@ -43,15 +43,15 @@ namespace giada {
 namespace m {
 namespace mixer
 {
-void init(int framesInSeq, int audioBufferSize);
+void init(int framesInSeq, int framesInBuffer);
 
 int close();
 
 /* masterPlay
 Core method (callback) */
 
-int masterPlay(void *outBuf, void *inBuf, unsigned bufferSize, double streamTime,
-  RtAudioStreamStatus status, void *userData);
+int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize, double streamTime,
+  RtAudioStreamStatus status, void* userData);
 
 /* isSilent
 Is mixer silent? */
@@ -63,8 +63,13 @@ Rewinds sequencer to frame 0. */
 
 void rewind();
 
+/* startInputRec
+Starts input recording on frame clock::getCurrentFrame(). */
+
+void startInputRec();
+
 /* mergeVirtualInput
-Copies the virtual channel input in the channels designed for input recording. 
+Copies the virtual channel input in the channels designed for input recording.
 Called by mixerHandler on stopInputRec(). */
 
 void mergeVirtualInput();
@@ -87,18 +92,13 @@ extern std::vector<Channel*> channels; // this is about to disappear
 
 extern bool   recording;         // is recording something?
 extern bool   ready;
-extern int    frameSize;
 extern float  outVol;
 extern float  inVol;
 extern float  peakIn;
-extern float  peakOut;
-extern bool	 metronome;
-extern int    waitRec;      // delayComp guard
-extern bool  docross;			 // crossfade guard
-extern bool  rewindWait;	   // rewind guard, if quantized
-
-extern int  tickTracker, tockTracker;
-extern bool tickPlay, tockPlay; // 1 = play, 0 = stop
+extern bool	  metronome;
+extern int    waitRec;       // delayComp guard
+extern bool   rewindWait;	   // rewind guard, if quantized
+extern bool   hasSolos;      // more than 0 channels soloed
 
 extern pthread_mutex_t mutex_recs;
 extern pthread_mutex_t mutex_chans;

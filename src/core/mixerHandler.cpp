@@ -26,6 +26,7 @@
 
 
 #include <vector>
+#include <algorithm>
 #include "../utils/fs.h"
 #include "../utils/string.h"
 #include "../utils/log.h"
@@ -52,6 +53,7 @@
 #include "midiChannel.h"
 #include "wave.h"
 #include "waveManager.h"
+#include "channelManager.h"
 #include "mixerHandler.h"
 
 
@@ -125,7 +127,7 @@ int getNewColumnChanIndex()
 	return index;
 }
 
-/* ------------------------------------------------------------------------ */
+/* -------------------------------------------------------------------------- */
 
 
 int getNewChanIndex()
@@ -156,9 +158,9 @@ int getNewChanIndex()
 bool uniqueSamplePath(const SampleChannel* skip, const string& path)
 {
 	for (const Channel* ch : mixer::channels) {
-		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
-		if (skip == ch || (sch != nullptr)) // skip itself and MIDI channels
+		if (skip == ch || ch->type != G_CHANNEL_SAMPLE) // skip itself and MIDI channels
 			continue;
+		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
 		if (sch->wave != nullptr && path == sch->wave->getPath())
 			return false;
 	}
@@ -308,7 +310,6 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 	if (!ch->allocBuffers()) {
 		delete ch;
 		return nullptr;
-	}
 
 	while (true) {
 		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
@@ -353,7 +354,7 @@ int deleteResourceChannel(ResourceChannel* ch)
 		mixer::columnChannels.at(columnIndex)->removeResource(index);
 		delete ch;
 		pthread_mutex_unlock(&mixer::mutex_chans);
-		return 1;
+		return;
 	}
 }
 
@@ -421,15 +422,14 @@ void stopSequencer()
 /* -------------------------------------------------------------------------- */
 
 
-bool uniqueSolo(Channel* ch)
+void updateSoloCount()
 {
-	int solos = 0;
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
-		Channel *ch = mixer::channels.at(i);
-		if (ch->solo) solos++;
-		if (solos > 1) return false;
-	}
-	return true;
+	for (Channel* ch : mixer::channels)
+		if (ch->solo) {
+			mixer::hasSolos = true;
+			return;
+		}
+	mixer::hasSolos = false;
 }
 
 

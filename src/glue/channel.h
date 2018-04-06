@@ -93,8 +93,6 @@ a manual interaction on the GUI, otherwise it's a MIDI/Jack/external signal. */
 void toggleInputMonitor(Channel* ch);
 void kill(ResourceChannel* ch);
 void toggleMute(Channel* ch, bool gui=true);
-void setSoloOn(Channel* ch, bool gui=true);
-void setSoloOff(Channel* ch, bool gui=true);
 void toggleSolo(Channel* ch, bool gui=true);
 void setVolume(Channel* ch, float v, bool gui=true, bool editor=false);
 void setName(Channel* ch, const std::string& name);

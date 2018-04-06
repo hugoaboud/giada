@@ -43,63 +43,70 @@ class SampleChannel : public ResourceChannel
 private:
 
 	/* fillChan
-	Fills 'dest' buffer at point 'offset' with wave data taken from 'start'. If 
-	rewind=false don't rewind internal tracker. Returns new sample position, 
+	Fills 'dest' buffer at point 'offset' with wave data taken from 'start'. If
+	rewind=false don't rewind internal tracker. Returns new sample position,
 	in frames. It resamples data if pitch != 1.0f. */
 
-	int fillChan(float* dest, int start, int offset, bool rewind=true);
-
-	/* clearChan
-	 * set data to zero from start to bufferSize-1. */
-
-	void clearChan(float* dest, int start);
+	int fillChan(giada::m::AudioBuffer& dest, int start, int offset, bool rewind=true);
 
 	/* calcFadeoutStep
-	 * how many frames are left before the end of the sample? Is there
-	 * enough room for a complete fadeout? Should we shorten it? */
+	How many frames are left before the end of the sample? Is there enough room
+	for a complete fadeout? Should we shorten it? */
 
 	void calcFadeoutStep();
 
 	/* calcVolumeEnv
-	 * compute any changes in volume done via envelope tool */
+	Computes any changes in volume done via envelope tool. */
 
 	void calcVolumeEnv(int frame);
 
+	/* reset
+	Rewinds tracker to the beginning of the sample. */
+
+	void reset(int frame);
+
+	/* fade methods
+	Prepare channel for fade, mixer will take care of the process during master
+	play. */
+
+	void setFadeIn(bool internal);
+	void setFadeOut(int actionPostFadeout);
+	void setXFade(int frame);
+
 	/* rsmp_state, rsmp_data
-	 * structs from libsamplerate */
+	Structs from libsamplerate. */
 
 	SRC_STATE* rsmp_state;
 	SRC_DATA   rsmp_data;
 
-	/* pChan
-	Extra virtual channel for processing resampled data. */
+	/* pChan, vChanPreview
+	Extra virtual channel for processing resampled data and for audio preview. */
 
-	float* pChan;
-
-	/* pChan
-	Extra virtual channel for audio preview. */
-
-	float* vChanPreview;
+	giada::m::AudioBuffer pChan;
+	giada::m::AudioBuffer vChanPreview;
 
 	/* frameRewind
 	Exact frame in which a rewind occurs. */
 
 	int frameRewind;
 
-	int   begin;
-	int   end;
-	float boost;
+	/* begin, end
+	Begin/end point to read wave data from/to. */
+
+	int begin;
+	int end;
+
 	float pitch;
-	int   trackerPreview;  // chan positip for audio preview
-	int   shift;
+	float boost;
 
-	/* inputTracker
-	 * position of the sample in the input side (recording) */
-	int inputTracker;
-
-	/* waitRec
-	 * delay compensation */
-	int waitRec;
+	bool  fadeinOn;
+	float fadeinVol;
+	bool  fadeoutOn;
+	float fadeoutVol;      // fadeout volume
+	int   fadeoutTracker;  // tracker fadeout, xfade only
+	float fadeoutStep;     // fadeout decrease
+  int   fadeoutType;     // xfade or fadeout
+  int		fadeoutEnd;      // what to do when fadeout ends
 
 public:
 
@@ -108,11 +115,8 @@ public:
 
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
 	void clearBuffers() override;
-
-	void input(float* inBuffer) override;
-	void process(float* outBuffer, float* inBuffer) override;
-	void preview(float* outBuffer) override;
-	
+	void process(giada::m::AudioBuffer& out, const giada::m::AudioBuffer& in) override;
+	void preview(giada::m::AudioBuffer& out) override;
 	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
 	void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
 	void recStart() override;
@@ -124,9 +128,9 @@ public:
 	void rewind() override;
 	void setMute(bool internal) override;
 	void unsetMute(bool internal) override;
-  	int  readPatch(const std::string& basePath, int i, pthread_mutex_t* pluginMutex, int samplerate, int rsmpQuality) override;
-	int  writePatch(int i, bool isProject) override;
-	void quantize(int index, int localFrame) override;
+  void readPatch(const std::string& basePath, int i) override;
+	void writePatch(int i, bool isProject) override;
+	void quantize(int index, int localFrame, int globalFrame) override;
 	void onZero(int frame, bool recsStopOnChanHalt) override;
 	void onBar(int frame) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
@@ -134,22 +138,10 @@ public:
 	bool allocBuffers() override;
 
 	bool isChainAlive() override;
-
-	int getTrackerPreview() const;
-	int getShift() const;
-	float getBoost() const;	
-	
-	void setShift(int s);
-
-	void reset(int frame);
-
-	/* fade methods
-	 * prepare channel for fade, mixer will take care of the process
-	 * during master play. */
-
-	void setFadeIn(bool internal);
-	void setFadeOut(int actionPostFadeout);
-	void setXFade(int frame);
+	float getBoost() const;
+	int   getBegin() const;
+	int   getEnd() const;
+	float getPitch() const;
 
 	/* pushWave
 	Adds a new wave to an existing channel. */
@@ -160,46 +152,49 @@ public:
 	void newWave();
 
 	/* getPosition
-	 * returns the position of an active sample. If EMPTY o MISSING
-	 * returns -1. */
+	Returns the position of an active sample. If EMPTY o MISSING returns -1. */
 
 	int getPosition();
 
 	/* sum
-	 * add sample frames to virtual channel. Frame = processed frame in
-	 * Mixer. Running = is Mixer in play? */
+	Adds sample frames to virtual channel. Frame = processed frame in Mixer.
+	Running == is Mixer in play? */
 
 	void sum(int frame, bool running);
 
 	void setPitch(float v);
-	float getPitch();
 	void setBegin(int f);
-	int getBegin();
 	void setEnd(int f);
-	int getEnd();
-	void setTrackerPreview(int f);
+	void setBoost(float v);
 
 	/* hardStop
-	 * stop the channel immediately, no further checks. */
+	Stops the channel immediately, no further checks. */
 
 	void hardStop(int frame);
 
-	void setBoost(float v);
+	/* setReadActions
+	If enabled (v == true), recorder will read actions from this channel. If
+	killOnFalse == true and disabled, will also kill the channel. */
 
-	void setOnEndPreviewCb(std::function<void()> f);
+	void setReadActions(bool v, bool killOnFalse);
 
-	Wave*	wave;
-	int		tracker;         // chan position
-	int		mode;            // mode: see const.h
-	bool	qWait;           // quantizer wait
-	bool	fadeinOn;
-	float	fadeinVol;
-	bool	fadeoutOn;
-	float	fadeoutVol;      // fadeout volume
-	int		fadeoutTracker;  // tracker fadeout, xfade only
-	float	fadeoutStep;     // fadeout decrease
-	int		fadeoutType;     // xfade or fadeout
-	int		fadeoutEnd;      // what to do when fadeout ends
+	/* onPreviewEnd
+	A callback fired when audio preview ends. */
+
+	std::function<void()> onPreviewEnd;
+
+	Wave* wave;
+	int   tracker;         // chan position
+	int   trackerPreview;  // chan position for audio preview
+	int   shift;
+	int   mode;            // mode: see const.h
+	bool  qWait;           // quantizer wait
+
+	/* midi stuff */
+
+  bool     midiInVeloAsVol;
+  uint32_t midiInReadActions;
+  uint32_t midiInPitch;
 
 	/* const - what to do when a fadeout ends */
 

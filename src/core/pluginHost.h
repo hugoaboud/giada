@@ -34,6 +34,7 @@
 #include <functional>
 #include <pthread.h>
 #include "../deps/juce-config.h"
+#include "audioBuffer.h"
 
 
 class Plugin;
@@ -63,12 +64,14 @@ struct PluginInfo
 	bool isInstrument;
 };
 
-void init(int bufSize, int frequency);
+extern pthread_mutex_t mutex_midi;
+
+void init(int bufSize, int samplerate);
 void close();
 
 /* scanDirs
-Parses plugin directories (semicolon-separated) and store list in 
-knownPluginList. The callback is called on each plugin found. Used to update the 
+Parses plugin directories (semicolon-separated) and store list in
+knownPluginList. The callback is called on each plugin found. Used to update the
 main window from the GUI thread. */
 
 int scanDirs(const std::string& paths, const std::function<void(float)>& cb);
@@ -121,9 +124,9 @@ std::string getUnknownPluginInfo(int index);
 void freeStack(pthread_mutex_t* mutex, Channel* ch=nullptr);
 
 /* processStack
- * apply the fx list to the buffer. */
+Applies the fx list to the buffer. */
 
-void processStack(float* buffer, Channel* ch=nullptr);
+void processStack(AudioBuffer& buffer, Channel* ch=nullptr);
 
 /* getPluginByIndex */
 
@@ -157,7 +160,7 @@ void freeAllStacks(std::vector<Channel*>* channels, pthread_mutex_t* mutex);
 /* clonePlugin */
 
 int clonePlugin(Plugin* src, pthread_mutex_t* mutex, Channel* ch);
- 
+
 /* doesPluginExist */
 
 bool doesPluginExist(const std::string& fid);
@@ -166,7 +169,7 @@ bool hasMissingPlugins();
 
 void sortPlugins(int sortMethod);
 
-extern pthread_mutex_t mutex_midi;
+void forEachPlugin(int stackType, const Channel* ch, std::function<void(const Plugin* p)> f);
 
 }}}; // giada::m::pluginHost::
 

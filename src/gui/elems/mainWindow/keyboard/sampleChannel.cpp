@@ -165,17 +165,17 @@ void menuCallback(Fl_Widget* w, void* v)
 			gch->changeSize(G_GUI_CHANNEL_H_1);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
 			break;
-		}		
+		}
 		case Menu::RESIZE_H2: {
 			gch->changeSize(G_GUI_CHANNEL_H_2);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
 			break;
-		}		
+		}
 		case Menu::RESIZE_H3: {
 			gch->changeSize(G_GUI_CHANNEL_H_3);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
 			break;
-		}		
+		}
 		case Menu::RESIZE_H4: {
 			gch->changeSize(G_GUI_CHANNEL_H_4);
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
@@ -207,7 +207,7 @@ void menuCallback(Fl_Widget* w, void* v)
 
 
 geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
-	: geResourceChannel(X, Y, W, H, CHANNEL_SAMPLE, ch)
+	: geResourceChannel(X, Y, W, H, G_CHANNEL_SAMPLE, ch)
 {
 	begin();
 
@@ -235,7 +235,7 @@ geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
 	button->callback(cb_button, (void*)this);
 	button->when(FL_WHEN_CHANGED);   // do callback on keypress && on keyrelease
 
-	
+
 	arm->callback(cb_arm, (void*)this);
 
 #ifdef WITH_VST
@@ -377,7 +377,8 @@ void geSampleChannel::refresh()
 		return;
 
 	setColorsByStatus(((ResourceChannel*)ch)->getStatus(), ((ResourceChannel*)ch)->getRecStatus());
-	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {	
+	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {
+		// TODO: channel record status
 		if (m::mixer::recording)// && ch->isArmed())
 			mainButton->setInputRecordMode();
 		if (m::recorder::active) {
@@ -418,10 +419,10 @@ void geSampleChannel::update()
 			mainButton->label("* file not found! *");
 			break;
 		default:
-			if (sch->getName().empty())
+			if (sch->name.empty())
 				mainButton->label(sch->wave->getBasename(false).c_str());
 			else
-				mainButton->label(sch->getName().c_str());
+				mainButton->label(sch->name.c_str());
 			break;
 	}
 
@@ -431,8 +432,8 @@ void geSampleChannel::update()
 	arm->value(sch->isArmed() || sch->getRecStatus() != REC_STOPPED);
 	arm->redraw();
 
-	/* Update channels. If you load a patch with recorded actions, the 'R' button 
-	must be shown. Moreover if the actions are active, the 'R' button must be 
+	/* Update channels. If you load a patch with recorded actions, the 'R' button
+	must be shown. Moreover if the actions are active, the 'R' button must be
 	activated accordingly. */
 
 	if (sch->hasActions)
@@ -443,11 +444,13 @@ void geSampleChannel::update()
 	modeBox->value(sch->mode);
 	modeBox->redraw();
 
-	vol->value(sch->getVolume());
+	vol->value(sch->volume);
 	mute->value(sch->mute);
 	solo->value(sch->solo);
 
 	mainButton->setKey(sch->key);
+
+	arm->value(sch->armed);
 
 #ifdef WITH_VST
 	fx->status = sch->plugins.size() > 0;

@@ -45,15 +45,14 @@ using namespace giada;
 
 namespace giada {
 namespace c     {
-namespace recorder 
+namespace recorder
 {
 namespace
 {
 void updateChannel(geChannel* gch)
 {
 	gch->ch->hasActions = m::recorder::hasActions(gch->ch->index);
-	SampleChannel* sch = static_cast<SampleChannel*>(gch->ch);
-	if (sch != nullptr && !gch->ch->hasActions)
+	if (gch->ch->type == G_CHANNEL_SAMPLE && !gch->ch->hasActions)
 		static_cast<geSampleChannel*>(gch)->hideActionButton();
 	/* TODO - set mute=false */
 	gu_refreshActionEditor(); // refresh a.editor window, it could be open
@@ -119,7 +118,7 @@ void recordMidiAction(int chan, int note, int frame_a, int frame_b)
 
 	/* Avoid frame overflow. */
 
-	int overflow = frame_b - m::clock::getTotalFrames();
+	int overflow = frame_b - (m::clock::getFramesInLoop());
 	if (overflow > 0) {
 		frame_b -= overflow;
 		frame_a -= overflow;
@@ -130,12 +129,12 @@ void recordMidiAction(int chan, int note, int frame_a, int frame_b)
 	m::MidiEvent event_a = m::MidiEvent(m::MidiEvent::NOTE_ON,  note, 0x3F);
 	m::MidiEvent event_b = m::MidiEvent(m::MidiEvent::NOTE_OFF, note, 0x3F);
 
-	/* Avoid overlapping actions. Find the next action past frame_a and compare 
+	/* Avoid overlapping actions. Find the next action past frame_a and compare
 	its frame: if smaller than frame_b, an overlap occurs. Shrink the new action
 	accordingly. */
 
 	m::recorder::action* next = nullptr;
-	m::recorder::getNextAction(chan, G_ACTION_MIDI, frame_a, &next, event_a.getRaw(), 
+	m::recorder::getNextAction(chan, G_ACTION_MIDI, frame_a, &next, event_a.getRaw(),
 		0x0000FF00);
 
 	if (next != nullptr && next->frame <= frame_b) {
@@ -144,7 +143,7 @@ void recordMidiAction(int chan, int note, int frame_a, int frame_b)
 	}
 
 	m::recorder::rec(chan, G_ACTION_MIDI, frame_a, event_a.getRaw());
-	m::recorder::rec(chan, G_ACTION_MIDI, frame_b, event_b.getRaw());		
+	m::recorder::rec(chan, G_ACTION_MIDI, frame_b, event_b.getRaw());
 }
 
 
@@ -174,14 +173,14 @@ vector<m::recorder::Composite> getMidiActions(int chan, int frameLimit)
 				- is not a MIDI action (we only want MIDI things here)
 				- is not a MIDI Note On type. We don't want any other kind of action here */
 
-			if (a1->chan != chan || a1->type != G_ACTION_MIDI || 
+			if (a1->chan != chan || a1->type != G_ACTION_MIDI ||
 				  a1midi.getStatus() != m::MidiEvent::NOTE_ON)
 				continue;
 
 			/* Prepare the composite action. Action 1 exists for sure, so fill it up
 			right away. */
 
-			m::recorder::Composite cmp; 
+			m::recorder::Composite cmp;
 			cmp.a1 = *a1;
 
 			/* Search for the next action. Must have: same channel, G_ACTION_MIDI,
@@ -191,7 +190,7 @@ vector<m::recorder::Composite> getMidiActions(int chan, int frameLimit)
 
 			m::MidiEvent a2midi(m::MidiEvent::NOTE_OFF, a1midi.getNote(), 0x0);
 
-			m::recorder::getNextAction(chan, G_ACTION_MIDI, a1->frame, &a2, 
+			m::recorder::getNextAction(chan, G_ACTION_MIDI, a1->frame, &a2,
 				a2midi.getRaw(), 0x0000FF00);
 
 			/* If action 2 has been found, add it to the composite duo. Otherwise

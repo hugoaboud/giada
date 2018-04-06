@@ -42,6 +42,7 @@
 #include "inputChannel.h"
 #include "columnChannel.h"
 #include "midiChannel.h"
+#include "audioBuffer.h"
 #include "mixer.h"
 
 
@@ -80,7 +81,7 @@ float tick[TICKSIZE] = {
 /* feed
  on InputChannel::process method. */
 
-void routeAudio(float* outBuf, float* inBuf, unsigned bufferSize)
+void routeAudio(AudioBuffer& outBuf, const AudioBuffer& inBuf, unsigned bufferSize)
 {
 	if (!kernelAudio::isInputEnabled())
 		return;
@@ -96,7 +97,7 @@ void routeAudio(float* outBuf, float* inBuf, unsigned bufferSize)
 	}
 
 	// Process ColumnChannels
-	// 
+	//
 	for (unsigned i=0; i<columnChannels.size(); i++) {
 		columnChannels[i]->process(outBuf, nullptr);
 	}
@@ -108,9 +109,9 @@ void routeAudio(float* outBuf, float* inBuf, unsigned bufferSize)
 /* clearAllBuffers
 Cleans up every buffer, both in Mixer and in channels. */
 
-void clearAllBuffers(float* outBuf, unsigned bufferSize)
+void clearAllBuffers(AudioBuffer& outBuf)
 {
-	memset(outBuf, 0, sizeof(float) * bufferSize * 2);         // out
+	outBuf.clear();
 
 	pthread_mutex_lock(&mutex_chans);
 	for (InputChannel* ichannel : inputChannels)
@@ -132,15 +133,14 @@ void readActions(unsigned frame)
 {
 	pthread_mutex_lock(&mutex_recs);
 	for (unsigned i=0; i<recorder::frames.size(); i++) {
-		if (recorder::frames.at(i) == clock::getCurrentFrame()) {
-			for (unsigned j=0; j<recorder::global.at(i).size(); j++) {
-				int index   = recorder::global.at(i).at(j)->chan;
-				Channel *ch = mh::getResourceChannelByIndex(index);
-				ch->parseAction(recorder::global.at(i).at(j), frame,
-					clock::getCurrentFrame(), clock::isRunning());
-			}
-			break;
+		if (recorder::frames.at(i) != clock::getCurrentFrame())
+			continue;
+		for (recorder::action* action : recorder::global.at(i)) {
+			Channel* ch = mh::getChannelByIndex(action->chan);
+			ch->parseAction(action, frame, clock::getCurrentFrame(),
+				clock::getQuantize(), clock::isRunning());
 		}
+		break;
 	}
 	pthread_mutex_unlock(&mutex_recs);
 }
@@ -157,10 +157,12 @@ void doQuantize(unsigned frame)
 
 	if (clock::getQuantize() == 0 || !clock::quantoHasPassed())
 		return;
+
 	if (rewindWait) {
 		rewindWait = false;
 		rewind();
 	}
+
 	pthread_mutex_lock(&mutex_chans);
 	for (unsigned i=0; i<columnChannels.size(); i++) {
 		ColumnChannel* cch = columnChannels.at(i);
@@ -176,11 +178,11 @@ void doQuantize(unsigned frame)
 /* renderMetronome
 Generates metronome when needed and pastes it to the output buffer. */
 
-void renderMetronome(float* outBuf, unsigned frame)
+void renderMetronome(AudioBuffer& outBuf, unsigned frame)
 {
 	if (tockPlay) {
-		outBuf[frame]   += tock[tockTracker];
-		outBuf[frame+1] += tock[tockTracker];
+		for (int i=0; i<outBuf.countChannels(); i++)
+			outBuf[frame][i] += tock[tockTracker];
 		tockTracker++;
 		if (tockTracker >= TICKSIZE-1) {
 			tockPlay    = false;
@@ -188,8 +190,8 @@ void renderMetronome(float* outBuf, unsigned frame)
 		}
 	}
 	if (tickPlay) {
-		outBuf[frame]   += tick[tickTracker];
-		outBuf[frame+1] += tick[tickTracker];
+		for (int i=0; i<outBuf.countChannels(); i++)
+			outBuf[frame][i] += tick[tickTracker];
 		tickTracker++;
 		if (tickTracker >= TICKSIZE-1) {
 			tickPlay    = false;
@@ -203,33 +205,13 @@ void renderMetronome(float* outBuf, unsigned frame)
 /* limitOutput
 Applies a very dumb hard limiter. */
 
-void limitOutput(float* outBuf, unsigned frame)
+void limitOutput(AudioBuffer& outBuf, unsigned frame)
 {
-	if (outBuf[frame] > 1.0f)
-		outBuf[frame] = 1.0f;
-	else
-	if (outBuf[frame] < -1.0f)
-		outBuf[frame] = -1.0f;
-
-	if (outBuf[frame+1] > 1.0f)
-		outBuf[frame+1] = 1.0f;
-	else
-	if (outBuf[frame+1] < -1.0f)
-		outBuf[frame+1] = -1.0f;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* computePeak */
-
-void computePeak(float* outBuf, unsigned frame)
-{
-	/* TODO it takes into account only left channel so far! */
-	if (outBuf[frame] > peakOut)
-		peakOut = outBuf[frame];
-
-	// TODO: calculate input peak (highets InputChannels peak)
+	for (int i=0; i<outBuf.countChannels(); i++)
+		if      (outBuf[frame][i] > 1.0f)
+			outBuf[frame][i] = 1.0f;
+		else if (outBuf[frame][i] < -1.0f)
+			outBuf[frame][i] = -1.0f;
 }
 
 
@@ -238,10 +220,10 @@ void computePeak(float* outBuf, unsigned frame)
 /* finalizeOutput
 Last touches after the output has been rendered: apply output volume. */
 
-void finalizeOutput(float* outBuf, unsigned frame)
+void finalizeOutput(AudioBuffer& outBuf, unsigned frame)
 {
-	outBuf[frame]   *= outVol;
-	outBuf[frame+1] *= outVol;
+	for (int i=0; i<outBuf.countChannels(); i++)
+		outBuf[frame][i] *= outVol;
 }
 
 
@@ -308,24 +290,16 @@ std::vector<InputChannel*> inputChannels;
 std::vector<ColumnChannel*> columnChannels;
 std::vector<Channel*> channels;
 
-bool   recording    = false;   // is recording something?
+bool   recording    = false;
 bool   ready        = true;
 float  outVol       = G_DEFAULT_OUT_VOL;
 float  inVol        = G_DEFAULT_IN_VOL;
 float  peakIn      = 0.0f;
 float  peakOut      = 0.0f;
 bool	 metronome    = false;
-int    waitRec      = 0;       // delayComp guard
-bool   docross      = false;	 // crossfade guard
-bool   rewindWait   = false;	 // rewind guard, if quantized
-
-int  tickTracker, tockTracker = 0;
-bool tickPlay, tockPlay = false; // 1 = play, 0 = stop
-
-/* inputTracker
- * position of the sample in the input side (recording) */
-
-int inputTracker = 0;
+int    waitRec      = 0;
+bool   rewindWait   = false;
+bool   hasSolos     = false;
 
 pthread_mutex_t mutex_recs;
 pthread_mutex_t mutex_chans;
@@ -335,7 +309,7 @@ pthread_mutex_t mutex_plugins;
 /* -------------------------------------------------------------------------- */
 
 
-void init(int framesInSeq, int audioBufferSize)
+void init(int framesInSeq, int framesInBuffer)
 {
 	pthread_mutex_init(&mutex_recs, nullptr);
 	pthread_mutex_init(&mutex_chans, nullptr);
@@ -346,7 +320,7 @@ void init(int framesInSeq, int audioBufferSize)
 /* -------------------------------------------------------------------------- */
 
 
-int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
+int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize,
 	double streamTime, RtAudioStreamStatus status, void* userData)
 {
 	if (!ready)
@@ -356,14 +330,17 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 	clock::recvJackSync();
 #endif
 
-	float* outBuf = (float*) _outBuf;
-	float* inBuf  = kernelAudio::isInputEnabled() ? (float*) _inBuf : nullptr;
-	peakOut       = 0.0f;
+	AudioBuffer out, in;
+	out.setData((float*) outBuf, bufferSize, G_MAX_IO_CHANS);
+	if (kernelAudio::isInputEnabled())
+		in.setData((float*) inBuf, bufferSize, G_MAX_IO_CHANS);
 
-	clearAllBuffers(outBuf, bufferSize);
+	peakOut = 0.0f;  // reset peak calculator
+	peakIn  = 0.0f;  // reset peak calculator
 
-	// Read actions and test for quantize, bars and beats
-	for (unsigned j=0; j<bufferSize*conf::channelsIn; j+=conf::channelsIn) {
+	clearAllBuffers(out);
+
+	for (unsigned j=0; j<bufferSize; j++) {
 		if (clock::isRunning()) {
 			doQuantize(j);
 			testBar(j);
@@ -381,13 +358,19 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 
 	/* post processing */
 
-	for (unsigned j=0; j<bufferSize; j+=2) {
-		finalizeOutput(outBuf, j);
+	/* Post processing. */
+	for (unsigned j=0; j<bufferSize; j++) {
+		finalizeOutput(out, j);
 		if (conf::limitOutput)
-			limitOutput(outBuf, j);
-		computePeak(outBuf, j);
-		renderMetronome(outBuf, j);
+			limitOutput(out, j);
+		computePeak(out, peakOut, j);
+		renderMetronome(out, j);
 	}
+
+	/* Unset data in buffers. If you don't do this, buffers go out of scope and
+	destroy memory allocated by RtAudio ---> havoc. */
+	out.setData(nullptr, 0, 0);
+	in.setData(nullptr, 0, 0);
 
 	return 0;
 }
@@ -396,7 +379,7 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 /* -------------------------------------------------------------------------- */
 
 
-int close()
+void close()
 {
 	clock::stop();
 
@@ -405,18 +388,6 @@ int close()
 
 	while (columnChannels.size() > 0)
 		mh::deleteColumnChannel(columnChannels.at(0));
-
-	/*
-	if (vChanInput.size() > 0) {
-		for (int c = 0; c < vChanInput.size(); c++) 
-			{
-				delete[] vChanInput[c];
-				vChanInput = nullptr;
-			}
-	}
-	*/
-
-	return 1;
 }
 
 

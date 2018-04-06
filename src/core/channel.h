@@ -35,6 +35,7 @@
 #include "midiMapConf.h"
 #include "midiEvent.h"
 #include "recorder.h"
+#include "audioBuffer.h"
 
 #ifdef WITH_VST
 	#include "../deps/juce-config.h"
@@ -50,8 +51,10 @@ class Channel
 {
 protected:
 
+	Channel(int type, int status, int bufferSize);
+
 	/* sendMidiLMessage
-	Composes a MIDI message by merging bytes from MidiMap conf class, and sends it 
+	Composes a MIDI message by merging bytes from MidiMap conf class, and sends it
 	to KernelMidi. */
 
 	void sendMidiLmessage(uint32_t learn, const giada::m::midimap::message_t& msg);
@@ -61,10 +64,15 @@ protected:
 
 	float calcPanning(int ch);
 
+	/* vChan
+	Virtual channel for internal processing. */
+
+	giada::m::AudioBuffer vChan;
+
 #ifdef WITH_VST
 
-	/* MidiBuffer contains MIDI events. When ready, events are sent to each plugin 
-	in the channel. This is available for any kind of channel, but it makes sense 
+	/* MidiBuffer contains MIDI events. When ready, events are sent to each plugin
+	in the channel. This is available for any kind of channel, but it makes sense
 	only for MIDI channels. */
 
 	juce::MidiBuffer midiBuffer;
@@ -85,12 +93,18 @@ protected:
 	float pan;
 	float volume;   // global volume
 	float peak;
-	
+
 	std::string name;
 
-public:
+	/* volume_*
+	Internal volume variables: volume_d keeps track of
+	the delta during volume changes. */
 
-	Channel(int bufferSize);
+	float volume_d;
+
+	bool mute_i;                // internal mute
+
+public:
 
 	virtual ~Channel();
 
@@ -120,11 +134,11 @@ public:
 	Merges vChannels into buffer, plus plugin processing (if any). Warning:
 	inBuffer might be nullptr if no input devices are available for recording. */
 
-	virtual void process(float* outBuffer, float* inBuffer) = 0;
+	virtual void process(giada::m::AudioBuffer& out, const giada::m::AudioBuffer& in) = 0;
 
 	/* mute / premute
-	What to do when channel is muted. If internal == true, set internal mute 
-	without altering main mute. 
+	What to do when channel is muted. If internal == true, set internal mute
+	without altering main mute.
 	Pre: before FX*/
 
 	virtual void setMute  (bool internal);
@@ -141,11 +155,16 @@ public:
 	virtual void parseAction(giada::m::recorder::action* a, int localFrame,
     int globalFrame, bool mixerIsRunning) = 0;
 
+	/* readPatch
+	Fills channel with data from patch. */
+
+	virtual void readPatch(const std::string& basePath, int i);
+
 	/* writePatch
-	Fills a patch with channel values. Returns the index of the last 
+	Fills a patch with channel values. Returns the index of the last
 	Patch::channel_t added. */
 
-	virtual int writePatch(int i, bool isProject);
+	virtual void writePatch(int i, bool isProject);
 
 	/* receiveMidi
 	Receives and processes midi messages from external devices. */
@@ -170,7 +189,7 @@ public:
 	bool isMidiInAllowed(int c) const;
 
 	/* setReadActions
-	If enabled (v == true), recorder will read actions from this channel. If 
+	If enabled (v == true), recorder will read actions from this channel. If
 	killOnFalse == true and disabled, will also kill the channel. */
 
 	virtual void setReadActions(bool v);
@@ -216,15 +235,45 @@ public:
 	bool	hasActions;		// has something recorded
 	bool	readActions;	// read what's recorded
 	float*	vChan;			// virtual channel
-  	
+
   	geChannel* guiChannel;	// pointer to a gChannel object, part of the GUI
 
-	// TODO - midi structs, please
+	int previewMode;
+
+	float       pan;
+	float       volume;   // global volume
+	bool        armed;
+	std::string name;
+	int         index;    // unique id
+	int         type;     // midi or sample
+	int         status;   // status: see const.h
+	int         key;      // keyboard button
+	bool        mute;     // global mute
+	bool        mute_s;   // previous mute status after being solo'd TODO - remove it with mute refactoring
+	bool        solo;
+
+  bool hasActions;      // has something recorded
+  bool readActions;     // read what's recorded
+	int  recStatus;       // status of recordings (waiting, ending, ...)
+
+  bool      midiIn;               // enable midi input
+  uint32_t  midiInKeyPress;
+  uint32_t  midiInKeyRel;
+  uint32_t  midiInKill;
+  uint32_t  midiInArm;
+  uint32_t  midiInVolume;
+  uint32_t  midiInMute;
+  uint32_t  midiInSolo;
+
+  /* midiInFilter
+  Which MIDI channel should be filtered out when receiving MIDI messages. -1
+  means 'all'. */
 
 	bool		midiIn;              // enable midi input
 	uint32_t	midiInVolume;
 	uint32_t	midiInMute;
 	uint32_t	midiInSolo;
+	int midiInFilter;
 
 	/*  midiOutL*
 	 * Enable MIDI lightning output, plus a set of midi lighting event to be sent

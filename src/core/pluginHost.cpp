@@ -28,6 +28,7 @@
 #ifdef WITH_VST
 
 
+#include <cassert>
 #include "../utils/log.h"
 #include "../utils/fs.h"
 #include "../utils/string.h"
@@ -85,7 +86,7 @@ void splitPluginDescription(const string& descr, vector<string>& out)
 {
 	// input:  VST-mda-Ambience-18fae2d2-6d646141  string
 	// output: [2-------------] [1-----] [0-----]  vector.size() == 3
-	
+
 	string chunk = "";
 	int count = 2;
 	for (int i=descr.length()-1; i >= 0; i--) {
@@ -147,20 +148,20 @@ void close()
 /* -------------------------------------------------------------------------- */
 
 
-void init(int _buffersize, int _samplerate)
+void init(int buffersize_, int samplerate_)
 {
-	gu_log("[pluginHost::init] initialize with buffersize=%d, samplerate=%d\n",
-		_buffersize, _samplerate);
-
 	messageManager = juce::MessageManager::getInstance();
-	audioBuffer.setSize(2, _buffersize);
-	samplerate = _samplerate;
-	buffersize = _buffersize;
+	audioBuffer.setSize(G_MAX_IO_CHANS, buffersize_);
+	samplerate = samplerate_;
+	buffersize = buffersize_;
 	missingPlugins = false;
 	//unknownPluginList.empty();
 	loadList(gu_getHomePath() + G_SLASH + "plugins.xml");
 
 	pthread_mutex_init(&mutex_midi, nullptr);
+
+	gu_log("[pluginHost::init] initialized with buffersize=%d, samplerate=%d\n",
+	buffersize, samplerate);
 }
 
 
@@ -182,7 +183,7 @@ int scanDirs(const string& dirs, const std::function<void(float)>& cb)
 	for (const string& dir : dirVec)
 		searchPath.add(juce::File(dir));
 
-	juce::PluginDirectoryScanner scanner(knownPluginList, format, searchPath, 
+	juce::PluginDirectoryScanner scanner(knownPluginList, format, searchPath,
 		true, juce::File::nonexistent); // true: recursive
 
 	juce::String name;
@@ -226,12 +227,12 @@ int loadList(const string& filepath)
 /* -------------------------------------------------------------------------- */
 
 
-Plugin* addPlugin(const string& fid, pthread_mutex_t* mutex, 
+Plugin* addPlugin(const string& fid, pthread_mutex_t* mutex,
 	Channel* ch)
 {
 	vector<Plugin*>* pStack = &ch->plugins;
 
-	/* Initialize plugin. The default mode uses getTypeForIdentifierString, 
+	/* Initialize plugin. The default mode uses getTypeForIdentifierString,
 	falling back to  getTypeForFile (deprecated) for old patches (< 0.14.4). */
 
 	const juce::PluginDescription* pd = findPluginDescription(fid);
@@ -325,12 +326,12 @@ pluginHost::PluginInfo getAvailablePluginInfo(int i)
 {
 	juce::PluginDescription* pd = knownPluginList.getType(i);
 	PluginInfo pi;
-	pi.uid = pd->fileOrIdentifier.toStdString();
-	pi.name = pd->name.toStdString();
-	pi.category = pd->category.toStdString();
+	pi.uid              = pd->fileOrIdentifier.toStdString();
+	pi.name             = pd->name.toStdString();
+	pi.category         = pd->category.toStdString();
 	pi.manufacturerName = pd->manufacturerName.toStdString();
-	pi.format = pd->pluginFormatName.toStdString();
-	pi.isInstrument = pd->isInstrument;
+	pi.format           = pd->pluginFormatName.toStdString();
+	pi.isInstrument     = pd->isInstrument;
 	return pi;
 }
 
@@ -379,7 +380,7 @@ void freeStack(pthread_mutex_t* mutex, Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void processStack(float* buffer, Channel* ch)
+void processStack(AudioBuffer& buffer, Channel* ch)
 {
 	vector<Plugin*>* pStack = &ch->plugins;
 
@@ -388,17 +389,18 @@ void processStack(float* buffer, Channel* ch)
 	if (pStack == nullptr || pStack->size() == 0)
 		return;
 
-	/* MIDI channels must not process the current buffer: give them an empty one. 
-	Sample channels and Master in/out want audio data instead: let's convert the 
+	assert(outBuf.countFrames() == audioBuffer.getNumSamples());
+
+	/* MIDI channels must not process the current buffer: give them an empty one.
+	Sample channels and Master in/out want audio data instead: let's convert the
 	internal buffer from Giada to Juce. */
 
-	if (ch != nullptr && static_cast<ResourceChannel*>(ch)->getType() == CHANNEL_MIDI) 
+	if (ch != nullptr && ch->type == G_CHANNEL_MIDI)
 		audioBuffer.clear();
 	else
-		for (int i=0; i<buffersize; i++) {
-			audioBuffer.setSample(0, i, buffer[i*2]);
-			audioBuffer.setSample(1, i, buffer[(i*2)+1]);
-		}
+		for (int i=0; i<outBuf.countFrames(); i++)
+			for (int j=0; j<outBuf.countChannels(); j++)
+				audioBuffer.setSample(j, i, outBuf[i][j]);
 
 	/* Hardcore processing. At the end we swap input and output, so that he N-th
 	plugin will process the result of the plugin N-1. Part of this loop must be
@@ -417,20 +419,19 @@ void processStack(float* buffer, Channel* ch)
 		if (plugin->isSuspended() || plugin->isBypassed())
 			continue;
 
-		/* If this is a Channel (ch != nullptr) and the current plugin is an 
-		instrument (i.e. accepts MIDI), don't let it fill the current audio buffer: 
+		/* If this is a Channel (ch != nullptr) and the current plugin is an
+		instrument (i.e. accepts MIDI), don't let it fill the current audio buffer:
 		create a new temporary one instead and then merge the result into the main
 		one when done. This way each plug-in generates its own audio data and we can
 		play more than one plug-in instrument in the same stack, driven by the same
 		set of MIDI events. */
 
 		if (ch != nullptr && plugin->acceptsMidi()) {
-			juce::AudioBuffer<float> tmp(2, buffersize);
+			juce::AudioBuffer<float> tmp(audioBuffer.getNumChannels(), buffersize);
 			plugin->process(tmp, ch->getPluginMidiEvents());
-			for (int i=0; i<buffersize; i++) {
-				audioBuffer.addSample(0, i, tmp.getSample(0, i));
-				audioBuffer.addSample(1, i, tmp.getSample(1, i));
-			}
+			for (int i=0; i<audioBuffer.getNumSamples(); i++)
+				for (int j=0; j<audioBuffer.getNumChannels(); j++)
+					audioBuffer.addSample(j, i, tmp.getSample(j, i));
 		}
 		else
 			plugin->process(audioBuffer, juce::MidiBuffer()); // Empty MIDI buffer
@@ -441,13 +442,12 @@ void processStack(float* buffer, Channel* ch)
 		pthread_mutex_unlock(&mutex_midi);
 	}
 
-	/* Converting buffer from Juce to Giada. A note for the future: if we 
+	/* Converting buffer from Juce to Giada. A note for the future: if we
 	overwrite (=) (as we do now) it's SEND, if we add (+) it's INSERT. */
 
-	for (int i=0; i<buffersize; i++) {
-		buffer[i*2]     = audioBuffer.getSample(0, i);
-		buffer[(i*2)+1] = audioBuffer.getSample(1, i);
-	}
+	for (int i=0; i<outBuf.countFrames(); i++)
+		for (int j=0; j<outBuf.countChannels(); j++)
+			outBuf[i][j] = audioBuffer.getSample(j, i);
 }
 
 
@@ -591,6 +591,20 @@ void sortPlugins(int method)
 			break;
 	}
 }
+
+
+/* -------------------------------------------------------------------------- */
+
+
+void forEachPlugin(int stackType, const Channel* ch, std::function<void(const Plugin* p)> f)
+{
+	/* TODO - Remove const is ugly. This is a temporary workaround until all
+	PluginHost functions params will be const-correct. */
+	vector<Plugin*>* stack = getStack(stackType, const_cast<Channel*>(ch));
+	for (const Plugin* p : *stack)
+		f(p);
+}
+
 
 }}}; // giada::m::pluginHost::
 

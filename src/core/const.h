@@ -46,10 +46,10 @@
 
 /* -- version --------------------------------------------------------------- */
 #define G_APP_NAME      "Giada"
-#define G_VERSION_STR   "0.14.6"
+#define G_VERSION_STR   "0.15.0"
 #define G_VERSION_MAJOR 0
-#define G_VERSION_MINOR 14
-#define G_VERSION_PATCH 6
+#define G_VERSION_MINOR 15
+#define G_VERSION_PATCH 0
 
 #define CONF_FILENAME "giada.conf"
 
@@ -68,11 +68,12 @@
 #define G_GUI_FONT_SIZE_BASE 12
 #define G_GUI_INNER_MARGIN   4
 #define G_GUI_OUTER_MARGIN   8
-#define G_GUI_UNIT           20    // base unit for elements 
+#define G_GUI_UNIT           20    // base unit for elements
 #define G_GUI_CHANNEL_H_1    G_GUI_UNIT
 #define G_GUI_CHANNEL_H_2    G_GUI_UNIT * 2
 #define G_GUI_CHANNEL_H_3    G_GUI_UNIT * 4
 #define G_GUI_CHANNEL_H_4    G_GUI_UNIT * 6
+#define G_GUI_ZOOM_FACTOR    2
 
 
 #define G_COLOR_RED       fl_rgb_color(28,  32,  80)
@@ -105,6 +106,7 @@
 #define G_MAX_BUF_SIZE      4096
 #define G_MIN_GUI_WIDTH     816
 #define G_MIN_GUI_HEIGHT    510
+#define G_MAX_IO_CHANS      2
 
 
 
@@ -145,7 +147,6 @@
 #define G_DEFAULT_BUFSIZE          1024
 #define G_DEFAULT_DELAYCOMP        0
 #define G_DEFAULT_BIT_DEPTH        32     // float
-#define G_DEFAULT_AUDIO_CHANS      2      // stereo for internal processing
 #define G_DEFAULT_VOL              1.0f
 #define G_DEFAULT_PITCH            1.0f
 #define G_DEFAULT_BOOST            1.0f
@@ -237,11 +238,11 @@
 
 
 /* -- channel types --------------------------------------------------------- */
-#define CHANNEL_SAMPLE 0x01
-#define CHANNEL_MIDI   0x02
-#define CHANNEL_INPUT  0x04
-#define CHANNEL_COLUMN 0x08
-#define CHANNEL_MASTER 0x10
+#define G_CHANNEL_SAMPLE 0x01
+#define G_CHANNEL_MIDI   0x02
+#define G_CHANNEL_INPUT  0x04
+#define G_CHANNEL_COLUMN 0x08
+#define G_CHANNEL_MASTER 0x10
 
 /* -- menus ----------------------------------------------------------------- */
 #define INPUTCHANNEL_RENAME 0x01
