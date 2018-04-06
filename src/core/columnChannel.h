@@ -31,6 +31,7 @@
 #include "channel.h"
 
 class ResourceChannel;
+class geColumn;
 
 class ColumnChannel : public Channel
 {
@@ -57,6 +58,7 @@ public:
 
 	ResourceChannel* getResource(int index);
 	void 			 addResource(ResourceChannel* resource);
+	void 			 removeResource(int index);
 	unsigned 		 getResourceCount();
 
 	/* ResourceChannel stack methods */

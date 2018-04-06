@@ -116,6 +116,8 @@ public:
 
 	gdColumn(gdColumnList *gdi, ColumnChannel *i, int x, int y, int w);
 	void refresh();
+
+	ColumnChannel* getChannel() { return pColumn; }
 };
 
 #endif

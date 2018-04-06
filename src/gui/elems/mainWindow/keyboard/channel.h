@@ -28,128 +28,29 @@
 #ifndef GE_CHANNEL_H
 #define GE_CHANNEL_H
 
-
 #include <FL/Fl_Group.H>
 
-
-class ResourceChannel;
-class geIdButton;
-class geChannelStatus;
+class Channel;
 class geButton;
-class geChannelButton;
 class geDial;
-#ifdef WITH_VST
-class geStatusButton;
-#endif
-
 
 class geChannel : public Fl_Group
 {
-protected:
+	public:
+		geChannel(int x, int y, int w, int h, Channel* ch);
 
-	/* Define some breakpoints for dynamic resize. BREAK_DELTA: base amount of
-	pixels to shrink sampleButton. */
+		/* refresh
+		 * update graphics. */
+		virtual void refresh() = 0;
+	
+		virtual void reset() = 0;
+		virtual void update() = 0;
 
-#ifdef WITH_VST
-	static const int BREAK_READ_ACTIONS = 240;
-	static const int BREAK_MODE_BOX     = 216;
-	static const int BREAK_FX           = 192;
-	static const int BREAK_ARM          = 168;
-#else
-	static const int BREAK_READ_ACTIONS = 216;
-	static const int BREAK_MODE_BOX     = 192;
-	static const int BREAK_ARM          = 168;
-#endif
+		Channel* ch;
 
-	static const int MIN_ELEM_W = 20;
-
-	static void cb_arm(Fl_Widget* v, void* p);
-	static void cb_mute(Fl_Widget* v, void* p);
-	static void cb_solo(Fl_Widget* v, void* p);
-	static void cb_changeVol(Fl_Widget* v, void* p);
-#ifdef WITH_VST
-		static void cb_openFxWindow(Fl_Widget* v, void* p);
-#endif
-	void cb_mute();
-	virtual void cb_arm();
-	void cb_solo();
-	void cb_changeVol();
-#ifdef WITH_VST
-		void cb_openFxWindow();
-#endif
-
-	/* blink
-	 * blink button when channel is in wait/ending status. */
-
-	void blink();
-
-	/* setColorByStatus
-	 * update colors depending on channel status. */
-
-	void setColorsByStatus(int playStatus, int recStatus);
-
-	/* handleKey
-	 * method wrapped by virtual handle(int e). */
-
-	int handleKey(int e, int key);
-
-	/* packWidgets
-	Spread widgets across available space. */
-
-	void packWidgets();
-
-public:
-
-	geChannel(int x, int y, int w, int h, int type, ResourceChannel* ch);
-
-	/* reset
-	 * reset channel to initial status. */
-
-	virtual void reset() = 0;
-
-	/* update
-	 * update the label of sample button and everything else such as 'R'
-	 * button, key box and so on, according to global values. */
-
-	virtual void update() = 0;
-
-	/* refresh
-	 * update graphics. */
-
-	virtual void refresh() = 0;
-
-	/* changeSize
-	Changes channel's size according to a template (x1, x2, ...). */
-
-	virtual void changeSize(int h);
-
-	/* keypress
-	 * what to do when the corresponding key is pressed. */
-
-	int keyPress(int event);
-
-	/* getColumnIndex
-	 * return the numeric index of the column in which this channel is
-	 * located. */
-
-	int getColumnIndex();
-
-	int getSize();
-
-	ResourceChannel* ch;
- 
-	geIdButton*      button;
-	geChannelStatus* status;
-	geButton*        arm;
-	geChannelButton* mainButton;
-	geButton*        mute;
-	geButton*        solo;
-	geDial*          vol;
-#ifdef WITH_VST
-	geStatusButton*  fx;
-#endif
-
-	int type;
+		geButton*        mute;
+		geButton*        solo;
+		geDial*          vol;
 };
 
 

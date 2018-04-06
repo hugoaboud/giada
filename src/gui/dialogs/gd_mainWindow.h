@@ -54,7 +54,7 @@ public:
 	geBeatMeter* beatMeter;
 	geMainMenu* mainMenu;
 	geMainIO* mainIO;
-  geMainTimer* mainTimer;
+  	geMainTimer* mainTimer;
 	geMainTransport* mainTransport;
 
 	gdMainWindow(int w, int h, const char* title, int argc, char** argv);

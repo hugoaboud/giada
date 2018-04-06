@@ -61,6 +61,7 @@ ResourceChannel::ResourceChannel(int type, int status, int bufferSize)
 	recStatus      		(REC_STOPPED),
 	readActions			(false),
 	armed            	(false),
+	column		 		(nullptr),
 	midiInKeyPress 		(0x0),
 	midiInKeyRel   		(0x0),
 	midiInKill     		(0x0),
@@ -102,7 +103,7 @@ bool ResourceChannel::allocBuffers()
 /* -------------------------------------------------------------------------- */
 
 
-int previewMode;
+/*int previewMode;
 float volume_i; // internal volume
 float volume_d; // delta volume (for envelope)
 int type;                  // midi or sample
@@ -112,7 +113,7 @@ uint32_t midiInKeyPress;
 uint32_t midiInKeyRel;
 uint32_t midiInKill;
 uint32_t midiInArm;
-uint32_t midiOutLplaying;
+uint32_t midiOutLplaying;*/
 
 
 void ResourceChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex)

@@ -58,11 +58,11 @@ Channel::Channel(int bufferSize)
 	mute_i         (false),
 	mute_s         (false),
 	mute           (false),
+	pre_mute           (false),
 	solo           (false),
 	inputMonitor   (false),
 	hasActions     (false),
 	vChan          (nullptr),
-	guiChannel     (nullptr),
 	midiIn         (true),
 	midiInVolume   (0x0),
 	midiInMute     (0x0),
@@ -173,10 +173,8 @@ int Channel::writePatch(int i, bool isProject)
 {
 	patch::channel_t pch;
 	pch.index           = index;
-	pch.size            = guiChannel->getSize();
 	pch.name            = name;
 	pch.key             = key;
-	pch.column          = guiChannel->getColumnIndex();
 	pch.mute            = mute;
 	pch.mute_s          = mute_s;
 	pch.solo            = solo;

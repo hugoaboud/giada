@@ -130,6 +130,10 @@ void ColumnChannel::addResource(ResourceChannel* sample) {
 	resources.push_back(sample);
 }
 
+void ColumnChannel::removeResource(int index) {
+	resources.erase(resources.begin() + index);
+}
+
 unsigned ColumnChannel::getResourceCount() {
 	return resources.size();
 }

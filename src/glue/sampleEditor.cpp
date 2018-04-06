@@ -269,8 +269,8 @@ void rewindPreview(SampleChannel* ch)
 
 void toNewChannel(SampleChannel* ch, int a, int b)
 {
-	SampleChannel* newCh = static_cast<SampleChannel*>(c::channel::addChannel(
-		ch->guiChannel->getColumnIndex(), CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
+	SampleChannel* newCh = static_cast<SampleChannel*>(c::channel::addResourceChannel(
+		ch->column, CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
 
 	Wave* wave = nullptr;
 	int result = m::waveManager::createFromWave(ch->wave, a, b, &wave);

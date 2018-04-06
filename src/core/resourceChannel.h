@@ -30,6 +30,8 @@
 
 #include "channel.h"
 
+class ColumnChannel;
+
 class ResourceChannel : public Channel
 {
 protected:
@@ -168,6 +170,8 @@ public:
 	void setPreviewMode(int m);
 
 	// midi stuff
+
+	ColumnChannel* column;
 
 	uint32_t midiInKeyPress;
 	uint32_t midiInKeyRel;

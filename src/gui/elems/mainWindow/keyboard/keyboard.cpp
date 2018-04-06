@@ -25,11 +25,12 @@
  * -------------------------------------------------------------------------- */
 
 
+#include "../../../../core/columnChannel.h"
 #include "../../../../core/sampleChannel.h"
 #include "../../../../core/resourceChannel.h"
-#include "../../../../core/mixerHandler.h"
 #include "../../../../glue/transport.h"
 #include "../../../../glue/io.h"
+#include "../../../../glue/channel.h"
 #include "../../../../utils/log.h"
 #include "../../../dialogs/gd_warnings.h"
 #include "../../basics/boxtypes.h"
@@ -38,7 +39,7 @@
 #include "channelButton.h"
 #include "keyboard.h"
 
-using namespace giada::m;
+using namespace giada;
 
 int geKeyboard::indexColumn = 0;
 
@@ -77,10 +78,6 @@ geKeyboard::geKeyboard(int X, int Y, int W, int H)
 
 void geKeyboard::init()
 {
-	/* add 2 empty columns as init layout */
-
-	__cb_addColumn();
-	__cb_addColumn();
 }
 
 
@@ -122,6 +119,7 @@ void geKeyboard::updateChannel(geChannel* gch)
 
 void geKeyboard::organizeColumns()
 {
+	// TODO: fix this
 	if (columns.size() == 0)
 		return;
 
@@ -134,21 +132,7 @@ void geKeyboard::organizeColumns()
 		}
 	}
 
-	/* Zero columns? Just add the "add column" button. Compact column and avoid 
-	empty spaces otherwise. */
-
-	if (columns.size() == 0)
-		addColumnBtn->position(x() - xposition(), y());
-	else {
-		for (size_t i=0; i<columns.size(); i++) {
-			int pos = i == 0 ? x() - xposition() : columns.at(i-1)->x() + columns.at(i-1)->w() + COLUMN_GAP;
-			columns.at(i)->position(pos, y());
-		}
-		addColumnBtn->position(columns.back()->x() + columns.back()->w() + COLUMN_GAP, y());
-	}
-
-	refreshColIndexes();
-	redraw();
+	update();
 }
 
 
@@ -157,27 +141,23 @@ void geKeyboard::organizeColumns()
 
 void geKeyboard::cb_addColumn(Fl_Widget* v, void* p)
 {
-	((geKeyboard*)p)->__cb_addColumn(G_DEFAULT_COLUMN_WIDTH);
+	((geKeyboard*)p)->cb_addColumn(G_DEFAULT_COLUMN_WIDTH);
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 
-geChannel* geKeyboard::addChannel(int colIndex, ResourceChannel* ch, int size, bool build)
+geChannel* geKeyboard::addChannel(ColumnChannel* cch, ResourceChannel* ch, int size, bool build)
 {
-	geColumn* col = getColumnByIndex(colIndex);
-
-	/* no column with index 'colIndex' found? Just create it and set its index
-	to 'colIndex'. */
-
-	if (!col) {
-		__cb_addColumn();
-		col = columns.back();
-		col->setIndex(colIndex);
-		gu_log("[geKeyboard::addChannel] created new column with index=%d\n", colIndex);
+	if (!cch) {
+		if (!build) {
+			return nullptr;
+		}
+		cch = c::channel::addColumnChannel(380);
+		gu_log("[geKeyboard::addChannel] created new column ");
 	}
-
+	geColumn* col = (geColumn*) cch->guiChannel;
 	gu_log("[geKeyboard::addChannel] add to column with index=%d, size=%d\n", 
 		col->getIndex(), size);
 	return col->addChannel(ch, size);
@@ -190,7 +170,7 @@ geChannel* geKeyboard::addChannel(int colIndex, ResourceChannel* ch, int size, b
 void geKeyboard::refreshColumns()
 {
 	for (unsigned i=0; i<columns.size(); i++)
-		columns.at(i)->refreshChannels();
+		columns.at(i)->refresh();
 }
 
 
@@ -269,9 +249,10 @@ int geKeyboard::handle(int e)
 			 * If found, set that button's value() based on up/down event,
 			 * and invoke that button's callback() */
 
-			for (unsigned i=0; i<columns.size(); i++)
+			// TODO: fix this
+			/*for (unsigned i=0; i<columns.size(); i++)
 				for (int k=1; k<columns.at(i)->children(); k++)
-					ret &= static_cast<geChannel*>(columns.at(i)->child(k))->keyPress(e);
+					ret &= static_cast<geChannel*>(columns.at(i)->child(k))->keyPress(e);*/
 			break;
 		}
 	}
@@ -325,7 +306,16 @@ void geKeyboard::printChannelMessage(int res)
 /* -------------------------------------------------------------------------- */
 
 
-void geKeyboard::__cb_addColumn(int width)
+void geKeyboard::cb_addColumn(int width)
+{
+	c::channel::addColumnChannel(width);
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
+geColumn* geKeyboard::addColumn(ColumnChannel* col, int width)
 {
 	int colx;
 	int colxw;
@@ -338,13 +328,8 @@ void geKeyboard::__cb_addColumn(int width)
 		colx  = prev->x()+prev->w() + COLUMN_GAP;
 		colxw = colx + width;
 	}
-
-	/* add geColumn to geKeyboard and to columns vector */
-	ColumnChannel* columnChannel = mh::addColumnChannel();
-	if (columnChannel == nullptr) return;
-
-	geColumn* gc = new geColumn(colx, y(), width, 2000, indexColumn, this, columnChannel);
-  add(gc);
+	geColumn* gc = new geColumn(colx, y(), width, 2000, indexColumn, this, col);
+  	add(gc);
 	columns.push_back(gc);
 	indexColumn++;
 
@@ -353,21 +338,29 @@ void geKeyboard::__cb_addColumn(int width)
 	addColumnBtn->position(colxw + COLUMN_GAP, y());
 	redraw();
 
-	gu_log("[geKeyboard::__cb_addColumn] new column added (index=%d, w=%d), total count=%d, addColumn(x)=%d\n",
+	gu_log("[geKeyboard::cb_addColumn] new column added (index=%d, w=%d), total count=%d, addColumn(x)=%d\n",
 		gc->getIndex(), width, columns.size(), addColumnBtn->x());
 
 	/* recompute col indexes */
-
 	refreshColIndexes();
-}
 
+	gc->channel = col;
+	return gc;
+}
 
 /* -------------------------------------------------------------------------- */
 
-
-void geKeyboard::addColumn(int width)
+void geKeyboard::deleteColumn(geColumn* gcol)
 {
-	__cb_addColumn(width);
+	for (unsigned i=0; i<columns.size(); i++) {
+		geColumn* k = columns.at(i);
+		if (k == gcol) {
+			Fl::delete_widget(columns.at(i));
+			columns.erase(columns.begin() + i);
+			update();
+			return;
+		}
+	}
 }
 
 
@@ -396,4 +389,22 @@ int geKeyboard::getColumnWidth(int i)
 geColumn* geKeyboard::getColumn(int i)
 {
   return columns.at(i);
+}
+
+void geKeyboard::update() {
+	/* Zero columns? Just add the "add column" button. Compact column and avoid 
+	empty spaces otherwise. */
+
+	if (columns.size() == 0)
+		addColumnBtn->position(x() - xposition(), y());
+	else {
+		for (size_t i=0; i<columns.size(); i++) {
+			int pos = i == 0 ? x() - xposition() : columns.at(i-1)->x() + columns.at(i-1)->w() + COLUMN_GAP;
+			columns.at(i)->position(pos, y());
+		}
+		addColumnBtn->position(columns.back()->x() + columns.back()->w() + COLUMN_GAP, y());
+	}
+
+	refreshColIndexes();
+	redraw();
 }

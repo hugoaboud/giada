@@ -276,6 +276,8 @@ void glue_loadPatch(void* data)
 	/* Add common stuff, columns and channels. Also increment the progress bar by 
 	0.8 / total_channels steps.  */
 
+	// TODO: fix this
+	/*
 	float steps = 0.8 / patch::channels.size();
 	
 	for (const patch::column_t& col : patch::columns) {
@@ -290,7 +292,7 @@ void glue_loadPatch(void* data)
 			browser->setStatusBar(steps);
 			k++;
 		}
-	}
+	}*/
 
 	/* Fill Mixer. */
 

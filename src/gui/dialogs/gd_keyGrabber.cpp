@@ -97,8 +97,9 @@ void gdKeyGrabber::__cb_clear()
 
 void gdKeyGrabber::setButtonLabel(int key)
 {
-	ch->guiChannel->mainButton->setKey(key);
-	ch->key = key;
+	//TODO: FIX THIS
+	//ch->guiChannel->mainButton->setKey(key);
+	//ch->key = key;
 }
 
 /* -------------------------------------------------------------------------- */

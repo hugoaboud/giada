@@ -190,8 +190,33 @@ InputChannel* addInputChannel()
 	}
 
 	ch->index = getNewInputChanIndex();
-	gu_log("[addChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
+	gu_log("[addInputChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
+}
+
+
+
+int deleteInputChannel(InputChannel* ch) {
+	int index = -1;
+	for (unsigned i=0; i<mixer::inputChannels.size(); i++) {
+		if (mixer::inputChannels.at(i) == ch) {
+			index = i;
+			break;
+		}
+	}
+	if (index == -1) {
+		gu_log("[deleteInputChannel] unable to find channel %d for deletion!\n", ch->index);
+		return 0;
+	}
+
+	while (true) {
+		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
+			continue;
+		mixer::inputChannels.erase(mixer::inputChannels.begin() + index);
+		delete ch;
+		pthread_mutex_unlock(&mixer::mutex_chans);
+		return 1;
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -229,7 +254,7 @@ ColumnChannel* addColumnChannel() {
 
 	ch->index = getNewColumnChanIndex();
 	ch->setName(("Column " + std::to_string(ch->index)).c_str());
-	gu_log("[addChannel] column channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
+	gu_log("[addColumnChannel] column channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
 }
 
@@ -244,7 +269,7 @@ int deleteColumnChannel(ColumnChannel* ch) {
 		}
 	}
 	if (index == -1) {
-		gu_log("[deleteChannel] unable to find channel %d for deletion!\n", ch->index);
+		gu_log("[deleteColumnChannel] unable to find channel %d for deletion!\n", ch->index);
 		return 0;
 	}
 
@@ -264,13 +289,13 @@ ColumnChannel* getColumnChannelByIndex(int index) {
 	for (unsigned i=0; i<mixer::columnChannels.size(); i++)
 		if (mixer::columnChannels.at(i)->index == index)
 			return mixer::columnChannels.at(i);
-	gu_log("[getInputChannelByIndex] channel at index %d not found!\n", index);
+	gu_log("[getColumnChannelByIndex] channel at index %d not found!\n", index);
 	return nullptr;
 }
 
 /* -------------------------------------------------------------------------- */
 
-ResourceChannel* addChannel(int type)
+ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 {
 	ResourceChannel* ch;
 	int bufferSize = kernelAudio::getRealBufSize()*2;
@@ -294,7 +319,8 @@ ResourceChannel* addChannel(int type)
 	}
 
 	ch->index = getNewChanIndex();
-	gu_log("[addChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
+	ch->column = col;
+	gu_log("[addResourceChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
 }
 
@@ -302,24 +328,29 @@ ResourceChannel* addChannel(int type)
 /* -------------------------------------------------------------------------- */
 
 
-int deleteChannel(Channel* ch)
+int deleteResourceChannel(ResourceChannel* ch)
 {
+	int columnIndex = -1;
 	int index = -1;
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
-		if (mixer::channels.at(i) == ch) {
-			index = i;
-			break;
+	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
+		ColumnChannel* column = mixer::columnChannels.at(i);
+		for (unsigned j=0; j<column->getResourceCount(); j++) {
+			if (column->getResource(i) == ch) {
+				columnIndex = i;
+				index = j;
+				break;
+			}
 		}
 	}
-	if (index == -1) {
-		gu_log("[deleteChannel] unable to find channel %d for deletion!\n", ch->index);
+	if (columnIndex == -1 || index == -1) {
+		gu_log("[deleteResourceChannel] unable to find channel %d for deletion!\n", ch->index);
 		return 0;
 	}
 
 	while (true) {
 		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
 			continue;
-		mixer::channels.erase(mixer::channels.begin() + index);
+		mixer::columnChannels.at(columnIndex)->removeResource(index);
 		delete ch;
 		pthread_mutex_unlock(&mixer::mutex_chans);
 		return 1;
@@ -330,7 +361,7 @@ int deleteChannel(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-ResourceChannel* getChannelByIndex(int index)
+ResourceChannel* getResourceChannelByIndex(int index)
 {
 	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
 		ColumnChannel* cch = mixer::columnChannels.at(i);

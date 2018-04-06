@@ -367,8 +367,9 @@ bool startInputRec(bool gui)
 	/* Update sample name inside sample channels' main button. This is useless for
 	midi channel, but let's do it anyway. */
 
-	for (Channel* ch : m::mixer::channels)
-		ch->guiChannel->update();
+	// TODO: ResourceChannels instead
+	//for (Channel* ch : m::mixer::channels)
+	//		ch->guiChannel->update();
 
 	return true;
 }

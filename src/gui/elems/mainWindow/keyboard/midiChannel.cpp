@@ -130,13 +130,13 @@ void menuCallback(Fl_Widget* w, void* v)
 			static_cast<geColumn*>(gch->parent())->repositionChannels();
 			break;
 		case Menu::CLONE_CHANNEL:
-			c::channel::cloneChannel(gch->ch);
+			c::channel::cloneResourceChannel((ResourceChannel*)gch->ch);
 			break;		
 		case Menu::RENAME_CHANNEL:
 			gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
 			break;
 		case Menu::DELETE_CHANNEL:
-			c::channel::deleteChannel(gch->ch);
+			c::channel::deleteResourceChannel((ResourceChannel*)gch->ch);
 			break;
 	}
 }
@@ -148,7 +148,7 @@ void menuCallback(Fl_Widget* w, void* v)
 
 
 geMidiChannel::geMidiChannel(int X, int Y, int W, int H, MidiChannel* ch)
-	: geChannel(X, Y, W, H, CHANNEL_MIDI, ch)
+	: geResourceChannel(X, Y, W, H, CHANNEL_MIDI, ch)
 {
 	begin();
 
@@ -269,7 +269,7 @@ void geMidiChannel::cb_openMenu()
 
 void geMidiChannel::refresh()
 {
-	setColorsByStatus(ch->getStatus(), ch->getRecStatus());
+	setColorsByStatus(((ResourceChannel*)ch)->getStatus(), ((ResourceChannel*)ch)->getRecStatus());
 	mainButton->redraw();
 }
 

@@ -30,6 +30,7 @@
 
 
 #include <FL/Fl_Group.H>
+#include "channel.h"
 
 
 class Channel;
@@ -40,22 +41,20 @@ class geResizerBar;
 class geKeyboard;
 
 
-class geColumn : public Fl_Group
+class geColumn : public geChannel
 {
 private:
 
-	static void cb_addChannel  (Fl_Widget* v, void* p);
-	inline void __cb_addChannel();
+	static void cb_openMenu(Fl_Widget* v, void* p);
+	inline void cb_openMenu();
 
 	int openTypeMenu();
 
-	geButton*      m_addChannelBtn;
+	geButton*      m_titleBtn;
 	geResizerBar*  m_resizer;
 	geKeyboard*    m_parent;
 
 	int m_index;
-
-	ColumnChannel* channel;
 
 public:
 
@@ -88,8 +87,13 @@ public:
 	/* refreshChannels
 	Updates channels' graphical statues. Called on each GUI cycle. */
 
-	void refreshChannels();
+	void refresh() override;
 
+	void update() override;
+	void reset() override;
+
+	ColumnChannel* channel;
+	
 	Channel* getChannel(int i);
 	int getIndex();
 	void setIndex(int i);

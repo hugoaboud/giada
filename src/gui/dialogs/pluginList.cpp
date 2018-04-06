@@ -55,7 +55,6 @@
 
 extern gdMainWindow* G_MainWin;
 
-
 using std::string;
 using namespace giada::m;
 using namespace giada::c;

@@ -48,12 +48,49 @@ using std::vector;
 using std::string;
 using namespace giada;
 
+namespace {
+
+enum class Menu
+{
+	ADD_SAMPLE_CHANNEL = 0,
+	ADD_MIDI_CHANNEL,
+	RENAME_CHANNEL,
+	DELETE_CHANNEL
+};
+
+void menuCallback(Fl_Widget* w, void* v)
+{
+	using namespace giada;
+
+	geColumn* gcol = static_cast<geColumn*>(w);
+	Menu selectedItem = (Menu) (intptr_t) v;
+
+	switch (selectedItem) {
+		case Menu::ADD_SAMPLE_CHANNEL: {
+			c::channel::addResourceChannel(gcol->channel, CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1);
+			break;
+		}
+		case Menu::ADD_MIDI_CHANNEL: {
+			c::channel::addResourceChannel(gcol->channel, CHANNEL_MIDI, G_GUI_CHANNEL_H_1);
+			break;
+		}
+		case Menu::RENAME_CHANNEL: {
+			//gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
+			break;
+		}
+		case Menu::DELETE_CHANNEL: {
+			c::channel::deleteColumnChannel(gcol->channel);
+			break;
+		}
+	}
+}
+
+}
 
 geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent, ColumnChannel *channel)
-	: Fl_Group(X, Y, W, H), 
+	: geChannel(X, Y, W, H, channel), 
 		m_parent(parent), 
-		m_index (index),
-		channel(channel)
+		m_index (index)
 {
 	/* geColumn does a bit of a mess: we pass a pointer to its m_parent (geKeyboard) and
 	the geColumn itself deals with the creation of another widget, outside geColumn
@@ -65,14 +102,14 @@ geColumn::geColumn(int X, int Y, int W, int H, int index, geKeyboard* parent, Co
 	instead. */
 
 	begin();
-	m_addChannelBtn = new geButton(x(), y(), w(), G_GUI_UNIT, channel->getName().c_str());
+		m_titleBtn = new geButton(x(), y(), w(), G_GUI_UNIT, channel->getName().c_str());
 	end();
 
 	m_resizer = new geResizerBar(x()+w(), y(), G_GUI_OUTER_MARGIN * 2, h(), 
 		G_MIN_COLUMN_WIDTH, geResizerBar::HORIZONTAL);
 	m_parent->add(m_resizer);
 
-	m_addChannelBtn->callback(cb_addChannel, (void*)this);
+	m_titleBtn->callback(cb_openMenu, (void*)this);
 }
 
 
@@ -97,7 +134,7 @@ int geColumn::handle(int e)
 	switch (e) {
 		case FL_RELEASE: {
 			if (Fl::event_button() == FL_RIGHT_MOUSE) {
-				__cb_addChannel();
+				cb_openMenu();
 				return 1;
 			}
 		}
@@ -113,8 +150,8 @@ int geColumn::handle(int e)
 			int result = 0;
 			for (string& path : paths) {
 				gu_log("[geColumn::handle] loading %s...\n", path.c_str());
-				SampleChannel* c = static_cast<SampleChannel*>(c::channel::addChannel(
-					m_index, CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
+				SampleChannel* c = static_cast<SampleChannel*>(c::channel::addResourceChannel(
+					channel, CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
 				result = c::channel::loadChannel(c, gu_stripFileUrl(path));
 				if (result != G_RES_OK) {
 					deleteChannel(c->guiChannel);
@@ -166,7 +203,7 @@ void geColumn::resize(int X, int Y, int W, int H)
 /* -------------------------------------------------------------------------- */
 
 
-void geColumn::refreshChannels()
+void geColumn::refresh()
 {
 	for (int i=1; i<children(); i++)
 		static_cast<geChannel*>(child(i))->refresh();
@@ -194,7 +231,7 @@ void geColumn::draw()
 /* -------------------------------------------------------------------------- */
 
 
-void geColumn::cb_addChannel(Fl_Widget* v, void* p) { ((geColumn*)p)->__cb_addChannel(); }
+void geColumn::cb_openMenu(Fl_Widget* v, void* p) { ((geColumn*)p)->cb_openMenu(); }
 
 
 /* -------------------------------------------------------------------------- */
@@ -254,23 +291,15 @@ void geColumn::deleteChannel(geChannel* gch)
 /* -------------------------------------------------------------------------- */
 
 
-void geColumn::__cb_addChannel()
+void geColumn::cb_openMenu()
 {
-	gu_log("[geColumn::__cb_addChannel] m_index = %d\n", m_index);
-	int type = openTypeMenu();
-	if (type)
-		c::channel::addChannel(m_index, type, G_GUI_CHANNEL_H_1);
-}
+	using namespace giada;
 
-
-/* -------------------------------------------------------------------------- */
-
-
-int geColumn::openTypeMenu()
-{
 	Fl_Menu_Item rclick_menu[] = {
-		{"Sample channel"},
-		{"MIDI channel"},
+		{"Add Sample Channel",	0, menuCallback, (void*) Menu::ADD_SAMPLE_CHANNEL},
+		{"Add MIDI Channel",	0, menuCallback, (void*) Menu::ADD_MIDI_CHANNEL},
+		{"Rename column", 		0, menuCallback, (void*) Menu::RENAME_CHANNEL},
+		{"Delete column", 		0, menuCallback, (void*) Menu::DELETE_CHANNEL},
 		{0}
 	};
 
@@ -280,16 +309,11 @@ int geColumn::openTypeMenu()
 	b->textcolor(G_COLOR_LIGHT_2);
 	b->color(G_COLOR_GREY_2);
 
-	const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, b);
-	if (!m) return 0;
-
-	if (strcmp(m->label(), "Sample channel") == 0)
-		return CHANNEL_SAMPLE;
-	if (strcmp(m->label(), "MIDI channel") == 0)
-		return CHANNEL_MIDI;
-	return 0;
+	const Fl_Menu_Item* m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, b);
+	if (m)
+		m->do_callback(this, m->user_data());
+	return;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -318,6 +342,10 @@ Channel* geColumn::getChannel(int i)
 
 /* -------------------------------------------------------------------------- */
 
+void geColumn::update() {}
+void geColumn::reset() {}
+
+/* -------------------------------------------------------------------------- */
 
 int geColumn::getIndex()       { return m_index; }
 void geColumn::setIndex(int i) { m_index = i; }

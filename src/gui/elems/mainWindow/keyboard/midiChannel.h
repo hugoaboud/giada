@@ -29,14 +29,14 @@
 #define GE_MIDI_CHANNEL_H
 
 
-#include "channel.h"
+#include "resourceChannel.h"
 #include "channelButton.h"
 
 
 class MidiChannel;
 
 
-class geMidiChannel : public geChannel
+class geMidiChannel : public geResourceChannel
 {
 private:
 

@@ -32,6 +32,7 @@
 #include <FL/Fl.H>
 #include "core/init.h"
 #include "core/const.h"
+#include "utils/log.h"
 #include "core/patch.h"
 #include "core/conf.h"
 #include "core/midiMapConf.h"

@@ -35,6 +35,7 @@
 
 
 class Channel;
+class ColumnChannel;
 class ResourceChannel;
 class geButton;
 class geColumn;
@@ -56,7 +57,7 @@ private:
 	void refreshColIndexes();
 
 	static void cb_addColumn  (Fl_Widget* v, void* p);
-	inline void __cb_addColumn(int width=G_DEFAULT_COLUMN_WIDTH);
+	inline void cb_addColumn(int width=G_DEFAULT_COLUMN_WIDTH);
 
 	bool bckspcPressed;
 	bool endPressed;
@@ -91,12 +92,16 @@ public:
 	Requires Channel (and not geChannel). If build is set to true, also generate 
 	the corresponding column if column (index) does not exist yet. */
 
-	geChannel* addChannel(int column, ResourceChannel* ch, int size, bool build=false);
+	geChannel* addChannel(ColumnChannel* cch, ResourceChannel* ch, int size, bool build=false);
 
 	/* addColumn
 	 * add a new column to the top of the stack. */
 
-	void addColumn(int width=380);
+	geColumn* addColumn(ColumnChannel* col, int width=380);
+
+	/* deleteColumn */
+
+	void deleteColumn(geColumn* gcol);
 
 	/* deleteChannel
 	 * delete a channel from geChannels<> where geChannel->ch == ch and remove
@@ -160,6 +165,8 @@ public:
 	 * in the column array, NOT the index. */
 
 	int getColumnWidth(int i);
+
+	void update();
 };
 
 

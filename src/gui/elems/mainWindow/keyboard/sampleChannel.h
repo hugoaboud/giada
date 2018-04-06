@@ -29,7 +29,7 @@
 #define GE_SAMPLE_CHANNEL_H
 
 
-#include "channel.h"
+#include "resourceChannel.h"
 
 
 class SampleChannel;
@@ -37,7 +37,7 @@ class geChannelMode;
 class geButton;
 
 
-class geSampleChannel : public geChannel
+class geSampleChannel : public geResourceChannel
 {
 private:
 

@@ -135,7 +135,7 @@ void readActions(unsigned frame)
 		if (recorder::frames.at(i) == clock::getCurrentFrame()) {
 			for (unsigned j=0; j<recorder::global.at(i).size(); j++) {
 				int index   = recorder::global.at(i).at(j)->chan;
-				Channel *ch = mh::getChannelByIndex(index);
+				Channel *ch = mh::getResourceChannelByIndex(index);
 				ch->parseAction(recorder::global.at(i).at(j), frame,
 					clock::getCurrentFrame(), clock::isRunning());
 			}
@@ -399,8 +399,12 @@ int masterPlay(void* _outBuf, void* _inBuf, unsigned bufferSize,
 int close()
 {
 	clock::stop();
-	while (channels.size() > 0)
-		mh::deleteChannel(channels.at(0));
+
+	while (inputChannels.size() > 0)
+		mh::deleteInputChannel(inputChannels.at(0));
+
+	while (columnChannels.size() > 0)
+		mh::deleteColumnChannel(columnChannels.at(0));
 
 	/*
 	if (vChanInput.size() > 0) {

@@ -33,6 +33,7 @@
 
 
 class Channel;
+class ColumnChannel;
 class ResourceChannel;
 class SampleChannel;
 class gdSampleEditor;
@@ -42,30 +43,48 @@ namespace c     {
 namespace channel 
 {
 
-/* addChannel
+/**
+	ColumnChannel
+**/
+
+/* addColumnChannel
 Adds an empty new channel to the stack. Returns the new channel. */
 
-ResourceChannel* addChannel(int column, int type, int size);
+ColumnChannel* addColumnChannel(int width);
+
+/* deleteColumnChannel
+Removes a ColumnChannel from Mixer. */
+
+void deleteColumnChannel(ColumnChannel* ch);
+
+/**
+	ResourceChannel
+**/
+
+/* addResourceChannel
+Adds an empty new channel to the stack. Returns the new channel. */
+
+ResourceChannel* addResourceChannel(ColumnChannel* col, int type, int size);
 
 /* loadChannel
-Fills an existing channel with a wave. */
+Fills an existing SampleChannel with a wave. */
 
 int loadChannel(SampleChannel* ch, const std::string& fname);
 
-/* freeChannel
+/* freeResourceChannel
 Unloads the sample from a sample channel. */
 
-void freeChannel(ResourceChannel* ch);
+void freeResourceChannel(ResourceChannel* ch);
 
-/* deleteChannel
-Removes a channel from Mixer. */
+/* deleteResourceChannel
+Removes a ResourceChannel from Mixer. */
 
-void deleteChannel(Channel* ch);
+void deleteResourceChannel(ResourceChannel* ch);
 
-/* cloneChannel
+/* cloneResourceChannel
 Makes an exact copy of Channel *ch. */
 
-int cloneChannel(ResourceChannel* ch);
+int cloneResourceChannel(ResourceChannel* ch);
 
 /* toggle/set*
 Toggles or set several channel properties. If gui == true the signal comes from 

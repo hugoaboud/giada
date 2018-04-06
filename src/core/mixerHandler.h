@@ -96,27 +96,29 @@ ColumnChannel* getColumnChannelByIndex(int i);
 **/
 
 /* addChannel
-Adds a new channel of type 'type' into mixer's stack. */
+Adds a new resource channel of type 'type' into mixer's stack. */
 
-ResourceChannel* addChannel(int type);
+ResourceChannel* addResourceChannel(ColumnChannel* col, int type);
 
 /* deleteChannel
-Completely removes a channel from the stack. */
+Completely removes a resource channel from the stack. */
 
-int deleteChannel(Channel* ch);
+int deleteResourceChannel(ResourceChannel* ch);
 
 /* getChannelByIndex
 Returns channel with given index 'i'. */
 
-ResourceChannel* getChannelByIndex(int i);
+ResourceChannel* getResourceChannelByIndex(int i);
 
 /* hasLogicalSamples
-True if 1 or more samples are logical (memory only, such as takes) */
+True if 1 or more samples are logical (memory only, such as takes) 
+TODO: fix this*/
 
 bool hasLogicalSamples();
 
 /* hasEditedSamples
-True if 1 or more samples was edited via gEditor */
+True if 1 or more samples was edited via gEditor 
+TODO: fix this*/
 
 bool hasEditedSamples();
 
@@ -128,7 +130,8 @@ void stopSequencer();
 void rewindSequencer();
 
 /* uniqueSolo
- * true if ch is the only solo'd channel in mixer. */
+ * true if ch is the only solo'd channel in mixer.
+ TODO: fix this */
 
 bool uniqueSolo(Channel* ch);
 
@@ -154,7 +157,8 @@ bool uniqueSamplePath(const SampleChannel* skip, const std::string& p);
 
 /* hasArmedSampleChannels
 Tells whether Mixer has one or more sample channels armed for input
-recording. */
+recording. 
+TODO: fix this */
 
 bool hasArmedSampleChannels();
 }}}  // giada::m::mh::

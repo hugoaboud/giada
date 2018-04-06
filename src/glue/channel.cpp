@@ -40,8 +40,7 @@
 #include "../gui/elems/sampleEditor/rangeTool.h"
 #include "../gui/elems/sampleEditor/waveform.h"
 #include "../gui/elems/mainWindow/keyboard/keyboard.h"
-#include "../gui/elems/mainWindow/keyboard/channel.h"
-#include "../gui/elems/mainWindow/keyboard/sampleChannel.h"
+#include "../gui/elems/mainWindow/keyboard/resourceChannel.h"
 #include "../gui/elems/mainWindow/keyboard/channelButton.h"
 #include "../utils/gui.h"
 #include "../utils/fs.h"
@@ -54,6 +53,7 @@
 #include "../core/conf.h"
 #include "../core/wave.h"
 #include "../core/channel.h"
+#include "../core/columnChannel.h"
 #include "../core/sampleChannel.h"
 #include "../core/midiChannel.h"
 #include "../core/plugin.h"
@@ -80,6 +80,39 @@ bool soloSession__ = false;
 
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
+
+
+ColumnChannel* addColumnChannel(int width)
+{
+	ColumnChannel* col = m::mh::addColumnChannel();
+	geColumn* gcol = G_MainWin->keyboard->addColumn(col, width);
+	col->guiChannel = (geChannel*) gcol;
+	return col;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void deleteColumnChannel(ColumnChannel* cch)
+{
+	using namespace giada::m;
+
+	if (!gdConfirmWin("Warning", "Delete column: are you sure?"))
+		return;
+	
+#ifdef WITH_VST
+	pluginHost::freeStack(&mixer::mutex_plugins, cch);
+#endif
+	mh::deleteColumnChannel(cch);
+	Fl::lock();
+	//G_MainWin->keyboard->deleteColumn((geColumn*)cch->guiChannel);
+	Fl::flush();
+	Fl::unlock();
+	gu_closeAllSubwindows();
+}
+
 /* -------------------------------------------------------------------------- */
 
 
@@ -123,10 +156,11 @@ int loadChannel(SampleChannel* ch, const string& fname)
 /* -------------------------------------------------------------------------- */
 
 
-ResourceChannel* addChannel(int column, int type, int size)
+ResourceChannel* addResourceChannel(ColumnChannel* col, int type, int size)
 {
-	ResourceChannel* ch    = m::mh::addChannel(type);
-	geChannel* gch = G_MainWin->keyboard->addChannel(column, ch, size);
+	printf("col %p\n",col);
+	ResourceChannel* ch    = m::mh::addResourceChannel(col, type);
+	geChannel* gch = G_MainWin->keyboard->addChannel(col, ch, size);
 	ch->guiChannel = gch;
 	return ch;
 }
@@ -135,7 +169,7 @@ ResourceChannel* addChannel(int column, int type, int size)
 /* -------------------------------------------------------------------------- */
 
 
-void deleteChannel(Channel* ch)
+void deleteResourceChannel(ResourceChannel* ch)
 {
 	using namespace giada::m;
 
@@ -149,7 +183,7 @@ void deleteChannel(Channel* ch)
 	Fl::lock();
 	G_MainWin->keyboard->deleteChannel(ch->guiChannel);
 	Fl::unlock();
-	mh::deleteChannel(ch);
+	mh::deleteResourceChannel(ch);
 	gu_closeAllSubwindows();
 }
 
@@ -157,7 +191,7 @@ void deleteChannel(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void freeChannel(ResourceChannel* ch)
+void freeResourceChannel(ResourceChannel* ch)
 {
 	if (ch->getStatus() == STATUS_PLAY) {
 		if (!gdConfirmWin("Warning", "This action will stop the channel: are you sure?"))
@@ -194,13 +228,12 @@ void toggleInputMonitor(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-int cloneChannel(ResourceChannel* src)
+int cloneResourceChannel(ResourceChannel* src)
 {
 	using namespace giada::m;
 
-	ResourceChannel* ch    = mh::addChannel(src->getType());
-	geChannel* gch = G_MainWin->keyboard->addChannel(src->guiChannel->getColumnIndex(), 
-		ch, src->guiChannel->getSize());
+	ResourceChannel* ch    = mh::addResourceChannel(src->column, src->getType());
+	geChannel* gch = G_MainWin->keyboard->addChannel(src->column, ch, ((geResourceChannel*)src->guiChannel)->getSize());
 
 	ch->guiChannel = gch;
 	ch->copy(src, &mixer::mutex_plugins);

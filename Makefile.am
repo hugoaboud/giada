@@ -305,6 +305,8 @@ src/gui/elems/mainWindow/keyboard/keyboard.h              \
 src/gui/elems/mainWindow/keyboard/keyboard.cpp            \
 src/gui/elems/mainWindow/keyboard/column.h                \
 src/gui/elems/mainWindow/keyboard/column.cpp              \
+src/gui/elems/mainWindow/keyboard/resourceChannel.h       \
+src/gui/elems/mainWindow/keyboard/resourceChannel.cpp     \
 src/gui/elems/mainWindow/keyboard/sampleChannel.h         \
 src/gui/elems/mainWindow/keyboard/sampleChannel.cpp       \
 src/gui/elems/mainWindow/keyboard/midiChannel.h           \

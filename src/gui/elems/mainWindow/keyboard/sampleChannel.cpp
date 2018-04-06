@@ -58,9 +58,7 @@
 #include "column.h"
 #include "sampleChannel.h"
 
-
 extern gdMainWindow* G_MainWin;
-
 
 namespace
 {
@@ -184,7 +182,7 @@ void menuCallback(Fl_Widget* w, void* v)
 			break;
 		}
 		case Menu::CLONE_CHANNEL: {
-			c::channel::cloneChannel(gch->ch);
+			c::channel::cloneResourceChannel((ResourceChannel*)gch->ch);
 			break;
 		}
 		case Menu::RENAME_CHANNEL: {
@@ -192,11 +190,11 @@ void menuCallback(Fl_Widget* w, void* v)
 			break;
 		}
 		case Menu::FREE_CHANNEL: {
-			c::channel::freeChannel(gch->ch);
+			c::channel::freeResourceChannel((ResourceChannel*)gch->ch);
 			break;
 		}
 		case Menu::DELETE_CHANNEL: {
-			c::channel::deleteChannel(gch->ch);
+			c::channel::deleteResourceChannel((ResourceChannel*)gch->ch);
 			break;
 		}
 	}
@@ -209,7 +207,7 @@ void menuCallback(Fl_Widget* w, void* v)
 
 
 geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
-	: geChannel(X, Y, W, H, CHANNEL_SAMPLE, ch)
+	: geResourceChannel(X, Y, W, H, CHANNEL_SAMPLE, ch)
 {
 	begin();
 
@@ -280,9 +278,9 @@ void geSampleChannel::cb_button()
 	using namespace giada::c;
 
 	if (button->value())    // pushed, max velocity (127 i.e. 0x7f)
-		io::keyPress(ch, Fl::event_ctrl(), Fl::event_shift(), 0x7F);
+		io::keyPress((ResourceChannel*)ch, Fl::event_ctrl(), Fl::event_shift(), 0x7F);
 	else                    // released
-		io::keyRelease(ch, Fl::event_ctrl(), Fl::event_shift());
+		io::keyRelease((ResourceChannel*)ch, Fl::event_ctrl(), Fl::event_shift());
 }
 
 
@@ -328,14 +326,14 @@ void geSampleChannel::cb_openMenu()
 		{0}
 	};
 
-	if (ch->getStatus() & (STATUS_EMPTY | STATUS_MISSING)) {
+	if (((ResourceChannel*)ch)->getStatus() & (STATUS_EMPTY | STATUS_MISSING)) {
 		rclick_menu[(int) Menu::EXPORT_SAMPLE].deactivate();
 		rclick_menu[(int) Menu::EDIT_SAMPLE].deactivate();
 		rclick_menu[(int) Menu::FREE_CHANNEL].deactivate();
 		rclick_menu[(int) Menu::RENAME_CHANNEL].deactivate();
 	}
 
-	if (!ch->hasActions)
+	if (!((ResourceChannel*)ch)->hasActions)
 		rclick_menu[(int) Menu::CLEAR_ACTIONS].deactivate();
 
 
@@ -378,7 +376,7 @@ void geSampleChannel::refresh()
 	if (!mainButton->visible()) // mainButton invisible? status too (see below)
 		return;
 
-	setColorsByStatus(ch->getStatus(), ch->getRecStatus());
+	setColorsByStatus(((ResourceChannel*)ch)->getStatus(), ((ResourceChannel*)ch)->getRecStatus());
 	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {	
 		if (m::mixer::recording)// && ch->isArmed())
 			mainButton->setInputRecordMode();
@@ -512,7 +510,7 @@ void geSampleChannel::resize(int X, int Y, int W, int H)
 
 void geSampleChannel::changeSize(int H)
 {
-	geChannel::changeSize(H);
+	geResourceChannel::changeSize(H);
 
 	int Y = y() + (H / 2 - (G_GUI_UNIT / 2));
 

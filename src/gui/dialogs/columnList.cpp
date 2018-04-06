@@ -38,6 +38,7 @@
 #include "../../core/mixerHandler.h"
 #include "../../core/channel.h"
 #include "../../core/columnChannel.h"
+#include "../../glue/channel.h"
 #include "../../glue/plugin.h"
 #include "../../utils/log.h"
 #include "../../utils/string.h"
@@ -251,22 +252,6 @@ void gdColumn::cb_inputMonitor		(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_inp
 
 /* -------------------------------------------------------------------------- */
 
-
-void gdColumn::cb_button()
-{
-	gu_log("[geColumn::cb_button]");
-	int opt = openColumnChannelMenu();
-	switch (opt) {
-		case COLUMNCHANNEL_RENAME:
-			break;
-		case COLUMNCHANNEL_REMOVE:
-			break;
-	}
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 void gdColumn::cb_setOutput()
 {
 	pColumn->outputIndex = output->value()-1;
@@ -316,6 +301,7 @@ void gdColumn::cb_inputMonitor() {
 /* -------------------------------------------------------------------------- */
 
 void gdColumnList::refresh() {
+	refreshList();
 	// TODO: this is just terrible and may cause segfaults, fix it
 	// (FL_Group has 2 misterious children that resist clear plus the "new column" button)
 	for (int i=3; i<list->children(); i++) {
@@ -328,11 +314,38 @@ void gdColumn::refresh() {
 	//meter->redraw();
 }
 
-int gdColumn::openColumnChannelMenu()
+enum class Menu
 {
+	RENAME_CHANNEL = 0,
+	DELETE_CHANNEL
+};
+
+void buttonCallback(Fl_Widget* w, void* v)
+{
+	using namespace giada;
+
+	gdColumn* gcol = static_cast<gdColumn*>(w);
+	Menu selectedItem = (Menu) (intptr_t) v;
+
+	switch (selectedItem) {
+		case Menu::RENAME_CHANNEL: {
+			//gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
+			break;
+		}
+		case Menu::DELETE_CHANNEL: {
+			c::channel::deleteColumnChannel(gcol->getChannel());
+			break;
+		}
+	}
+}
+
+void gdColumn::cb_button()
+{
+	using namespace giada;
+
 	Fl_Menu_Item rclick_menu[] = {
-		{"Rename"},
-		{"Remove"},
+		{"Rename column", 		0, buttonCallback, (void*) Menu::RENAME_CHANNEL},
+		{"Delete column", 		0, buttonCallback, (void*) Menu::DELETE_CHANNEL},
 		{0}
 	};
 
@@ -342,12 +355,8 @@ int gdColumn::openColumnChannelMenu()
 	b->textcolor(G_COLOR_LIGHT_2);
 	b->color(G_COLOR_GREY_2);
 
-	const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, b);
-	if (!m) return 0;
-
-	if (strcmp(m->label(), "Rename") == 0)
-		return COLUMNCHANNEL_RENAME;
-	if (strcmp(m->label(), "Remove") == 0)
-		return COLUMNCHANNEL_REMOVE;
-	return 0;
+	const Fl_Menu_Item* m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, b);
+	if (m)
+		m->do_callback(this, m->user_data());
+	return;
 }
