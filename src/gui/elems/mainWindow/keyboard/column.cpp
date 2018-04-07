@@ -67,11 +67,11 @@ void menuCallback(Fl_Widget* w, void* v)
 
 	switch (selectedItem) {
 		case Menu::ADD_SAMPLE_CHANNEL: {
-			c::channel::addResourceChannel(gcol->channel, CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1);
+			c::channel::addResourceChannel(gcol->channel, G_CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1);
 			break;
 		}
 		case Menu::ADD_MIDI_CHANNEL: {
-			c::channel::addResourceChannel(gcol->channel, CHANNEL_MIDI, G_GUI_CHANNEL_H_1);
+			c::channel::addResourceChannel(gcol->channel, G_CHANNEL_MIDI, G_GUI_CHANNEL_H_1);
 			break;
 		}
 		case Menu::RENAME_CHANNEL: {

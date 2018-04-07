@@ -51,13 +51,13 @@ void geChannelStatus::draw()
   fl_rectf(x()+1, y()+1, w()-2, h()-2, G_COLOR_GREY_2);     // reset background
 
   if (ch != nullptr) {
-    if (ch->getStatus()    & (STATUS_WAIT | STATUS_ENDING | REC_ENDING | REC_WAITING) ||
-        ch->getRecStatus() & (REC_WAITING | REC_ENDING))
+    if (ch->status    & (STATUS_WAIT | STATUS_ENDING | REC_ENDING | REC_WAITING) ||
+        ch->recStatus & (REC_WAITING | REC_ENDING))
     {
       fl_rect(x(), y(), w(), h(), G_COLOR_LIGHT_1);
     }
     else
-    if (ch->getStatus() == STATUS_PLAY)
+    if (ch->status == STATUS_PLAY)
       fl_rect(x(), y(), w(), h(), G_COLOR_LIGHT_1);
     else
       fl_rectf(x()+1, y()+1, w()-2, h()-2, G_COLOR_GREY_2);     // status empty

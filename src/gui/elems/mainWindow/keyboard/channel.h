@@ -46,7 +46,7 @@ class geChannel : public Fl_Group
 		virtual void reset() = 0;
 		virtual void update() = 0;
 
-		virtual int getSize() = 0;
+		virtual int getSize();
 
 		Channel* ch;
 

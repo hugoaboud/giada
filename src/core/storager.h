@@ -30,6 +30,7 @@
 
 
 #include <jansson.h>
+#include <string>
 
 
 namespace giada {

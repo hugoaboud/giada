@@ -95,7 +95,7 @@ void geResourceChannel::cb_mute()
 
 void geResourceChannel::cb_solo()
 {
-	solo->value() ? c::channel::setSoloOn(ch) : c::channel::setSoloOff(ch);
+	solo->value() ? c::channel::setSolo(ch, true, true) : c::channel::setSolo(ch, true, true);
 }
 
 

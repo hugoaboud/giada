@@ -34,9 +34,11 @@
 
 class Plugin;
 class Channel;
+class ColumnChannel;
 class geButton;
 class gdColumnList;
 class geIdButton;
+class geStatusButton;
 class geChoice;
 class geSoundMeter;
 class geDial;

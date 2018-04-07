@@ -194,7 +194,7 @@ void gdInputList::refreshList()
 
 
 gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
-	: Fl_Group(X, Y, W, 20), pParent(gdi), pInput (i)
+	: Fl_Group(X, Y, W, 20), pInput(i) //pParent(gdi), pInput (i)
 {
 	begin();
 	button  		 = new geIdButton(x(), y(), 120, 20);
@@ -228,7 +228,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	inputMidiChannel->callback(cb_setInputMidiChannel, (void*)this);
 	
 	preMute->type(FL_TOGGLE_BUTTON);
-	preMute->value(i->preMute);
+	preMute->value(i->pre_mute);
 	preMute->callback(cb_preMute, (void*)this);
 
 	fx->callback(cb_openFxWindow, (void*)this);
@@ -387,7 +387,7 @@ void gdInput::cb_preMute() {
 void gdInput::cb_posMute() {
 	if (posMute->value()) {
 		pInput->setMute(false);
-		preMute->value(pInput->preMute);
+		preMute->value(pInput->pre_mute);
 	}
 	else pInput->unsetMute(false);
 }
@@ -395,7 +395,7 @@ void gdInput::cb_posMute() {
 /* -------------------------------------------------------------------------- */
 
 void gdInput::cb_setColumnChannel() {
-	pInput->columnChannel = mixer::columnChannels[columnChannel->value()-1];
+	pInput->outColumn = mixer::columnChannels[columnChannel->value()-1];
 }
 
 /* -------------------------------------------------------------------------- */

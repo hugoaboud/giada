@@ -1,7 +1,6 @@
 #ifndef G_AUDIO_BUFFER_H
 #define G_AUDIO_BUFFER_H
 
-
 namespace giada {
 namespace m
 {

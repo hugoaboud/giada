@@ -41,8 +41,6 @@ class Patch;
 
 class MidiChannel : public ResourceChannel
 {
-private:
-	bool armed;
 
 public:
 

@@ -35,6 +35,7 @@
 
 class Channel;
 class ColumnChannel;
+class ResourceChannel;
 class geButton;
 class geChannel;
 class geResizerBar;
@@ -62,7 +63,7 @@ public:
 	~geColumn();
 
 	/* addChannel
-	Adds a new channel in this column and set the internal pointer to channel 
+	Adds a new channel in this column and set the internal pointer to channel
 	to 'ch'. */
 
 	geChannel* addChannel(ResourceChannel* ch, int size);
@@ -72,7 +73,7 @@ public:
   void resize(int x, int y, int w, int h) override;
 
 	/* clear
-	Removes all channels from the column. If full==true, delete also the "add new 
+	Removes all channels from the column. If full==true, delete also the "add new
 	channel" button. */
 
 	void clear(bool full=false);
@@ -93,11 +94,11 @@ public:
 	void reset() override;
 
 	ColumnChannel* channel;
-	
+
 	Channel* getChannel(int i);
 	int getIndex();
 	void setIndex(int i);
-	bool isEmpty();   
+	bool isEmpty();
   int countChannels();
 };
 

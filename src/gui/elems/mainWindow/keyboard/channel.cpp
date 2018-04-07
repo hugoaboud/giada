@@ -32,3 +32,7 @@ geChannel::geChannel(int X, int Y, int W, int H, Channel* ch)
  	ch (ch)
 {
 }
+
+int geChannel::getSize() {
+	return 0;
+}

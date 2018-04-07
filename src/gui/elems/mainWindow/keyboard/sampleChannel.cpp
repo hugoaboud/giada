@@ -326,7 +326,7 @@ void geSampleChannel::cb_openMenu()
 		{0}
 	};
 
-	if (((ResourceChannel*)ch)->getStatus() & (STATUS_EMPTY | STATUS_MISSING)) {
+	if (((ResourceChannel*)ch)->status & (STATUS_EMPTY | STATUS_MISSING)) {
 		rclick_menu[(int) Menu::EXPORT_SAMPLE].deactivate();
 		rclick_menu[(int) Menu::EDIT_SAMPLE].deactivate();
 		rclick_menu[(int) Menu::FREE_CHANNEL].deactivate();
@@ -376,10 +376,10 @@ void geSampleChannel::refresh()
 	if (!mainButton->visible()) // mainButton invisible? status too (see below)
 		return;
 
-	setColorsByStatus(((ResourceChannel*)ch)->getStatus(), ((ResourceChannel*)ch)->getRecStatus());
+	setColorsByStatus(((ResourceChannel*)ch)->status, ((ResourceChannel*)ch)->recStatus);
 	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {
 		// TODO: channel record status
-		if (m::mixer::recording)// && ch->isArmed())
+		if (m::mixer::recording)// && ch->armed)
 			mainButton->setInputRecordMode();
 		if (m::recorder::active) {
 			if (m::recorder::canRec(ch, m::clock::isRunning(), m::mixer::recording))
@@ -410,7 +410,7 @@ void geSampleChannel::update()
 {
 	const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
 
-	switch (sch->getStatus()) {
+	switch (sch->status) {
 		case STATUS_EMPTY:
 			mainButton->label("-- no sample --");
 			break;
@@ -426,10 +426,10 @@ void geSampleChannel::update()
 			break;
 	}
 
-	gu_log("armed: %d\n",sch->isArmed());
-	gu_log("recStatus: %x\n",sch->getRecStatus());
-	gu_log("value: %d\n",sch->isArmed() || sch->getRecStatus() != REC_STOPPED);
-	arm->value(sch->isArmed() || sch->getRecStatus() != REC_STOPPED);
+	gu_log("armed: %d\n",sch->armed);
+	gu_log("recStatus: %x\n",sch->recStatus);
+	gu_log("value: %d\n",sch->armed || sch->recStatus != REC_STOPPED);
+	arm->value(sch->armed || sch->recStatus != REC_STOPPED);
 	arm->redraw();
 
 	/* Update channels. If you load a patch with recorded actions, the 'R' button

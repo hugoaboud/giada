@@ -38,6 +38,7 @@ class Channel;
 class geButton;
 class gdInputList;
 class geIdButton;
+class geStatusButton;
 class geChoice;
 class geSoundMeter;
 class geDial;
@@ -77,7 +78,7 @@ class gdInput : public Fl_Group
 {
 private:
 
-  gdInputList  *pParent;
+  //gdInputList  *pParent;
   InputChannel *pInput;
 
   	static void cb_button(Fl_Widget *v, void *p);

@@ -1,4 +1,3 @@
- *
  /* -----------------------------------------------------------------------------
  * Giada - Your Hardcore Loopmachine
  *
@@ -72,7 +71,7 @@ gdActionEditor::gdActionEditor(Channel *chan)
 	upperArea->begin();
 
 	if (rch != nullptr) {
-		if (rch->getType() == CHANNEL_SAMPLE) {
+		if (rch->getType() == G_CHANNEL_SAMPLE) {
 		  actionType = new geChoice(8, 8, 80, 20);
 		  gridTool   = new geGridTool(actionType->x()+actionType->w()+4, 8, this);
 			actionType->add("key press");
@@ -104,7 +103,7 @@ gdActionEditor::gdActionEditor(Channel *chan)
 	scroller = new geScroll(8, 36, w()-16, h()-44);
 
 	if (rch != nullptr) {
-		if (rch->getType() == CHANNEL_SAMPLE) {
+		if (rch->getType() == G_CHANNEL_SAMPLE) {
 
 			SampleChannel *ch = (SampleChannel*) chan;
 
@@ -196,7 +195,7 @@ void gdActionEditor::__cb_zoomIn()
 
 	ResourceChannel* rch = static_cast<ResourceChannel*>(chan);
 	if (rch != nullptr) {
-		if (rch->getType() == CHANNEL_SAMPLE) {
+		if (rch->getType() == G_CHANNEL_SAMPLE) {
 			ac->size(totalWidth, ac->h());
 			mc->size(totalWidth, mc->h());
 			vc->size(totalWidth, vc->h());
@@ -233,7 +232,7 @@ void gdActionEditor::__cb_zoomOut()
 
 	ResourceChannel* rch = static_cast<ResourceChannel*>(chan);
 	if (rch != nullptr) {
-		if (rch->getType() == CHANNEL_SAMPLE) {
+		if (rch->getType() == G_CHANNEL_SAMPLE) {
 			ac->size(totalWidth, ac->h());
 			mc->size(totalWidth, mc->h());
 			vc->size(totalWidth, vc->h());

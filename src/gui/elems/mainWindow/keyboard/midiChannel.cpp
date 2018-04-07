@@ -269,7 +269,7 @@ void geMidiChannel::cb_openMenu()
 
 void geMidiChannel::refresh()
 {
-	setColorsByStatus(((ResourceChannel*)ch)->getStatus(), ((ResourceChannel*)ch)->getRecStatus());
+	setColorsByStatus(((ResourceChannel*)ch)->status, ((ResourceChannel*)ch)->recStatus);
 	mainButton->redraw();
 }
 

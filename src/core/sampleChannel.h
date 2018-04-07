@@ -184,12 +184,6 @@ public:
 
 	void hardStop(int frame);
 
-	/* setReadActions
-	If enabled (v == true), recorder will read actions from this channel. If
-	killOnFalse == true and disabled, will also kill the channel. */
-
-	void setReadActions(bool v, bool killOnFalse);
-
 	/* onPreviewEnd
 	A callback fired when audio preview ends. */
 

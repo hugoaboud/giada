@@ -31,7 +31,6 @@
 
 #include "../window.h"
 
-
 class geButton;
 class geMidiLearner;
 

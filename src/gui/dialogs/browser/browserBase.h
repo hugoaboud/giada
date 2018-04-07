@@ -30,7 +30,7 @@
 
 
 #include "../window.h"
-
+#include <string>
 
 class Fl_Group;
 class Channel;
@@ -83,7 +83,7 @@ public:
 	std::string getCurrentPath() const;
 	Channel* getChannel() const;
 	void fireCallback() const;
-	
+
 	/* setStatusBar
 	 * Increment status bar for progress tracking. */
 
