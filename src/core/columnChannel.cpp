@@ -70,6 +70,27 @@ void ColumnChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
 	*/
 }
 
+/* -------------------------------------------------------------------------- */
+
+
+void ColumnChannel::writePatch(int i, bool isProject)
+{
+	/*
+		TODO
+	*/
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ColumnChannel::readPatch(const std::string& basePath, int i)
+{
+	/*
+		TODO
+	*/
+}
+
+/* -------------------------------------------------------------------------- */
+
 void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning){
 	/*
 		TODO
@@ -80,10 +101,10 @@ void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, i
 
 void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
+	if (!isNodeAlive()) return;
+
 	assert(out.countSamples() == vChan.countSamples());
 	// Ignore input, receive only throught ColumnChannel::input()
-
-	if (!isNodeAlive()) return;
 
 	if (!pre_mute) {
 		for (unsigned i=0; i<resources.size(); i++) {

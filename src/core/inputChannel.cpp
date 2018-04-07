@@ -24,6 +24,7 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <cassert>
 #include "const.h"
 #include "conf.h"
 #include "pluginHost.h"
@@ -89,6 +90,8 @@ void InputChannel::readPatch(const std::string& basePath, int i)
 void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
 	if (inputIndex < 0 || !isNodeAlive()) return;
+	assert(out.countSamples() == vChan.countSamples());
+	assert(in.countSamples() == vChan.countSamples());
 
 	input(in);
 
@@ -103,6 +106,10 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 	if (outColumn != nullptr && outColumn->isNodeAlive()) {
 		outColumn->input(vChan);
 	}
+}
+
+void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) {
+
 }
 
 /* -------------------------------------------------------------------------- */

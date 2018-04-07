@@ -79,7 +79,7 @@ gdInputList::gdInputList()
 	list->end();
 
 	end();
-	set_non_modal();	
+	set_non_modal();
 	label("Input Channels");
 	gu_setFavicon(this);
 	show();
@@ -120,7 +120,7 @@ void gdInputList::cb_refreshList(Fl_Widget* v, void* p)
 	 * well, who cares */
 
 	((gdInputList*)p)->refreshList();
-	((gdInputList*)p)->redraw();	
+	((gdInputList*)p)->redraw();
 }
 
 
@@ -154,24 +154,18 @@ void gdInputList::refreshList()
 	list->clear();
 	list->scroll_to(0, 0);
 
-	/* add new buttons, as many as the plugin in pluginHost::stack + 1,
+	/* add new buttons, as many as the input channels in mixer::inputChannels + 1,
 	 * the 'add new' button. Warning: if ch == nullptr we are working with
 	 * master in/master out stacks. */
 
-	
-	//int numInputs = pluginHost::countPlugins(stackType, ch);
-	//int numInputs = 0;
 	int numInputs = mixer::inputChannels.size();
-	int i = 0;
-
-	while (i<numInputs) {
-		InputChannel *pInput = mh::getInputChannelByIndex(i);
+	for (int i = 0; i < numInputs; i++) {
+		InputChannel *pInput = mixer::inputChannels[i];
 		gdInput *gdi     = new gdInput(this, pInput, list->x(), list->y()-list->yposition()+(i*24), 836);
 		list->add(gdi);
-		i++;
 	}
 
-	int addInputY = numInputs == 0 ? 90 : list->y()-list->yposition()+(i*24);
+	int addInputY = numInputs == 0 ? 90 : list->y()-list->yposition()+(numInputs*24);
 	addInput = new geButton(8, addInputY, INPUTLIST_W-16, 20, "-- add new input --");
 	addInput->callback(cb_addInput, (void*)this);
 	list->add(addInput);
@@ -179,7 +173,7 @@ void gdInputList::refreshList()
 	/* if num(plugins) > 7 make room for the side scrollbar.
 	 * Scrollbar.width = 20 + 4(margin) */
 
-	if (i>7)
+	if (numInputs>7)
 		size(INPUTLIST_W+24, h());
 	else
 		size(INPUTLIST_W, h());
@@ -200,7 +194,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	button  		 = new geIdButton(x(), y(), 120, 20);
 	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 132, 20);
 	inputMidiDevice  = new geChoice(inputAudio->x()+inputAudio->w()+4, y(), 132, 20);
-	inputMidiChannel = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);	
+	inputMidiChannel = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);
 	preMute			 = new geStatusButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
 	fx    			 = new geStatusButton(preMute->x()+preMute->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
 	posMute			 = new geStatusButton(fx->x()+fx->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
@@ -226,7 +220,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	for (int i = 0; i < 16; i++) inputMidiChannel->add(std::to_string(i+1).c_str());
 	inputMidiChannel->value(0);
 	inputMidiChannel->callback(cb_setInputMidiChannel, (void*)this);
-	
+
 	preMute->type(FL_TOGGLE_BUTTON);
 	preMute->value(i->pre_mute);
 	preMute->callback(cb_preMute, (void*)this);
@@ -341,7 +335,7 @@ int gdInput::openInputChannelMenu()
 
 void gdInput::cb_setBypass()
 {
-	
+
 }
 
 /* -------------------------------------------------------------------------- */
@@ -355,13 +349,13 @@ void gdInput::cb_setInputAudio()
 
 void gdInput::cb_setInputMidiDevice()
 {
-	
+
 }
 /* -------------------------------------------------------------------------- */
 
 void gdInput::cb_setInputMidiChannel()
 {
-	
+
 }
 
 /* -------------------------------------------------------------------------- */

@@ -50,7 +50,6 @@ public:
 	~ResourceChannel();
 
 	// [ Channel inheritance ]
-	virtual bool allocBuffers();
 	virtual void copy(const Channel* src, pthread_mutex_t* pluginMutex) = 0;
 	virtual void readPatch(const std::string& basePath, int i);
 	virtual void writePatch(int i, bool isProject);

@@ -482,7 +482,7 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 			recStatus = REC_READING;
 			inputTracker = 0;
 			setReadActions(true, recsStopOnChanHalt);   // rec start
-			newWave();
+			//newWave(); FIXME WaveManager?
 			((geSampleChannel*)guiChannel)->update();
 		}
 		return;
@@ -767,10 +767,10 @@ void SampleChannel::pushWave(Wave* w)
 
 void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
+	if (!isNodeAlive()) return;
+	
 	assert(out.countSamples() == vChan.countSamples());
 	assert(in.countSamples()  == vChan.countSamples());
-
-	if (!isNodeAlive()) return;
 
 	input(in);
 

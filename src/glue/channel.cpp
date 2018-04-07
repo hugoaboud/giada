@@ -52,6 +52,7 @@
 #include "../core/conf.h"
 #include "../core/wave.h"
 #include "../core/channel.h"
+#include "../core/columnChannel.h"
 #include "../core/sampleChannel.h"
 #include "../core/midiChannel.h"
 #include "../core/plugin.h"
@@ -105,6 +106,25 @@ int loadChannel(SampleChannel* ch, const string& fname)
 	G_MainWin->keyboard->updateChannel(ch->guiChannel);
 
 	return result;
+}
+
+/* -------------------------------------------------------------------------- */
+
+/* addColumnChannel
+Adds an empty new channel to the stack. Returns the new channel. */
+
+ColumnChannel* addColumnChannel(int width) {
+  ColumnChannel* ch    = m::mh::addColumnChannel();
+	geColumn* gch = G_MainWin->keyboard->addColumn(ch, width);
+	ch->guiChannel = (geChannel*) gch;
+	return ch;
+}
+
+/* deleteColumnChannel
+Removes a ColumnChannel from Mixer. */
+
+void deleteColumnChannel(ColumnChannel* ch) {
+  // TODO
 }
 
 /* -------------------------------------------------------------------------- */

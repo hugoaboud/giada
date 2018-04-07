@@ -158,7 +158,7 @@ geChannel* geKeyboard::addChannel(ColumnChannel* cch, ResourceChannel* ch, int s
 		gu_log("[geKeyboard::addChannel] created new column ");
 	}
 	geColumn* col = (geColumn*) cch->guiChannel;
-	gu_log("[geKeyboard::addChannel] add to column with index=%d, size=%d\n", 
+	gu_log("[geKeyboard::addChannel] add to column with index=%d, size=%d\n",
 		col->getIndex(), size);
 	return col->addChannel(ch, size);
 }
@@ -392,7 +392,7 @@ geColumn* geKeyboard::getColumn(int i)
 }
 
 void geKeyboard::update() {
-	/* Zero columns? Just add the "add column" button. Compact column and avoid 
+	/* Zero columns? Just add the "add column" button. Compact column and avoid
 	empty spaces otherwise. */
 
 	if (columns.size() == 0)
