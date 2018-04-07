@@ -44,15 +44,6 @@ protected:
 	A callback fired when audio preview ends. */
 	std::function<void()> onPreviewEnd;
 
-	float volume_i; // internal volume
-	float volume_d; // delta volume (for envelope)
-
-	int  type;                  // midi or sample
-	int  status;                // status of resource ()
-	int  recStatus;             // status of recordings (waiting, ending, ...)
-	bool readActions;	        // read what's recorded
-	bool armed;                 // armed for recording
-
 public:
 
 	ResourceChannel(int type, int status, int bufferSize);
@@ -61,14 +52,14 @@ public:
 	// [ Channel inheritance ]
 	virtual bool allocBuffers();
 	virtual void copy(const Channel* src, pthread_mutex_t* pluginMutex) = 0;
-	virtual int readPatch(const std::string& basePath, int i, pthread_mutex_t* pluginMutex, int samplerate, int rsmpQuality);
-	virtual int writePatch(int i, bool isProject);
+	virtual void readPatch(const std::string& basePath, int i);
+	virtual void writePatch(int i, bool isProject);
 
 	/* Preview
 	Makes itself audibile for audio preview, such as Sample Editor or other
 	tools. */
 
-	virtual void preview(float* outBuffer) = 0;
+	virtual void preview(giada::m::AudioBuffer& outBuffer) = 0;
 
 	/* start
 	Action to do when channel starts. doQuantize = false (don't quantize)
@@ -89,7 +80,7 @@ public:
 	means that the channel has been started by a human key press and not a pre-recorded action. */
 
 	virtual void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) = 0;
-	
+
 	/* stop
 	What to do when recording on this channel is stopped normally (via key or MIDI). */
 
@@ -116,10 +107,10 @@ public:
 	virtual void stopBySeq(bool chansStopOnSeqHalt) = 0;
 
 	/* quantize
-	Starts channel according to quantizer. Index = array index of mixer::channels, 
+	Starts channel according to quantizer. Index = array index of mixer::channels,
 	used by recorder. LocalFrame = frame within the current buffer.  */
 
-	virtual void quantize(int index, int localFrame) = 0;
+	virtual void quantize(int index, int localFrame, int globalFrame) = 0;
 
 	/* onZero
 	What to do when frame goes to zero, i.e. sequencer restart. */
@@ -142,20 +133,20 @@ public:
 	sample yet.*/
 
 	virtual bool canInputRec() = 0;
-	
+
 	/* isPreview
 	Whethet a channel is previewing. */
 	bool isPreview();
 
 	/* setReadActions
-	If enabled (v == true), recorder will read actions from this channel. If 
+	If enabled (v == true), recorder will read actions from this channel. If
 	killOnFalse == true and disabled, will also kill the channel. */
 
 	void setReadActions(bool v, bool killOnFalse);
 
 	/* isPlaying
 	If status == STATUS_PLAY | STATUS_ENDING return true. */
-	
+
 	bool isPlaying();
 
 	/* sendMidiL*
@@ -165,32 +156,45 @@ public:
 	void sendMidiLsolo();
 	void sendMidiLplay();
 
-	void setVolumeI(float v);
-	void setArmed(bool b);
-	void setPreviewMode(int m);
+	/* setters */
 
-	// midi stuff
+	void setVolumeI(float v);
+	void setPreviewMode(int m);
+	void setOnPreviewEndCb(std::function<void()> f);
+
+	/* getters */
+
+	int getType() const { return type; }
+
+	/* status
+	Status of resource */
+
+	int status;
+
+	/* recStatus
+	Status of recording (waiting, ending, ...) */
+
+	int recStatus;
+
+	/* armed
+	Armed for recording */
+
+	bool armed;
+
+	/* column
+	ColumnChannel this channel belongs to */
 
 	ColumnChannel* column;
+
+	// midi stuff
 
 	uint32_t midiInKeyPress;
 	uint32_t midiInKeyRel;
 	uint32_t midiInKill;
 	uint32_t midiInArm;
-	
 	uint32_t midiOutLplaying;
-
 	bool     midiInVeloAsVol;
-	uint32_t midiInReadActions;
 	uint32_t midiInPitch;
-
-	/* setters & getters */
-	
-	bool isArmed() const { return armed; };
-	int getType() const { return type; }
-	int getStatus() const { return status; };
-	int getRecStatus() const { return recStatus; };
-	int getReadActions() const { return readActions; };
 };
 
 

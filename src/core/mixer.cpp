@@ -76,12 +76,15 @@ float tick[TICKSIZE] = {
 	0.069639,  0.031320
 };
 
+int  tickTracker, tockTracker = 0;
+bool tickPlay, tockPlay = false; // 1 = play, 0 = stop
+
 /* -------------------------------------------------------------------------- */
 
 /* feed
  on InputChannel::process method. */
 
-void routeAudio(AudioBuffer& outBuf, const AudioBuffer& inBuf, unsigned bufferSize)
+void routeAudio(AudioBuffer& out, AudioBuffer& in, unsigned bufferSize)
 {
 	if (!kernelAudio::isInputEnabled())
 		return;
@@ -93,13 +96,13 @@ void routeAudio(AudioBuffer& outBuf, const AudioBuffer& inBuf, unsigned bufferSi
 	// If the InputChannel is monitoring, writes the processed output to outBuf.
 	// Also feeds the ColumnChannel it's routed to with the processed output.
 	for (unsigned i=0; i<inputChannels.size(); i++) {
-		inputChannels[i]->process(outBuf, inBuf);
+		inputChannels[i]->process(out, in);
 	}
 
 	// Process ColumnChannels
 	//
 	for (unsigned i=0; i<columnChannels.size(); i++) {
-		columnChannels[i]->process(outBuf, nullptr);
+		columnChannels[i]->process(out, in);
 	}
 }
 
@@ -137,8 +140,7 @@ void readActions(unsigned frame)
 			continue;
 		for (recorder::action* action : recorder::global.at(i)) {
 			Channel* ch = mh::getChannelByIndex(action->chan);
-			ch->parseAction(action, frame, clock::getCurrentFrame(),
-				clock::getQuantize(), clock::isRunning());
+			ch->parseAction(action, frame, clock::getCurrentFrame(), clock::isRunning());
 		}
 		break;
 	}
@@ -167,7 +169,7 @@ void doQuantize(unsigned frame)
 	for (unsigned i=0; i<columnChannels.size(); i++) {
 		ColumnChannel* cch = columnChannels.at(i);
 		for (unsigned j=0; j<cch->getResourceCount(); j++)
-			cch->getResource(j)->quantize(j, frame);
+			cch->getResource(j)->quantize(j, frame, clock::getCurrentFrame());
 	}
 	pthread_mutex_unlock(&mutex_chans);
 }
@@ -354,7 +356,7 @@ int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize,
 
 	// inBuf -> Input Channels -> Column Channels ->
 	// -> Resource Channels -> Column Channels -> _outBuf
-	routeAudio(outBuf, inBuf, bufferSize);
+	routeAudio(out, in, bufferSize);
 
 	/* post processing */
 
@@ -363,7 +365,6 @@ int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize,
 		finalizeOutput(out, j);
 		if (conf::limitOutput)
 			limitOutput(out, j);
-		computePeak(out, peakOut, j);
 		renderMetronome(out, j);
 	}
 

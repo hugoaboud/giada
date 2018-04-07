@@ -169,7 +169,7 @@ bool hasMissingPlugins();
 
 void sortPlugins(int sortMethod);
 
-void forEachPlugin(int stackType, const Channel* ch, std::function<void(const Plugin* p)> f);
+void forEachPlugin(const Channel* ch, std::function<void(const Plugin* p)> f);
 
 }}}; // giada::m::pluginHost::
 

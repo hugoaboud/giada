@@ -45,23 +45,24 @@ public:
 	ColumnChannel(int bufferSize);
 	~ColumnChannel();
 
-	/* Channel inherit*/
-
+	/* [Channel] inheritance */
 	std::string getName() const override;
-	void process(float* outBuffer, float* inBuffer) override;
-	void input(float* inBuffer) override;
-	void copy(const Channel *src, pthread_mutex_t *pluginMutex) override;
+	bool isNodeAlive() override;
+	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
+	void readPatch(const std::string& basePath, int i) override;
+	void writePatch(int i, bool isProject) override;
+	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
-	bool isChainAlive() override;
+
 
 	/* */
 
-	ResourceChannel* getResource(int index);
-	void 			 addResource(ResourceChannel* resource);
-	void 			 removeResource(int index);
-	unsigned 		 getResourceCount();
+	ResourceChannel* 	getResource(int index);
+	void 			 				addResource(ResourceChannel* resource);
+	void 			 				removeResource(int index);
+	unsigned 		 			getResourceCount();
 
-	/* ResourceChannel stack methods */
+	/* ResourceChannel Stack methods */
 
 	void recArmedResources();
 	void stopRecResources();

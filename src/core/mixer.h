@@ -45,7 +45,7 @@ namespace mixer
 {
 void init(int framesInSeq, int framesInBuffer);
 
-int close();
+void close();
 
 /* masterPlay
 Core method (callback) */

@@ -135,8 +135,8 @@ public:
 
 	int getColumnIndex();
 
-	int getSize();
- 
+	int getSize() override;
+
 	geIdButton*      button;
 	geChannelStatus* status;
 	geButton*        arm;

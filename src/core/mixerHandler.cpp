@@ -93,57 +93,11 @@ int readPatchPlugins(vector<patch::plugin_t>* list)
 
 /* ------------------------------------------------------------------------ */
 
-int getNewInputChanIndex()
+int channelIndex = 0;
+
+int getNewChannelIndex()
 {
-	/* always skip last channel: it's the last one just added */
-
-	if (mixer::inputChannels.size() == 1)
-		return 0;
-
-	int index = 0;
-	for (unsigned i=0; i<mixer::inputChannels.size()-1; i++) {
-		if (mixer::inputChannels.at(i)->index > index)
-			index = mixer::inputChannels.at(i)->index;
-		}
-	index += 1;
-	return index;
-}
-
-/* ------------------------------------------------------------------------ */
-
-int getNewColumnChanIndex()
-{
-	/* always skip last channel: it's the last one just added */
-
-	if (mixer::columnChannels.size() == 1)
-		return 0;
-
-	int index = 0;
-	for (unsigned i=0; i<mixer::columnChannels.size()-1; i++) {
-		if (mixer::columnChannels.at(i)->index > index)
-			index = mixer::columnChannels.at(i)->index;
-		}
-	index += 1;
-	return index;
-}
-
-/* -------------------------------------------------------------------------- */
-
-
-int getNewChanIndex()
-{
-	/* always skip last channel: it's the last one just added */
-
-	if (mixer::channels.size() == 1)
-		return 0;
-
-	int index = 0;
-	for (unsigned i=0; i<mixer::channels.size()-1; i++) {
-		if (mixer::channels.at(i)->index > index)
-			index = mixer::channels.at(i)->index;
-		}
-	index += 1;
-	return index;
+	return channelIndex++;
 }
 
 
@@ -191,14 +145,14 @@ InputChannel* addInputChannel()
 		break;
 	}
 
-	ch->index = getNewInputChanIndex();
+	ch->index = getNewChannelIndex();
 	gu_log("[addInputChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
 }
 
 
 
-int deleteInputChannel(InputChannel* ch) {
+bool deleteInputChannel(InputChannel* ch) {
 	int index = -1;
 	for (unsigned i=0; i<mixer::inputChannels.size(); i++) {
 		if (mixer::inputChannels.at(i) == ch) {
@@ -208,7 +162,7 @@ int deleteInputChannel(InputChannel* ch) {
 	}
 	if (index == -1) {
 		gu_log("[deleteInputChannel] unable to find channel %d for deletion!\n", ch->index);
-		return 0;
+		return false;
 	}
 
 	while (true) {
@@ -217,7 +171,7 @@ int deleteInputChannel(InputChannel* ch) {
 		mixer::inputChannels.erase(mixer::inputChannels.begin() + index);
 		delete ch;
 		pthread_mutex_unlock(&mixer::mutex_chans);
-		return 1;
+		return true;
 	}
 }
 
@@ -254,7 +208,7 @@ ColumnChannel* addColumnChannel() {
 		break;
 	}
 
-	ch->index = getNewColumnChanIndex();
+	ch->index = getNewChannelIndex();
 	ch->setName(("Column " + std::to_string(ch->index)).c_str());
 	gu_log("[addColumnChannel] column channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
@@ -262,7 +216,7 @@ ColumnChannel* addColumnChannel() {
 
 /* -------------------------------------------------------------------------- */
 
-int deleteColumnChannel(ColumnChannel* ch) {
+bool deleteColumnChannel(ColumnChannel* ch) {
 	int index = -1;
 	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
 		if (mixer::columnChannels.at(i) == ch) {
@@ -272,7 +226,7 @@ int deleteColumnChannel(ColumnChannel* ch) {
 	}
 	if (index == -1) {
 		gu_log("[deleteColumnChannel] unable to find channel %d for deletion!\n", ch->index);
-		return 0;
+		return false;
 	}
 
 	while (true) {
@@ -281,7 +235,7 @@ int deleteColumnChannel(ColumnChannel* ch) {
 		mixer::columnChannels.erase(mixer::columnChannels.begin() + index);
 		delete ch;
 		pthread_mutex_unlock(&mixer::mutex_chans);
-		return 1;
+		return true;
 	}
 }
 
@@ -302,7 +256,7 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 	ResourceChannel* ch;
 	int bufferSize = kernelAudio::getRealBufSize()*2;
 
-	if (type == CHANNEL_SAMPLE)
+	if (type == G_CHANNEL_SAMPLE)
 		ch = new SampleChannel(bufferSize);
 	else
 		ch = new MidiChannel(bufferSize);
@@ -310,6 +264,7 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 	if (!ch->allocBuffers()) {
 		delete ch;
 		return nullptr;
+	}
 
 	while (true) {
 		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
@@ -319,7 +274,7 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 		break;
 	}
 
-	ch->index = getNewChanIndex();
+	ch->index = getNewChannelIndex();
 	ch->column = col;
 	gu_log("[addResourceChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
 	return ch;
@@ -329,7 +284,7 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 /* -------------------------------------------------------------------------- */
 
 
-int deleteResourceChannel(ResourceChannel* ch)
+bool deleteResourceChannel(ResourceChannel* ch)
 {
 	int columnIndex = -1;
 	int index = -1;
@@ -345,7 +300,7 @@ int deleteResourceChannel(ResourceChannel* ch)
 	}
 	if (columnIndex == -1 || index == -1) {
 		gu_log("[deleteResourceChannel] unable to find channel %d for deletion!\n", ch->index);
-		return 0;
+		return false;
 	}
 
 	while (true) {
@@ -354,7 +309,7 @@ int deleteResourceChannel(ResourceChannel* ch)
 		mixer::columnChannels.at(columnIndex)->removeResource(index);
 		delete ch;
 		pthread_mutex_unlock(&mixer::mutex_chans);
-		return;
+		return true;
 	}
 }
 
@@ -371,10 +326,26 @@ ResourceChannel* getResourceChannelByIndex(int index)
 				return cch->getResource(j);
 		}
 	}
-	gu_log("[getChannelByIndex] channel at index %d not found!\n", index);
+	gu_log("[getResourceChannelByIndex] channel at index %d not found!\n", index);
 	return nullptr;
 }
 
+/* -------------------------------------------------------------------------- */
+
+Channel* getChannelByIndex(int index)
+{
+	InputChannel* input = getInputChannelByIndex(index);
+	if (input != nullptr) return (Channel*) input;
+
+	ColumnChannel* column = getColumnChannelByIndex(index);
+	if (column != nullptr) return (Channel*) column;
+
+	ResourceChannel* resource = getResourceChannelByIndex(index);
+	if (resource != nullptr) return (Channel*) resource;
+
+	gu_log("[getChannelByIndex] channel at index %d not found!\n", index);
+	return nullptr;
+}
 
 /* -------------------------------------------------------------------------- */
 

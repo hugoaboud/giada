@@ -24,6 +24,8 @@
  *
  * -------------------------------------------------------------------------- */
 
+
+#include <cassert>
 #include "const.h"
 #include "sampleChannel.h"
 #include "columnChannel.h"
@@ -38,7 +40,7 @@ using namespace giada::m;
 
 
 ColumnChannel::ColumnChannel(int bufferSize)
-	: Channel(bufferSize),
+	: Channel(G_CHANNEL_COLUMN, bufferSize),
 	outputIndex(-1)
 {
 }
@@ -76,47 +78,35 @@ void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, i
 
 /* -------------------------------------------------------------------------- */
 
-void ColumnChannel::input(float* inBuffer) {
-	if (pre_mute || mute) return;
-	for (int i=0; i<bufferSize; i++) {
-		vChan[i] += inBuffer[i];
-		if (vChan[i] > peak) peak = vChan[i];
-	}
-}
+void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
+{
+	assert(out.countSamples() == vChan.countSamples());
+	// Ignore input, receive only throught ColumnChannel::input()
 
-/* -------------------------------------------------------------------------- */
-
-void ColumnChannel::process(float* outBuffer, float* inBuffer) {
-
-	if (mute) return;
+	if (!isNodeAlive()) return;
 
 	if (!pre_mute) {
 		for (unsigned i=0; i<resources.size(); i++) {
-			resources[i]->process(outBuffer, vChan);
-			resources[i]->preview(outBuffer);
-		}
-	}
-
-	if (inputMonitor) {
-		for (int i=0; i<bufferSize; i++) {
-			outBuffer[i] += vChan[i];
+			resources[i]->process(out, vChan);
+			resources[i]->preview(out);
 		}
 	}
 
 #ifdef WITH_VST
-	pluginHost::processStack(outBuffer, this);
+	pluginHost::processStack(vChan, this);
 #endif
 
-	for (int i=0; i<bufferSize; i++)
-		outBuffer[i] *= volume;
+	if (inputMonitor)
+		output(out);
 }
 
 /* -------------------------------------------------------------------------- */
 
 
-bool ColumnChannel::isChainAlive() {
+bool ColumnChannel::isNodeAlive() {
+	if (mute) return false;
 	if (inputMonitor) return true;
-	for (unsigned i = 0; i < resources.size(); i++) if (resources[i]->isChainAlive()) return true;
+	for (unsigned i = 0; i < resources.size(); i++) if (resources[i]->isNodeAlive()) return true;
 	return false;
 }
 
@@ -144,7 +134,7 @@ void ColumnChannel::recArmedResources() {
 	gu_log("recArmedResources\n");
 	for (unsigned i=0; i<resources.size(); i++) {
 		ResourceChannel* ch = mixer::columnChannels[i]->getResource(i);
-		if (ch->isArmed() && ch->getRecStatus() == REC_STOPPED) {
+		if (ch->armed && ch->recStatus == REC_STOPPED) {
 			ch->recStart();
 		}
 	}
@@ -153,10 +143,10 @@ void ColumnChannel::recArmedResources() {
 void ColumnChannel::stopRecResources() {
 	for (unsigned i=0; i<resources.size(); i++) {
 		ResourceChannel* ch = mixer::columnChannels[i]->getResource(i);
-		if (ch->isArmed() || ch->getRecStatus() != REC_STOPPED) {
+		if (ch->armed || ch->recStatus != REC_STOPPED) {
 			ch->recStop();
 		}
-	}	
+	}
 }
 
 void ColumnChannel::clearAllResources() {
@@ -168,7 +158,7 @@ void ColumnChannel::clearAllResources() {
 
 bool ColumnChannel::isSilent() {
 	for (unsigned i = 0; i < resources.size(); i++) {
-		int status = resources.at(i)->getStatus();
+		int status = resources.at(i)->status;
 		if (status == STATUS_PLAY || status == STATUS_ENDING) return false;
 	}
 	return true;

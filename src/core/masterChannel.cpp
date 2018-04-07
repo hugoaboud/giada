@@ -28,11 +28,8 @@
 #include "const.h"
 #include "masterChannel.h"
 
-using namespace giada::m;
-
 
 MasterChannel::MasterChannel(int bufferSize)
-	: Channel          (bufferSize)
 {
 }
 

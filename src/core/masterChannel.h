@@ -28,10 +28,7 @@
 #ifndef G_MASTER_CHANNEL_H
 #define G_MASTER_CHANNEL_H
 
-
-#include "channel.h"
-
-class MasterChannel : public Channel
+class MasterChannel
 {
 private:
 

@@ -52,23 +52,18 @@ using namespace giada::m;
 
 
 ResourceChannel::ResourceChannel(int type, int status, int bufferSize)
-: Channel(bufferSize),
+: Channel						(type, bufferSize),
 	previewMode    		(G_PREVIEW_NONE),
-	volume_i       		(1.0f),
-	volume_d       		(0.0f),
-	type		   		(type),
 	status         		(status),
 	recStatus      		(REC_STOPPED),
-	readActions			(false),
 	armed            	(false),
-	column		 		(nullptr),
+	column		 				(nullptr),
 	midiInKeyPress 		(0x0),
 	midiInKeyRel   		(0x0),
 	midiInKill     		(0x0),
 	midiInArm      		(0x0),
 	midiOutLplaying		(0x0),
 	midiInVeloAsVol		(true),
-	midiInReadActions	(0x0),
 	midiInPitch      	(0x0)
 {
 }
@@ -80,25 +75,7 @@ ResourceChannel::ResourceChannel(int type, int status, int bufferSize)
 ResourceChannel::~ResourceChannel()
 {
 	status = STATUS_OFF;
-	if (vChan != nullptr)
-		delete[] vChan;
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-bool ResourceChannel::allocBuffers()
-{
-	vChan = new (std::nothrow) float[bufferSize];
-	if (vChan == nullptr) {
-		gu_log("[ResourceChannel::allocBuffers] unable to alloc memory for vChan!\n");
-		return false;
-	}
-	std::memset(vChan, 0, bufferSize * sizeof(float));	
-	return true; 
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -125,25 +102,22 @@ void ResourceChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex)
 /* -------------------------------------------------------------------------- */
 
 
-int ResourceChannel::writePatch(int i, bool isProject)
+void ResourceChannel::writePatch(int i, bool isProject)
 {
 	/*
 		TODO
 	*/
-	return 0;
 }
 
 
 /* -------------------------------------------------------------------------- */
 
 
-int ResourceChannel::readPatch(const string& path, int i, pthread_mutex_t* pluginMutex,
-	int samplerate, int rsmpQuality)
+void ResourceChannel::readPatch(const std::string& basePath, int i)
 {
 	/*
 		TODO
 	*/
-	return 0;
 }
 
 
@@ -204,6 +178,13 @@ void ResourceChannel::setReadActions(bool v, bool killOnFalse)
 	readActions = v;
 	if (!readActions && killOnFalse)
 		kill(0);  /// FIXME - wrong frame value
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ResourceChannel::setOnPreviewEndCb(std::function<void()> f)
+{
+	onPreviewEnd = f;
 }
 
 /* -------------------------------------------------------------------------- */

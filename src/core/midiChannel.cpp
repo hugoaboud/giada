@@ -161,26 +161,9 @@ void MidiChannel::unsetMute(bool internal)
 	sendMidiLmute();
 }
 
-/* ----- */
+void MidiChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) {
 
-void MidiChannel::input(float *inBuffer) {}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void MidiChannel::process(giada::m::AudioBuffer& out, const giada::m::AudioBuffer& in)
-{
-#ifdef WITH_VST
-	pluginHost::processStack(vChan, this);
-#endif
-
-	/* TODO - isn't this useful only if WITH_VST ? */
-	for (int i=0; i<out.countFrames(); i++)
-		for (int j=0; j<out.countChannels(); j++)
-			out[i][j] += vChan[i][j] * volume;
 }
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -211,13 +194,6 @@ void MidiChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool fo
 			sendMidiLplay();
 			break;
 	}
-}
-
-/* -------------------------------------------------------------------------- */
-
-bool MidiChannel::isArmed() const
-{
-	return armed;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -343,7 +319,7 @@ void MidiChannel::receiveMidi(const MidiEvent& midiEvent)
 
 /* -------------------------------------------------------------------------- */
 
-bool MidiChannel::isChainAlive() {
+bool MidiChannel::isNodeAlive() {
 	return false;
 }
 

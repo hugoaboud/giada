@@ -93,7 +93,7 @@ void shiftPress(SampleChannel* ch)
 	}
 	else {
 		if (ch->hasActions) {
-			if (m::clock::isRunning() || ch->getStatus() == STATUS_OFF)
+			if (m::clock::isRunning() || ch->status == STATUS_OFF)
 				ch->getReadActions() ? c::channel::stopReadingRecs(ch) : c::channel::startReadingRecs(ch);
 			else
 				ch->kill(0);  // on frame 0: user-generated event
@@ -238,7 +238,7 @@ void keyRelease(SampleChannel* ch, bool ctrl, bool shift)
 
 void recPress(ResourceChannel* ch, bool ctrl, bool shift)
 {
-	if (ch->getType() == CHANNEL_SAMPLE)
+	if (ch->getType() == G_CHANNEL_SAMPLE)
 		recPress(static_cast<SampleChannel*>(ch), ctrl, shift);
 	//else
 	//	recPress(static_cast<MidiChannel*>(ch), ctrl, shift);
@@ -394,8 +394,7 @@ void stopInputRec(bool gui)
 			continue;
 		SampleChannel* sch = static_cast<SampleChannel*>(ch);
 		if (sch->mode & (LOOP_ANY) && sch->status == STATUS_OFF && sch->armed)
-			sch->start(clock::getCurrentFrame(), true, clock::getQuantize(),
-				clock::isRunning(), true, true);
+			sch->start(clock::getCurrentFrame(), true, clock::isRunning(), true, true);
 	}
 
 	Fl::lock();

@@ -57,7 +57,7 @@ Plugin::Plugin(juce::AudioPluginInstance *plugin, double samplerate,
 
 	for (int i=0; i<plugin->getNumParameters(); i++)
 		midiInParams.push_back(0x0);
-	
+
 	plugin->prepareToPlay(samplerate, buffersize);
 
 	gu_log("[Plugin] plugin initialized and ready. MIDI input params: %lu\n",
@@ -132,7 +132,9 @@ int Plugin::getNumParameters() const
 
 float Plugin::getParameter(int paramIndex) const
 {
-	return plugin->getParameter(paramIndex);
+	//FIXME: JUCE_DEPRECATED
+	//return plugin->getParameter(paramIndex);
+	return 0;
 }
 
 
@@ -141,7 +143,8 @@ float Plugin::getParameter(int paramIndex) const
 
 void Plugin::setParameter(int paramIndex, float value) const
 {
-	return plugin->setParameter(paramIndex, value);
+	//FIXME: JUCE_DEPRECATED
+	//return plugin->setParameter(paramIndex, value);
 }
 
 
@@ -261,7 +264,9 @@ string Plugin::getProgramName(int index) const
 
 string Plugin::getParameterName(int index) const
 {
-	return plugin->getParameterName(index).toStdString();
+	//FIXME: JUCE_DEPRECATED
+	//return plugin->getParameterName(index).toStdString();
+	return "";
 }
 
 
@@ -270,7 +275,9 @@ string Plugin::getParameterName(int index) const
 
 string Plugin::getParameterText(int index) const
 {
-	return plugin->getParameterText(index).toStdString();
+	//FIXME: JUCE_DEPRECATED
+	//return plugin->getParameterText(index).toStdString();
+	return "";
 }
 
 
@@ -279,7 +286,9 @@ string Plugin::getParameterText(int index) const
 
 string Plugin::getParameterLabel(int index) const
 {
-	return plugin->getParameterLabel(index).toStdString();
+	//FIXME: JUCE_DEPRECATED
+	//return plugin->getParameterLabel(index).toStdString();
+	return "";
 }
 
 

@@ -56,7 +56,7 @@ InputChannel* addInputChannel();
 /* deleteInputChannel
 Completely removes a column hannel from the stack. */
 
-int deleteInputChannel(InputChannel* ch);
+bool deleteInputChannel(InputChannel* ch);
 
 /* getInputChannelCount
 Get how many inputs are on stack. */
@@ -80,7 +80,7 @@ ColumnChannel* addColumnChannel();
 /* deleteChannel
 Completely removes a column hannel from the stack. */
 
-int deleteColumnChannel(ColumnChannel* ch);
+bool deleteColumnChannel(ColumnChannel* ch);
 
 /* getColumnChannelCount
 Get how many inputs are on stack. */
@@ -103,12 +103,17 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type);
 /* deleteChannel
 Completely removes a resource channel from the stack. */
 
-int deleteResourceChannel(ResourceChannel* ch);
+bool deleteResourceChannel(ResourceChannel* ch);
 
-/* getChannelByIndex
-Returns channel with given index 'i'. */
+/* getResourceChannelByIndex
+Returns ResourceChannel with given index 'i'. */
 
 ResourceChannel* getResourceChannelByIndex(int i);
+
+/* getResourceChannelByIndex
+Returns ResourceChannel with given index 'i'. */
+
+Channel* getChannelByIndex(int i);
 
 /* hasLogicalSamples
 True if 1 or more samples are logical (memory only, such as takes)

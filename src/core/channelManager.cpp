@@ -52,10 +52,10 @@ namespace
 void writeActions_(int chanIndex, patch::channel_t& pch)
 {
 	recorder::forEachAction([&] (const recorder::action* a) {
-		if (a->chan != chanIndex) 
+		if (a->chan != chanIndex)
 			return;
-		pch.actions.push_back(patch::action_t { 
-			a->type, a->frame, a->fValue, a->iValue 
+		pch.actions.push_back(patch::action_t {
+			a->type, a->frame, a->fValue, a->iValue
 		});
 	});
 }
@@ -68,7 +68,7 @@ void writePlugins_(const Channel* ch, patch::channel_t& pch)
 {
 #ifdef WITH_VST
 
-	pluginHost::forEachPlugin(pluginHost::CHANNEL, ch, [&] (const Plugin* p) {
+	pluginHost::forEachPlugin(ch, [&] (const Plugin* p) {
 		patch::plugin_t pp;
 		pp.path   = p->getUniqueId();
 		pp.bypass = p->isBypassed();
@@ -104,8 +104,7 @@ void readPlugins_(Channel* ch, const patch::channel_t& pch)
 #ifdef WITH_VST
 
 	for (const patch::plugin_t& ppl : pch.plugins) {
-		Plugin* plugin = pluginHost::addPlugin(ppl.path, pluginHost::CHANNEL,
-			&mixer::mutex_plugins, ch);
+		Plugin* plugin = pluginHost::addPlugin(ppl.path, &mixer::mutex_plugins, ch);
 		if (plugin == nullptr)
 			continue;
 
@@ -136,9 +135,11 @@ int create(int type, int bufferSize, bool inputMonitorOn, Channel** out)
 {
 	Channel* ch;
 	if (type == G_CHANNEL_SAMPLE)
-		ch = new SampleChannel(bufferSize, inputMonitorOn);
+		ch = new SampleChannel(bufferSize);
 	else
 		ch = new MidiChannel(bufferSize);
+
+	ch->inputMonitor = inputMonitorOn;
 
 	if (!ch->allocBuffers()) {
 		delete ch;
@@ -162,18 +163,18 @@ int writePatch(const Channel* ch, bool isProject)
 	pch.size            = ch->guiChannel->getSize();
 	pch.name            = ch->name;
 	pch.key             = ch->key;
-	pch.armed           = ch->armed;
-	pch.column          = ch->guiChannel->getColumnIndex();
+	//pch.armed           = ch->armed; TODO: to ResourceChannel
+	//pch.column          = ch->guiChannel->getColumnIndex(); TODO: to ResourceChannel
 	pch.mute            = ch->mute;
 	// pch.mute_s          = ch->mute_s;  TODO remove it with mute refactoring
 	pch.solo            = ch->solo;
 	pch.volume          = ch->volume;
 	pch.pan             = ch->pan;
 	pch.midiIn          = ch->midiIn;
-	pch.midiInKeyPress  = ch->midiInKeyPress;
-	pch.midiInKeyRel    = ch->midiInKeyRel;
-	pch.midiInKill      = ch->midiInKill;
-	pch.midiInArm       = ch->midiInArm;
+	//pch.midiInKeyPress  = ch->midiInKeyPress; TODO: to ResourceChannel
+	//pch.midiInKeyRel    = ch->midiInKeyRel; TODO: to ResourceChannel
+	//pch.midiInKill      = ch->midiInKill; TODO: to ResourceChannel
+	//pch.midiInArm       = ch->midiInArm; TODO: to ResourceChannel
 	pch.midiInVolume    = ch->midiInVolume;
 	pch.midiInMute      = ch->midiInMute;
 	pch.midiInFilter    = ch->midiInFilter;
@@ -226,7 +227,7 @@ void writePatch(const SampleChannel* ch, bool isProject, int index)
 	pch.pitch             = ch->getPitch();
 	pch.inputMonitor      = ch->inputMonitor;
 	pch.midiInReadActions = ch->midiInReadActions;
-	pch.midiInPitch       = ch->midiInPitch;	
+	pch.midiInPitch       = ch->midiInPitch;
 }
 
 
@@ -238,7 +239,7 @@ void readPatch(Channel* ch, int i)
 	const patch::channel_t& pch = patch::channels.at(i);
 
 	ch->key             = pch.key;
-	ch->armed           = pch.armed;
+	//ch->armed           = pch.armed;
 	ch->type            = pch.type;
 	ch->name            = pch.name;
 	ch->index           = pch.index;
@@ -248,9 +249,9 @@ void readPatch(Channel* ch, int i)
 	ch->volume          = pch.volume;
 	ch->pan             = pch.pan;
 	ch->midiIn          = pch.midiIn;
-	ch->midiInKeyPress  = pch.midiInKeyPress;
-	ch->midiInKeyRel    = pch.midiInKeyRel;
-	ch->midiInKill      = pch.midiInKill;
+	//ch->midiInKeyPress  = pch.midiInKeyPress;
+	//ch->midiInKeyRel    = pch.midiInKeyRel;
+	//ch->midiInKill      = pch.midiInKill;
 	ch->midiInVolume    = pch.midiInVolume;
 	ch->midiInMute      = pch.midiInMute;
 	ch->midiInFilter    = pch.midiInFilter;
@@ -282,7 +283,7 @@ void readPatch(SampleChannel* ch, const string& basePath, int i)
 	ch->setBoost(pch.boost);
 
   Wave* w = nullptr;
-  int res = waveManager::create(basePath + pch.samplePath, &w); 
+  int res = waveManager::create(basePath + pch.samplePath, &w);
 
 	if (res == G_RES_OK) {
 		ch->pushWave(w);
@@ -309,6 +310,6 @@ void readPatch(MidiChannel* ch, int i)
 	const patch::channel_t& pch = patch::channels.at(i);
 
 	ch->midiOut     = pch.midiOut;
-	ch->midiOutChan = pch.midiOutChan;	
+	ch->midiOutChan = pch.midiOutChan;
 }
 }}}; // giada::m::channelManager

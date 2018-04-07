@@ -53,11 +53,11 @@ namespace midiDispatcher
 namespace
 {
 /* cb_midiLearn, cb_data
-Callback prepared by the gdMidiGrabber window and called by midiDispatcher. It 
+Callback prepared by the gdMidiGrabber window and called by midiDispatcher. It
 contains things to do once the midi message has been stored. */
 
 cb_midiLearn* cb_learn = nullptr;
-void* cb_data = nullptr;	
+void* cb_data = nullptr;
 
 
 /* -------------------------------------------------------------------------- */
@@ -73,8 +73,8 @@ void processPlugins(Channel* ch, const MidiEvent& midiEvent)
 	uint32_t pure = midiEvent.getRaw(conf::noNoteOff);
 
 	/* Plugins' parameters layout reflects the structure of the matrix
-	Channel::midiInPlugins. It is safe to assume then that i (i.e. Plugin*) and k 
-	indexes match both the structure of Channel::midiInPlugins and 
+	Channel::midiInPlugins. It is safe to assume then that i (i.e. Plugin*) and k
+	indexes match both the structure of Channel::midiInPlugins and
 	vector<Plugin*>* plugins. */
 
 	vector<Plugin*>* plugins = &ch->plugins;
@@ -116,7 +116,7 @@ void processChannels(const MidiEvent& midiEvent)
 		if (pure == ch->midiInMute) {
 			gu_log("  >>> mute ch=%d (pure=0x%X)\n", ch->index, pure);
 			c::channel::toggleMute(ch, false);
-		}		
+		}
 		else if (pure == ch->midiInSolo) {
 			gu_log("  >>> solo ch=%d (pure=0x%X)\n", ch->index, pure);
 			c::channel::toggleSolo(ch, false);
@@ -140,7 +140,7 @@ void processChannels(const MidiEvent& midiEvent)
 			else if (pure == rch->midiInKill) {
 				gu_log("  >>> kill ch=%d (pure=0x%X)\n", ch->index, pure);
 				c::channel::kill(rch);
-			}		
+			}
 			else if (pure == rch->midiInArm) {
 				gu_log("  >>> arm ch=%d (pure=0x%X)\n", ch->index, pure);
 				c::io::recPress(rch, false, false);
@@ -149,7 +149,7 @@ void processChannels(const MidiEvent& midiEvent)
 				gu_log("  >>> toggle read actions ch=%d (pure=0x%X)\n", rch->index, pure);
 				c::channel::toggleReadingRecs(rch, false);
 			}
-			else if (rch->getType() == CHANNEL_SAMPLE) {
+			else if (rch->type == G_CHANNEL_SAMPLE) {
 				SampleChannel *sch = static_cast<SampleChannel*>(ch);
 				if (pure == sch->midiInPitch) {
 					float vf = midiEvent.getVelocity() / (127/4.0f); // [0-127] ~> [0.0-4.0]
@@ -253,19 +253,19 @@ void stopMidiLearn()
 
 void dispatch(int byte1, int byte2, int byte3)
 {
-	/* Here we want to catch two things: a) note on/note off from a keyboard and 
+	/* Here we want to catch two things: a) note on/note off from a keyboard and
 	b) knob/wheel/slider movements from a controller. */
 
 	MidiEvent midiEvent(byte1, byte2, byte3);
 
-	gu_log("[midiDispatcher] MIDI received - 0x%X (chan %d)\n", midiEvent.getRaw(), 
+	gu_log("[midiDispatcher] MIDI received - 0x%X (chan %d)\n", midiEvent.getRaw(),
 		midiEvent.getChannel());
 
-	/* Start dispatcher. If midi learn is on don't parse channels, just learn 
-	incoming MIDI signal. Learn callback wants 'pure' MIDI event: if 'noNoteOff' 
-	in global config, get the raw value with the 'velocy' byte. Otherwise strip it 
-	off. If midi learn is off process master events first, then each channel 
-	in the stack. This way incoming signals don't get processed by glue_* when 
+	/* Start dispatcher. If midi learn is on don't parse channels, just learn
+	incoming MIDI signal. Learn callback wants 'pure' MIDI event: if 'noNoteOff'
+	in global config, get the raw value with the 'velocy' byte. Otherwise strip it
+	off. If midi learn is off process master events first, then each channel
+	in the stack. This way incoming signals don't get processed by glue_* when
 	MIDI learning is on. */
 
 	if (cb_learn)
@@ -273,7 +273,6 @@ void dispatch(int byte1, int byte2, int byte3)
 	else {
 		processMaster(midiEvent);
 		processChannels(midiEvent);
-	}	
+	}
 }
 }}}; // giada::m::midiDispatcher::
-

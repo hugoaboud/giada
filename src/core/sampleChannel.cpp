@@ -54,14 +54,14 @@ using std::string;
 using namespace giada::m;
 
 
-SampleChannel::SampleChannel(int bufferSize, bool inputMonitor)
+SampleChannel::SampleChannel(int bufferSize)
 	: ResourceChannel  (G_CHANNEL_SAMPLE, STATUS_EMPTY, bufferSize),
 		rsmp_state       (nullptr),
+		inputTracker		 (0),
 		frameRewind      (-1),
 		begin            (0),
 		end              (0),
 		pitch            (G_DEFAULT_PITCH),
-		boost            (G_DEFAULT_BOOST),
 		fadeinOn         (false),
 		fadeinVol        (1.0f),
 		fadeoutOn        (false),
@@ -74,7 +74,6 @@ SampleChannel::SampleChannel(int bufferSize, bool inputMonitor)
 		shift            (0),
 		mode             (G_DEFAULT_CHANMODE),
 		qWait	           (false),
-		inputMonitor     (inputMonitor),
 		midiInReadActions(0x0),
 		midiInPitch      (0x0)
 {
@@ -363,11 +362,12 @@ void SampleChannel::parseAction(recorder::action* a, int localFrame, int globalF
 /* -------------------------------------------------------------------------- */
 
 
-void SampleChannel::sum(int frame, bool running)
+void SampleChannel::sum(int frame)
 {
 	if (wave == nullptr || status & ~(STATUS_PLAY | STATUS_ENDING))
 		return;
 
+	bool running = clock::isRunning();
 	if (frame != frameRewind) {
 
 		/* volume envelope, only if seq is running */
@@ -653,28 +653,8 @@ void SampleChannel::unsetMute(bool internal)
 
 /* -------------------------------------------------------------------------- */
 
-
-void SampleChannel::setBoost(float v)
-{
-	if (v > G_MAX_BOOST_DB)
-		boost = G_MAX_BOOST_DB;
-	else
-	if (v < 0.0f)
-		boost = 0.0f;
-	else
-		boost = v;
-}
-
-
-float SampleChannel::getBoost() const
-{
-	return boost;
-}
-
-/* -------------------------------------------------------------------------- */
-
-bool SampleChannel::isChainAlive() {
-	return inputMonitor || recStatus != REC_STOPPED;
+bool SampleChannel::isNodeAlive() {
+	return Channel::isNodeAlive() || recStatus != REC_STOPPED || isPlaying();
 }
 
 
@@ -688,16 +668,6 @@ void SampleChannel::calcFadeoutStep()
 	else
 		fadeoutStep = G_DEFAULT_FADEOUT_STEP;
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void SampleChannel::setOnEndPreviewCb(std::function<void()> f)
-{
-	onPreviewEnd = f;
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -795,53 +765,43 @@ void SampleChannel::pushWave(Wave* w)
 
 /* -------------------------------------------------------------------------- */
 
-
-
-void SampleChannel::input(giada::m::AudioBuffer& in)
+void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
 	assert(out.countSamples() == vChan.countSamples());
 	assert(in.countSamples()  == vChan.countSamples());
 
-	/* If armed and inbuffer is not nullptr (i.e. input device available) and
-  input monitor is on, copy input buffer to vChan: this enables the input
-  monitoring. The vChan will be overwritten later by pluginHost::processStack,
-  so that you would record "clean" audio (i.e. not plugin-processed). */
-	if (armed && in.isAllocd() && inputMonitor)
-		for (int i=0; i<vChan.countFrames(); i++)
-			for (int j=0; j<vChan.countChannels(); j++)
-				vChan[i][j] += in[i][j];   // add, don't overwrite
-}
+	if (!isNodeAlive()) return;
 
+	input(in);
 
-void SampleChannel::process(giada::m::AudioBuffer& outBuffer, giada::m::AudioBuffer& inBuffer)
-{
-	if (isChainAlive())  {
-		input(inBuffer);
-		// recording
-		if (recStatus == REC_READING) {
-			if (waitRec < conf::delayComp) {
-				waitRec++;
+	// recording
+	if (recStatus == REC_READING) {
+		if (waitRec < conf::delayComp) {
+			waitRec++;
+		}
+		else {
+			for (int i=0; i<vChan.countFrames(); i++) {
+				for (int j=0; j<vChan.countChannels(); j++)
+					(*wave)[i][j] += in[i][j];   // add, don't overwrite
+				inputTracker++;
+				if (inputTracker >= clock::getFramesInSeq())
+					inputTracker = 0;
 			}
-			else {
-				for (int i=0; i < bufferSize; i++) {
-					wave->getData()[inputTracker] += inBuffer[i];
-					inputTracker++;
-					if (inputTracker >= clock::getTotalFrames())
-						inputTracker = 0;
-				}
-			}
-	  	}
-  	}
+		}
+	}
 
-  	if (!isPlaying()) return;
+	if (isPlaying() && !pre_mute) {
+		//
+		for (int i=0; i<vChan.countFrames(); i++) {
+			sum(i);
+		}
+	}
 
-#ifdef WITH_VST
-	pluginHost::processStack(vChan, this);
-#endif
+	#ifdef WITH_VST
+		pluginHost::processStack(vChan, this);
+	#endif
 
-		for (int i=0; i<out.countFrames(); i++)
-			for (int j=0; j<out.countChannels(); j++)
-				out[i][j] += vChan[i][j] * volume * calcPanning(j) * boost;
+	output(out);
 }
 
 

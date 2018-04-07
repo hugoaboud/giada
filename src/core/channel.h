@@ -28,7 +28,6 @@
 #ifndef G_CHANNEL_H
 #define G_CHANNEL_H
 
-
 #include <vector>
 #include <string>
 #include <pthread.h>
@@ -41,70 +40,67 @@
 	#include "../deps/juce-config.h"
 #endif
 
-
 class Plugin;
 class MidiMapConf;
 class geChannel;
 
-
 class Channel
 {
-protected:
+	public:
+		int type;
 
-	Channel(int type, int status, int bufferSize);
+	protected:
 
-	/* sendMidiLMessage
-	Composes a MIDI message by merging bytes from MidiMap conf class, and sends it
-	to KernelMidi. */
+		/* vChan
+		Virtual channel for internal processing. */
 
-	void sendMidiLmessage(uint32_t learn, const giada::m::midimap::message_t& msg);
-
-	/* calcPanning
-	Given an audio channel (stereo: 0 or 1) computes the current panning value. */
-
-	float calcPanning(int ch);
-
-	/* vChan
-	Virtual channel for internal processing. */
-
-	giada::m::AudioBuffer vChan;
+		giada::m::AudioBuffer vChan;
 
 #ifdef WITH_VST
 
-	/* MidiBuffer contains MIDI events. When ready, events are sent to each plugin
-	in the channel. This is available for any kind of channel, but it makes sense
-	only for MIDI channels. */
+		/* MidiBuffer contains MIDI events. When ready, events are sent to each plugin
+		in the channel. This is available for any kind of channel, but it makes sense
+		only for MIDI channels. */
 
-	juce::MidiBuffer midiBuffer;
+		juce::MidiBuffer midiBuffer;
 
 #endif
 
-	/* bufferSize
-	Size of every buffer in this channel (vChan, pChan) */
+		/* bufferSize
+		Size of every buffer in this channel (vChan) */
 
-	int bufferSize;
+		int bufferSize;
 
-	/* midiInFilter
-	Which MIDI channel should be filtered out when receiving MIDI messages. -1
-	means 'all'. */
-
-  	int midiInFilter;
-
-	float pan;
-	float volume;   // global volume
-	float peak;
-
-	std::string name;
-
-	/* volume_*
-	Internal volume variables: volume_d keeps track of
+		/* volume_*
+	Internal volume variables: volume_i for envelopes, volume_d keeps track of
 	the delta during volume changes. */
 
-	float volume_d;
+		float volume_i;
+		float volume_d;
 
-	bool mute_i;                // internal mute
+		/* boost
+		Additional volume boost */
+		float boost;
+
+		/* mute_i
+		internal mute*/
+
+		bool mute_i;
+
+		/* sendMidiLMessage
+		Composes a MIDI message by merging bytes from MidiMap conf class, and sends it
+		to KernelMidi. */
+
+		void sendMidiLmessage(uint32_t learn, const giada::m::midimap::message_t& msg);
+
+		/* calcPanning
+		Given an audio channel (stereo: 0 or 1) computes the current panning value. */
+
+		float calcPanning(int ch);
 
 public:
+
+	Channel(int type, int bufferSize);
 
 	virtual ~Channel();
 
@@ -116,25 +112,46 @@ public:
 	/* readPatch
 	Fills channel with data from patch. */
 
-	virtual int readPatch(const std::string& basePath, int i,
-    pthread_mutex_t* pluginMutex, int samplerate, int rsmpQuality);
+	virtual void readPatch(const std::string& basePath, int i);
 
-	/* isChainAlive
-	Checks whether it's necessary to input/process audio (at some point in the
+	/* writePatch
+	Fills a patch with channel values. Returns the index of the last
+	Patch::channel_t added. */
+
+	virtual void writePatch(int i, bool isProject);
+
+	/* allocBuffers
+	Mandatory method to allocate memory for internal buffers. Call it after the
+	object has been constructed. */
+
+	virtual bool allocBuffers();
+
+	/* clearBuffers
+	Clears all memory buffers. */
+
+	virtual void clearBuffers();
+
+	/* isNodeAlive
+	Checks whether it's necessary to input audio (at some point in the
 	chain, monitoring/recording requires this channel audio). */
-	virtual bool isChainAlive() = 0;
+
+	virtual bool isNodeAlive();
 
 	/* input
-	Merges vChannels into buffer. Warning:
-	inBuffer might be nullptr if no input devices are available for recording. */
+	Merge input to vChan. */
 
-	virtual void input(float* inBuffer) = 0;
+	virtual void input(giada::m::AudioBuffer& in);
 
 	/* process
-	Merges vChannels into buffer, plus plugin processing (if any). Warning:
+	Input, plus plugin processing (if any) and output. Warning:
 	inBuffer might be nullptr if no input devices are available for recording. */
 
-	virtual void process(giada::m::AudioBuffer& out, const giada::m::AudioBuffer& in) = 0;
+	virtual void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) = 0;
+
+	/* output
+	Merge vChannels into buffer. */
+
+	virtual void output(giada::m::AudioBuffer& out);
 
 	/* mute / premute
 	What to do when channel is muted. If internal == true, set internal mute
@@ -155,44 +172,18 @@ public:
 	virtual void parseAction(giada::m::recorder::action* a, int localFrame,
     int globalFrame, bool mixerIsRunning) = 0;
 
-	/* readPatch
-	Fills channel with data from patch. */
+	/* setReadActions
+	If enabled (v == true), recorder will read actions from this channel. If
+	killOnFalse == true and disabled, will also kill the channel. */
 
-	virtual void readPatch(const std::string& basePath, int i);
-
-	/* writePatch
-	Fills a patch with channel values. Returns the index of the last
-	Patch::channel_t added. */
-
-	virtual void writePatch(int i, bool isProject);
-
-	/* receiveMidi
-	Receives and processes midi messages from external devices. */
-
-	virtual void receiveMidi(const giada::m::MidiEvent& midiEvent);
-
-	/* allocBuffers
-	Mandatory method to allocate memory for internal buffers. Call it after the
-	object has been constructed. */
-
-	virtual bool allocBuffers();
-
-	/* clear
-	Clears all memory buffers. */
-
-	virtual void clearBuffers();
+	void setReadActions(bool v);
+	int getReadActions() const { return readActions; };
 
 	/* isMidiAllowed
 	Given a MIDI channel 'c' tells whether this channel should be allowed to receive
 	and process MIDI events on MIDI channel 'c'. */
 
 	bool isMidiInAllowed(int c) const;
-
-	/* setReadActions
-	If enabled (v == true), recorder will read actions from this channel. If
-	killOnFalse == true and disabled, will also kill the channel. */
-
-	virtual void setReadActions(bool v);
 
 	/* sendMidiL*
 	 * send MIDI lightning events to a physical device. */
@@ -201,14 +192,25 @@ public:
 	void sendMidiLsolo();
 	void sendMidiLplay();
 
+	/* receiveMidi
+	Receives and processes midi messages from external devices. */
+
+	virtual void receiveMidi(const giada::m::MidiEvent& midiEvent);
+
+	/* setters */
+
 	void setName(const std::string& s);
 	void setPan(float v);
 	void setVolume(float v);
+	void setBoost(float v);
 	void setMidiInFilter(int c);
+
+	/* getters */
 
 	virtual std::string getName() const;
 	float 	getPan() const;
 	float 	getVolume() const;
+	float 	getBoost() const;
 	float 	getPeak() const;
 	int 	getMidiInFilter() const;
 
@@ -220,60 +222,49 @@ public:
 
 	juce::MidiBuffer& getPluginMidiEvents();
 
+	/* clearMidiBuffer
+	 *                  */
+
 	void clearMidiBuffer();
 
 #endif
 
-	int		index;			// unique id
-	int 	key;			// keyboard button
-	bool	mute_i;			// internal mute
-	bool	mute_s;			// previous mute status after being solo'd
-	bool	mute;			// global mute
-	bool	pre_mute;	    // global pre mute
-	bool	solo;			// global solo
-	bool	inputMonitor;	// input monitor (copies processed input to output)
-	bool	hasActions;		// has something recorded
-	bool	readActions;	// read what's recorded
-	float*	vChan;			// virtual channel
+	/*	index
+	Unique ID of the channel for this session */
+	int			index;
 
-  	geChannel* guiChannel;	// pointer to a gChannel object, part of the GUI
+	/* name
+	Name of the channel */
 
-	int previewMode;
-
-	float       pan;
-	float       volume;   // global volume
-	bool        armed;
 	std::string name;
-	int         index;    // unique id
-	int         type;     // midi or sample
-	int         status;   // status: see const.h
-	int         key;      // keyboard button
-	bool        mute;     // global mute
-	bool        mute_s;   // previous mute status after being solo'd TODO - remove it with mute refactoring
-	bool        solo;
 
-  bool hasActions;      // has something recorded
-  bool readActions;     // read what's recorded
-	int  recStatus;       // status of recordings (waiting, ending, ...)
 
-  bool      midiIn;               // enable midi input
-  uint32_t  midiInKeyPress;
-  uint32_t  midiInKeyRel;
-  uint32_t  midiInKill;
-  uint32_t  midiInArm;
-  uint32_t  midiInVolume;
-  uint32_t  midiInMute;
-  uint32_t  midiInSolo;
+	float   volume;   // global volume
+	float   pan;
+	float 	peak;
+	bool		mute;			// global mute
+	bool		mute_s;			// previous mute status after being solo'd
+	bool		pre_mute;	    // global pre mute
+	bool		solo;			// global solo
+	bool		inputMonitor;	// input monitor (copies processed input to output)
 
-  /* midiInFilter
-  Which MIDI channel should be filtered out when receiving MIDI messages. -1
-  means 'all'. */
+	int 		key;			// keyboard button
+
+	bool 		readActions; // read recorded actions
+	bool		hasActions;  // Has recorded actions
+
+  geChannel* guiChannel;	// pointer to a gChannel object, part of the GUI
 
 	bool		midiIn;              // enable midi input
 	uint32_t	midiInVolume;
 	uint32_t	midiInMute;
 	uint32_t	midiInSolo;
-	int midiInFilter;
+	uint32_t  midiInReadActions;
+
+	/* midiInFilter
+	Which MIDI channel should be filtered out when receiving MIDI messages. -1
+	means 'all'. */
+		int midiInFilter;
 
 	/*  midiOutL*
 	 * Enable MIDI lightning output, plus a set of midi lighting event to be sent

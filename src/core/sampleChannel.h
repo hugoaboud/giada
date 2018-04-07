@@ -85,6 +85,17 @@ private:
 	giada::m::AudioBuffer pChan;
 	giada::m::AudioBuffer vChanPreview;
 
+	/* inputTracker
+	Sample position while recording. */
+
+	int inputTracker;
+
+	/* waitRec
+	Delay comp: wait until waitRec reaches conf::delayComp. WaitRec returns to 0
+	as soon as the recording ends. */
+
+	int waitRec;
+
 	/* frameRewind
 	Exact frame in which a rewind occurs. */
 
@@ -97,7 +108,6 @@ private:
 	int end;
 
 	float pitch;
-	float boost;
 
 	bool  fadeinOn;
 	float fadeinVol;
@@ -113,42 +123,45 @@ public:
 	SampleChannel(int bufferSize);
 	~SampleChannel();
 
+	/* [Channel] inheritance */
+	bool isNodeAlive() override;
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
+	void readPatch(const std::string& basePath, int i) override;
+	void writePatch(int i, bool isProject) override;
+	bool allocBuffers() override;
 	void clearBuffers() override;
-	void process(giada::m::AudioBuffer& out, const giada::m::AudioBuffer& in) override;
+	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
+	void setMute(bool internal) override;
+	void unsetMute(bool internal) override;
+	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
+
+	/* [ResourceChannel] inheritance */
 	void preview(giada::m::AudioBuffer& out) override;
 	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
+	void stop() override;
 	void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
 	void recStart() override;
 	void recStop() override;
 	void kill(int frame) override;
 	void empty() override;
 	void stopBySeq(bool chansStopOnSeqHalt) override;
-	void stop() override;
-	void rewind() override;
-	void setMute(bool internal) override;
-	void unsetMute(bool internal) override;
-  void readPatch(const std::string& basePath, int i) override;
-	void writePatch(int i, bool isProject) override;
 	void quantize(int index, int localFrame, int globalFrame) override;
 	void onZero(int frame, bool recsStopOnChanHalt) override;
 	void onBar(int frame) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
+	void rewind() override;
 	bool canInputRec() override;
-	bool allocBuffers() override;
 
-	bool isChainAlive() override;
-	float getBoost() const;
 	int   getBegin() const;
 	int   getEnd() const;
 	float getPitch() const;
 
 	/* pushWave
-	Adds a new wave to an existing channel. */
+	Adds a new wave to this channel. */
 
 	void pushWave(Wave* w);
 
 	/* If wave is empty, creates a new */
+
 	void newWave();
 
 	/* getPosition
@@ -157,15 +170,14 @@ public:
 	int getPosition();
 
 	/* sum
-	Adds sample frames to virtual channel. Frame = processed frame in Mixer.
-	Running == is Mixer in play? */
+	Adds sample frames to virtual channel. Frame = processed frame in Mixer. */
 
-	void sum(int frame, bool running);
+	void sum(int frame);
 
 	void setPitch(float v);
 	void setBegin(int f);
 	void setEnd(int f);
-	void setBoost(float v);
+
 
 	/* hardStop
 	Stops the channel immediately, no further checks. */

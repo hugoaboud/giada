@@ -49,34 +49,33 @@ public:
 	MidiChannel(int bufferSize);
 	~MidiChannel();
 
+	/* [Channel] inheritance */
+	bool isNodeAlive() override;
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
-	void clearBuffers() override;
-	void input(float *inBuffer) override;
-	void process(float* outBuffer, float *inBuffer) override;
-	void preview(float* outBuffer) override;
-	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
-	void kill(int frame) override;
-	void empty() override;
-	void stopBySeq(bool chansStopOnSeqHalt) override;
-	void stop() override;
-	void rewind() override;
-	void setMute(bool internal) override;
-	void unsetMute(bool internal) override;
 	void readPatch(const std::string& basePath, int i) override;
 	void writePatch(int i, bool isProject) override;
-	void quantize(int index, int localFrame, int globalFrame) override;
-	void onZero(int frame, bool recsStopOnChanHalt) override;
-	void onBar(int frame) override;
+	void clearBuffers() override;
+	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
+	void setMute(bool internal) override;
+	void unsetMute(bool internal) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
 	void receiveMidi(const giada::m::MidiEvent& midiEvent) override;
-	bool canInputRec() override;
-	bool isChainAlive() override;
-	bool isArmed() const;
 
-
+	/* [ResourceChannel] inheritance */
+	void preview(giada::m::AudioBuffer& out) override;
+	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
+	void stop() override;
 	void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
 	void recStart() override;
 	void recStop() override;
+	void kill(int frame) override;
+	void empty() override;
+	void stopBySeq(bool chansStopOnSeqHalt) override;
+	void quantize(int index, int localFrame, int globalFrame) override;
+	void onZero(int frame, bool recsStopOnChanHalt) override;
+	void onBar(int frame) override;
+	void rewind() override;
+	bool canInputRec() override;
 
 	/* sendMidi
 	 * send Midi event to the outside world. */

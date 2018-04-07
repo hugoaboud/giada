@@ -49,35 +49,34 @@
 using std::string;
 using namespace giada::m;
 
-
-Channel::Channel(int bufferSize)
-: bufferSize     (bufferSize),
-	volume_i       (1.0f),
-	volume_d       (0.0f),
-	mute_i         (false),
-	guiChannel     (nullptr),
-	previewMode    (G_PREVIEW_NONE),
-	pan            (0.5f),
-	volume         (G_DEFAULT_VOL),
-	armed          (false),
-	type           (type),
-	status         (status),
-	key            (0),
-	mute           (false),
-	mute_s         (false),
-	solo           (false),
-	inputMonitor   (false),
-	hasActions     (false),
-	readActions    (false),
-	recStatus      (REC_STOPPED),
-	midiIn         (true),
-	midiInVolume   (0x0),
-	midiInMute     (0x0),
-	midiInSolo     (0x0),
-	midiInFilter   (-1),
-	midiOutL       (false),
-	midiOutLmute   (0x0),
-	midiOutLsolo   (0x0)
+Channel::Channel(int type, int bufferSize)
+: type					(type),
+	bufferSize    (bufferSize),
+	volume_i      (0.0f),
+	volume_d      (0.0f),
+	boost         (G_DEFAULT_BOOST),
+	mute_i        (false),
+	name					(""),
+	volume        (G_DEFAULT_VOL),
+	pan           (0.5f),
+	peak					(0),
+	mute          (false),
+	mute_s				(false),
+	pre_mute			(false),
+	solo          (false),
+	inputMonitor  (false),
+	key           (0),
+	readActions   (false),
+	hasActions    (false),
+	guiChannel    (nullptr),
+	midiIn        (true),
+	midiInVolume  (0x0),
+	midiInMute    (0x0),
+	midiInSolo    (0x0),
+	midiInFilter  (-1),
+	midiOutL      (false),
+	midiOutLmute  (0x0),
+	midiOutLsolo  (0x0)
 {
 }
 
@@ -85,12 +84,7 @@ Channel::Channel(int bufferSize)
 /* -------------------------------------------------------------------------- */
 
 
-Channel::~Channel()
-{
-	if (vChan != nullptr)
-		delete[] vChan;
-	status = STATUS_OFF;
-}
+Channel::~Channel() {}
 
 
 /* -------------------------------------------------------------------------- */
@@ -108,7 +102,7 @@ bool Channel::allocBuffers()
 /* -------------------------------------------------------------------------- */
 
 void Channel::clearBuffers() {
-	std::memset(vChan, 0, sizeof(float) * bufferSize);
+	vChan.free();
 }
 
 
@@ -239,6 +233,37 @@ bool Channel::isMidiInAllowed(int c) const
 	return midiInFilter == -1 || midiInFilter == c;
 }
 
+/* -------------------------------------------------------------------------- */
+
+void Channel::input(giada::m::AudioBuffer& in)
+{
+	assert(in.countSamples() == vChan.countSamples());
+	assert(!pre_mute);
+
+	/* Copy input buffer to vChan.
+	The vChan will be overwritten later by pluginHost::processStack,
+  so that you would record "clean" audio (i.e. not plugin-processed). */
+
+	if (in.isAllocd()) {
+		peak = 0;
+		for (int i=0; i<vChan.countFrames(); i++)
+			for (int j=0; j<vChan.countChannels(); j++) {
+				vChan[i][j] += in[i][j];   // add, don't overwrite
+				if (vChan[i][j] > peak) peak = vChan[i][j];
+			}
+	}
+}
+
+void Channel::output(giada::m::AudioBuffer& out) {
+	assert(out.countSamples() == vChan.countSamples());
+	for (int i=0; i<out.countFrames(); i++)
+		for (int j=0; j<out.countChannels(); j++)
+			out[i][j] += vChan[i][j] * volume * calcPanning(j) * boost;
+}
+
+bool Channel::isNodeAlive() {
+	return inputMonitor && !mute;
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -293,6 +318,25 @@ void Channel::setVolume(float v)
 float Channel::getVolume() const
 {
 	return volume;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Channel::setBoost(float v)
+{
+	if (v > G_MAX_BOOST_DB)
+		boost = G_MAX_BOOST_DB;
+	else
+	if (v < 0.0f)
+		boost = 0.0f;
+	else
+		boost = v;
+}
+
+
+float Channel::getBoost() const
+{
+	return boost;
 }
 
 /* -------------------------------------------------------------------------- */

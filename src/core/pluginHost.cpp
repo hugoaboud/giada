@@ -380,7 +380,7 @@ void freeStack(pthread_mutex_t* mutex, Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void processStack(AudioBuffer& buffer, Channel* ch)
+void processStack(AudioBuffer& out, Channel* ch)
 {
 	vector<Plugin*>* pStack = &ch->plugins;
 
@@ -389,7 +389,7 @@ void processStack(AudioBuffer& buffer, Channel* ch)
 	if (pStack == nullptr || pStack->size() == 0)
 		return;
 
-	assert(outBuf.countFrames() == audioBuffer.getNumSamples());
+	assert(out.countFrames() == audioBuffer.getNumSamples());
 
 	/* MIDI channels must not process the current buffer: give them an empty one.
 	Sample channels and Master in/out want audio data instead: let's convert the
@@ -398,9 +398,9 @@ void processStack(AudioBuffer& buffer, Channel* ch)
 	if (ch != nullptr && ch->type == G_CHANNEL_MIDI)
 		audioBuffer.clear();
 	else
-		for (int i=0; i<outBuf.countFrames(); i++)
-			for (int j=0; j<outBuf.countChannels(); j++)
-				audioBuffer.setSample(j, i, outBuf[i][j]);
+		for (int i=0; i<out.countFrames(); i++)
+			for (int j=0; j<out.countChannels(); j++)
+				audioBuffer.setSample(j, i, out[i][j]);
 
 	/* Hardcore processing. At the end we swap input and output, so that he N-th
 	plugin will process the result of the plugin N-1. Part of this loop must be
@@ -445,9 +445,9 @@ void processStack(AudioBuffer& buffer, Channel* ch)
 	/* Converting buffer from Juce to Giada. A note for the future: if we
 	overwrite (=) (as we do now) it's SEND, if we add (+) it's INSERT. */
 
-	for (int i=0; i<outBuf.countFrames(); i++)
-		for (int j=0; j<outBuf.countChannels(); j++)
-			outBuf[i][j] = audioBuffer.getSample(j, i);
+	for (int i=0; i<out.countFrames(); i++)
+		for (int j=0; j<out.countChannels(); j++)
+			out[i][j] = audioBuffer.getSample(j, i);
 }
 
 
@@ -596,12 +596,9 @@ void sortPlugins(int method)
 /* -------------------------------------------------------------------------- */
 
 
-void forEachPlugin(int stackType, const Channel* ch, std::function<void(const Plugin* p)> f)
+void forEachPlugin(const Channel* ch, std::function<void(const Plugin* p)> f)
 {
-	/* TODO - Remove const is ugly. This is a temporary workaround until all
-	PluginHost functions params will be const-correct. */
-	vector<Plugin*>* stack = getStack(stackType, const_cast<Channel*>(ch));
-	for (const Plugin* p : *stack)
+	for (const Plugin* p : ch->plugins)
 		f(p);
 }
 

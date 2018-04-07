@@ -33,10 +33,9 @@
 using namespace giada::m;
 
 InputChannel::InputChannel(int bufferSize)
-	: Channel          (bufferSize),
+	: Channel          (G_CHANNEL_INPUT, bufferSize),
 	inputIndex(-1),
-	preMute(false),
-	columnChannel(nullptr)
+	outColumn(nullptr)
 {
 	name = "Input";
 	inputMonitor = conf::inputMonitorDefaultOn;
@@ -52,7 +51,7 @@ InputChannel::~InputChannel()
 
 std::string InputChannel::getName() const
 {
-	return "i " + name;
+	return ">" + name;
 }
 
 
@@ -66,7 +65,20 @@ void InputChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
 
 /* -------------------------------------------------------------------------- */
 
-void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning){
+
+void InputChannel::writePatch(int i, bool isProject)
+{
+	/*
+		TODO
+	*/
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
+void InputChannel::readPatch(const std::string& basePath, int i)
+{
 	/*
 		TODO
 	*/
@@ -74,59 +86,30 @@ void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, in
 
 /* -------------------------------------------------------------------------- */
 
-void InputChannel::clearBuffers()
+void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
-	std::memset(vChan, 0, sizeof(float) * bufferSize);
-}
+	if (inputIndex < 0 || !isNodeAlive()) return;
 
-/* -------------------------------------------------------------------------- */
+	input(in);
 
-void InputChannel::input(float* inBuffer) {
-	for (int i=0; i<bufferSize; i++) {
-		vChan[i] += inBuffer[inputIndex+i*conf::channelsIn]; // add, don't overwrite (no raw memcpy)
-		if (vChan[i] > peak) peak = vChan[i];
-	}
-}
-
-/* -------------------------------------------------------------------------- */
-
-void InputChannel::process(float* outBuffer, float* inBuffer) {
-	
-	/* If input monitor is on, copy input buffer to vChan: this enables the input
-  monitoring. The vChan will be overwritten later by pluginHost::processStack. */
-	bool chainAlive = isChainAlive();
-	if ((chainAlive || inputMonitor) && inputIndex > -1)
-	{
-		if (!preMute)
-	    	input(inBuffer);
-
-	#ifdef WITH_VST
+#ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
-	#endif
-	}
+#endif
 
-	// TODO - Opaque channels' processing
-	if (inputMonitor) {
-	  	for (int j=0; j<bufferSize; j++) {
-			outBuffer[j*2]   += vChan[j] * volume * calcPanning(0);
-			outBuffer[j*2+1] +=	vChan[j] * volume * calcPanning(1);
-		}
-	}
+	if (inputMonitor)
+		output(out);
 
-	// feed output ColumnChannel
-	if (chainAlive && columnChannel != nullptr && !preMute && !mute) {
-		columnChannel->input(vChan);
+	// feed outColumn ColumnChannel
+	if (outColumn != nullptr && outColumn->isNodeAlive()) {
+		outColumn->input(vChan);
 	}
-
-	peak = 0;
 }
 
 /* -------------------------------------------------------------------------- */
 
-bool InputChannel::isChainAlive() {
-	if (columnChannel == nullptr) {
-		if (!inputMonitor) return false;
-		return true;
-	}
-	return columnChannel->isChainAlive();
+bool InputChannel::isNodeAlive() {
+	if (mute || pre_mute) return false;
+	if (inputMonitor) return true;
+	if (outColumn == nullptr) return false;
+	return outColumn->isNodeAlive();
 }
