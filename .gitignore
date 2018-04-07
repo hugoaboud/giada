@@ -67,3 +67,8 @@ giada.includes
 node_modules/
 package-lock.json
 vgcore*
+.codelite/
+.codelite/Giada.tags
+.codelite/refactoring.db
+Giada/
+Giada.workspace

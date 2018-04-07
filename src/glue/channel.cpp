@@ -79,7 +79,7 @@ int loadChannel(SampleChannel* ch, const string& fname)
 	/* Always stop a channel before loading a new sample in it. This will prevent
 	issues if tracker is outside the boundaries of the new sample -> segfault. */
 
-	if (ch->getStatus() & (STATUS_PLAY | STATUS_ENDING))
+	if (ch->status & (STATUS_PLAY | STATUS_ENDING))
 		ch->hardStop(0);
 
 	/* Save the patch and take the last browser's dir in order to re-use it the
@@ -112,10 +112,10 @@ int loadChannel(SampleChannel* ch, const string& fname)
 /* -------------------------------------------------------------------------- */
 
 
-ResourceChannel* addChannel(int column, int type, int size)
+ResourceChannel* addResourceChannel(ColumnChannel* col, int type, int size)
 {
-	ResourceChannel* ch    = m::mh::addChannel(type);
-	geChannel* gch = G_MainWin->keyboard->addChannel(column, ch, size);
+	ResourceChannel* ch    = m::mh::addResourceChannel(col, type);
+	geChannel* gch = G_MainWin->keyboard->addChannel(col, ch, size);
 	ch->guiChannel = gch;
 	return ch;
 }
@@ -124,7 +124,7 @@ ResourceChannel* addChannel(int column, int type, int size)
 /* -------------------------------------------------------------------------- */
 
 
-void deleteChannel(Channel* ch)
+void deleteResourceChannel(ResourceChannel* ch)
 {
 	using namespace giada::m;
 
@@ -138,7 +138,8 @@ void deleteChannel(Channel* ch)
 	Fl::lock();
 	G_MainWin->keyboard->deleteChannel(ch->guiChannel);
 	Fl::unlock();
-	mh::deleteChannel(ch);
+	//FIXME
+	//mh::deleteChannel(ch);
 	gu_closeAllSubwindows();
 }
 
@@ -146,9 +147,9 @@ void deleteChannel(Channel* ch)
 /* -------------------------------------------------------------------------- */
 
 
-void freeChannel(ResourceChannel* ch)
+void freeResourceChannel(ResourceChannel* ch)
 {
-	if (ch->getStatus() == STATUS_PLAY) {
+	if (ch->status == STATUS_PLAY) {
 		if (!gdConfirmWin("Warning", "This action will stop the channel: are you sure?"))
 			return;
 	}
@@ -169,15 +170,31 @@ void freeChannel(ResourceChannel* ch)
 	G_MainWin->delSubWindow(WID_FX_LIST);
 }
 
+/* -------------------------------------------------------------------------- */
+
+
+int cloneResourceChannel(ResourceChannel* src)
+{
+	using namespace giada::m;
+
+	ResourceChannel* ch    = mh::addResourceChannel(src->column, src->getType());
+	geChannel* gch = G_MainWin->keyboard->addChannel(src->column, ch, src->guiChannel->getSize());
+
+	ch->guiChannel = gch;
+	ch->copy(src, &mixer::mutex_plugins);
+
+	G_MainWin->keyboard->updateChannel(ch->guiChannel);
+	return true;
+}
 
 /* -------------------------------------------------------------------------- */
 
 
-void toggleArm(Channel* ch, bool gui)
+void toggleArm(ResourceChannel* ch, bool gui)
 {
 	ch->armed = !ch->armed;
 	if (!gui)
-		ch->guiChannel->arm->value(ch->armed);
+		((geResourceChannel*)ch->guiChannel)->arm->value(ch->armed);
 }
 
 
@@ -189,26 +206,6 @@ void toggleInputMonitor(Channel* ch)
 	SampleChannel* sch = static_cast<SampleChannel*>(ch);
 	sch->inputMonitor = !sch->inputMonitor;
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-int cloneChannel(ResourceChannel* src)
-{
-	using namespace giada::m;
-
-	ResourceChannel* ch    = mh::addChannel(src->getType());
-	geChannel* gch = G_MainWin->keyboard->addChannel(src->guiChannel->getColumnIndex(),
-		ch, src->guiChannel->getSize());
-
-	ch->guiChannel = gch;
-	ch->copy(src, &mixer::mutex_plugins);
-
-	G_MainWin->keyboard->updateChannel(ch->guiChannel);
-	return true;
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -299,27 +296,17 @@ void toggleMute(Channel* ch, bool gui)
 
 void toggleSolo(Channel* ch, bool gui)
 {
-	ch->solo ? setSoloOn(ch, gui) : setSoloOff(ch, gui);
+	ch->solo ? setSolo(ch, true, gui) : setSolo(ch, true, gui);
 }
-
 
 /* -------------------------------------------------------------------------- */
 
 
-void kill(ResourceChannel* ch)
-{
-	ch->kill(0); // on frame 0: it's a user-generated event
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void setSoloOn(Channel* ch, bool gui)
+void setSolo(Channel* ch, bool v, bool gui)
 {
 	using namespace giada::m;
 
-	ch->solo = !ch->solo;
+	ch->solo = v;
 	mh::updateSoloCount();
 
 	if (!gui) {
@@ -333,7 +320,7 @@ void setSoloOn(Channel* ch, bool gui)
 /* -------------------------------------------------------------------------- */
 
 
-void kill(Channel* ch)
+void kill(ResourceChannel* ch)
 {
 	ch->kill(0); // on frame 0: it's a user-generated event
 }
@@ -378,7 +365,7 @@ void toggleReadingRecs(ResourceChannel* ch, bool gui)
 	handle the case of when you press 'R', the channel goes into REC_WAITING and
 	then you press 'R' again to undo the status. */
 
-	if (ch->getReadActions() || (!ch->getReadActions() && ch->getRecStatus() == REC_WAITING))
+	if (ch->getReadActions() || (!ch->getReadActions() && ch->recStatus == REC_WAITING))
 		stopReadingRecs(ch, gui);
 	else
 		startReadingRecs(ch, gui);
@@ -415,7 +402,7 @@ void stopReadingRecs(ResourceChannel* ch, bool gui)
 	/* First of all, if the clock is not running just stop and disable everything.
 	Then if "treatRecsAsLoop" wait until the sequencer reaches beat 0, so put the
 	channel in REC_ENDING status. */
-	int recStatus = ch->getRecStatus();
+	int recStatus = ch->recStatus;
 	if (!clock::isRunning()) {
 		recStatus = REC_STOPPED;
 		ch->setReadActions(false, false);

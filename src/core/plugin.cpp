@@ -132,9 +132,7 @@ int Plugin::getNumParameters() const
 
 float Plugin::getParameter(int paramIndex) const
 {
-	//FIXME: JUCE_DEPRECATED
-	//return plugin->getParameter(paramIndex);
-	return 0;
+	return plugin->getParameter(paramIndex);
 }
 
 
@@ -143,8 +141,7 @@ float Plugin::getParameter(int paramIndex) const
 
 void Plugin::setParameter(int paramIndex, float value) const
 {
-	//FIXME: JUCE_DEPRECATED
-	//return plugin->setParameter(paramIndex, value);
+	return plugin->setParameter(paramIndex, value);
 }
 
 
@@ -264,9 +261,7 @@ string Plugin::getProgramName(int index) const
 
 string Plugin::getParameterName(int index) const
 {
-	//FIXME: JUCE_DEPRECATED
-	//return plugin->getParameterName(index).toStdString();
-	return "";
+	return plugin->getParameterName(index).toStdString();
 }
 
 
@@ -275,9 +270,7 @@ string Plugin::getParameterName(int index) const
 
 string Plugin::getParameterText(int index) const
 {
-	//FIXME: JUCE_DEPRECATED
-	//return plugin->getParameterText(index).toStdString();
-	return "";
+	return plugin->getParameterText(index).toStdString();
 }
 
 
@@ -286,9 +279,7 @@ string Plugin::getParameterText(int index) const
 
 string Plugin::getParameterLabel(int index) const
 {
-	//FIXME: JUCE_DEPRECATED
-	//return plugin->getParameterLabel(index).toStdString();
-	return "";
+	return plugin->getParameterLabel(index).toStdString();
 }
 
 

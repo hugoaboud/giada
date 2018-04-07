@@ -78,7 +78,7 @@ Adds a new column channel into mixer's stack. */
 ColumnChannel* addColumnChannel();
 
 /* deleteChannel
-Completely removes a column hannel from the stack. */
+Completely removes a column Channel from the stack. */
 
 bool deleteColumnChannel(ColumnChannel* ch);
 

@@ -13,7 +13,7 @@ public:
 	~AudioBuffer();
 
 	/* operator []
-	Given a frame 'offset', returns a pointer to it. This is useful for digging 
+	Given a frame 'offset', returns a pointer to it. This is useful for digging
 	inside a frame, i.e. parsing each channel. How to use it:
 
 		for (int k=0; k<buffer->countFrames(), k++)
@@ -34,8 +34,8 @@ public:
 	void free();
 
 	/* copyData
-	Copies 'frames' frames from the new 'data' into m_data, and fills m_data 
-	starting from frame 'offset'. It takes for granted that the new data contains 
+	Copies 'frames' frames from the new 'data' into m_data, and fills m_data
+	starting from frame 'offset'. It takes for granted that the new data contains
 	the same number of channels than m_channels. */
 
 	void copyData(float* data, int frames, int offset=0);
@@ -54,19 +54,19 @@ public:
 
 	/* moveData
 	Moves data held by 'b' into this buffer. Then 'b' becomes an empty buffer. */
-	 
+
 	void moveData(AudioBuffer& b);
 
 	/* clear
 	Clears the internal data by setting all bytes to 0.0f. Optional parameters
 	'a' and 'b' set the range. */
-	
+
 	void clear(int a=0, int b=-1);
 
 private:
 
 	float* m_data;
-	int    m_size;     // in frames    
+	int    m_size;     // in frames
 	int    m_channels;
 };
 
