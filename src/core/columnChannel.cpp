@@ -53,15 +53,6 @@ ColumnChannel::~ColumnChannel()
 {
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-std::string ColumnChannel::getName() const
-{
-	return "c " + name;
-}
-
-
 /* -------------------------------------------------------------------------- */
 
 void ColumnChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
@@ -102,7 +93,7 @@ void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, i
 void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
 	if (mute) return;
-	
+
 	assert(out.countSamples() == vChan.countSamples());
 	// Ignore input, receive only throught ColumnChannel::input()
 

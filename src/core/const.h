@@ -94,8 +94,8 @@
 /* -- MIN/MAX values -------------------------------------------------------- */
 #define G_MIN_BPM           20.0f
 #define G_MAX_BPM           999.0f
-#define G_MAX_BEATS				  32
-#define G_MAX_BARS				  32
+#define G_MAX_BEATS				  64
+#define G_MAX_BARS				  64
 #define G_MAX_QUANTIZE      8
 #define G_MIN_DB_SCALE      60.0f
 #define G_MIN_COLUMN_WIDTH  140
@@ -153,6 +153,7 @@
 #define G_DEFAULT_OUT_VOL          1.0f
 #define G_DEFAULT_IN_VOL           1.0f
 #define G_DEFAULT_CHANMODE         SINGLE_BASIC
+#define G_DEFAULT_CHANRECMODE      REC_LOOP_ONCE
 #define G_DEFAULT_BPM              120.0f
 #define G_DEFAULT_BEATS            4
 #define G_DEFAULT_BARS             1
@@ -178,6 +179,9 @@
 
 #define LOOP_ANY				 0xA3 // 1010 0011  chanMode - any loop mode
 #define SINGLE_ANY		   0x5C // 0101 1100  chanMode - any single mode
+
+#define REC_LOOP_BASIC	0x01 // 0000 0001  chanRecMode
+#define REC_LOOP_ONCE		0x02 // 0000 0010  chanRecMode
 
 #define	STATUS_ENDING		 0x01 // 0000 0001  chanStatus - ending            (loop mode only)
 #define	STATUS_WAIT			 0x02 // 0000 0010  chanStatus - waiting for start (loop mode only)

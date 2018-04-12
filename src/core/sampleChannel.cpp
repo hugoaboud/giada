@@ -73,6 +73,7 @@ SampleChannel::SampleChannel(int bufferSize)
 		trackerPreview   (0),
 		shift            (0),
 		mode             (G_DEFAULT_CHANMODE),
+		recMode          (G_DEFAULT_CHANRECMODE),
 		qWait	           (false),
 		midiInReadActions(0x0),
 		midiInPitch      (0x0)
@@ -132,6 +133,7 @@ void SampleChannel::copy(const Channel* src_, pthread_mutex_t* pluginMutex)
 	end             = src->end;
 	boost           = src->boost;
 	mode            = src->mode;
+	recMode         = src->recMode;
 	qWait           = src->qWait;
 	fadeinOn        = src->fadeinOn;
 	fadeinVol       = src->fadeinVol;

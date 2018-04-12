@@ -110,11 +110,6 @@ void glue_setBpm(float v)
 
 void glue_setBeats(int beats, int bars, bool expand)
 {
-	/* Never change this stuff while recording audio */
-
-	if (mixer::recording)
-		return;
-
 	/* Temp vars to store old data (they are necessary) */
 
 	int oldBeats = clock::getBeats();

@@ -49,13 +49,6 @@ InputChannel::InputChannel(int bufferSize)
 InputChannel::~InputChannel()
 {}
 
-/* -------------------------------------------------------------------------- */
-
-std::string InputChannel::getName() const
-{
-	return ">" + name;
-}
-
 
 /* -------------------------------------------------------------------------- */
 

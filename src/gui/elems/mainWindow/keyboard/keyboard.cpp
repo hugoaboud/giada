@@ -119,7 +119,6 @@ void geKeyboard::updateChannel(geChannel* gch)
 
 void geKeyboard::organizeColumns()
 {
-	// TODO: fix this
 	if (columns.size() == 0)
 		return;
 
@@ -127,8 +126,7 @@ void geKeyboard::organizeColumns()
 
 	for (size_t i=columns.size(); i-- > 0;) {
 		if (columns.at(i)->isEmpty()) {
-			Fl::delete_widget(columns.at(i));
-			columns.erase(columns.begin() + i);
+			c::channel::deleteChannel(columns.at(i)->ch, false);
 		}
 	}
 
@@ -344,7 +342,6 @@ geColumn* geKeyboard::addColumn(ColumnChannel* col, int width)
 	/* recompute col indexes */
 	refreshColIndexes();
 
-	gc->channel = col;
 	return gc;
 }
 

@@ -2,6 +2,8 @@
  *
  * Giada - Your Hardcore Loopmachine
  *
+ * ge_modeBox
+ *
  * -----------------------------------------------------------------------------
  *
  * Copyright (C) 2010-2018 Giovanni A. Zuliani | Monocasual
@@ -25,31 +27,28 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_INPUT_CHANNEL_H
-#define G_INPUT_CHANNEL_H
+#ifndef GE_CHANNEL_REC_MODE_H
+#define GE_CHANNEL_REC_MODE_H
 
-#include "channel.h"
 
-class ColumnChannel;
+#include <FL/Fl_Menu_Button.H>
 
-class InputChannel : public Channel
+
+class geChannelRecMode : public Fl_Menu_Button
 {
 private:
 
+	static void cb_changeMode  (Fl_Widget *v, void *p);
+	inline void __cb_changeMode(int mode);
+
+	class SampleChannel *ch;
+
 public:
 
-	InputChannel(int bufferSize);
-	~InputChannel();
-
-	/* [Channel] inheritance */
-	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
-	void readPatch(const std::string& basePath, int i) override;
-	void writePatch(bool isProject) override;
-	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
-
-	int				inputIndex;
-	ColumnChannel*	outColumn;
+  geChannelRecMode(int x, int y, int w, int h, class SampleChannel *ch,
+    const char *l=0);
+	void draw();
 };
+
 
 #endif

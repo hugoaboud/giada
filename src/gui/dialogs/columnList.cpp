@@ -42,6 +42,7 @@
 #include "../../glue/plugin.h"
 #include "../../utils/log.h"
 #include "../../utils/string.h"
+#include "../dialogs/channelNameInput.h"
 #include "../elems/soundMeter.h"
 #include "../elems/basics/dial.h"
 #include "../elems/basics/boxtypes.h"
@@ -141,8 +142,7 @@ void gdColumnList::cb_addColumn()
 			stackType, ch);
 	addSubWindow(pc);
 	pc->callback(cb_refreshList, (void*)this);	// 'this' refers to gdColumnList*/
-	mh::addColumnChannel();
-	refreshList();
+	channel::addColumnChannel(G_DEFAULT_COLUMN_WIDTH);
 }
 
 
@@ -301,7 +301,6 @@ void gdColumn::cb_inputMonitor() {
 /* -------------------------------------------------------------------------- */
 
 void gdColumnList::refresh() {
-	refreshList();
 	// TODO: this is just terrible and may cause segfaults, fix it
 	// (FL_Group has 2 misterious children that resist clear plus the "new column" button)
 	for (int i=3; i<list->children(); i++) {
@@ -320,7 +319,7 @@ enum class Menu
 	DELETE_CHANNEL
 };
 
-void buttonCallback(Fl_Widget* w, void* v)
+void columnButtonCallback(Fl_Widget* w, void* v)
 {
 	using namespace giada;
 
@@ -328,14 +327,12 @@ void buttonCallback(Fl_Widget* w, void* v)
 	Menu selectedItem = (Menu) (intptr_t) v;
 
 	switch (selectedItem) {
-		case Menu::RENAME_CHANNEL: {
-			//gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
+		case Menu::RENAME_CHANNEL:
+			gu_openSubWindow(G_MainWin, new gdChannelNameInput(gcol->getChannel()), WID_SAMPLE_NAME);
 			break;
-		}
-		case Menu::DELETE_CHANNEL: {
-			c::channel::deleteColumnChannel(gcol->getChannel());
+		case Menu::DELETE_CHANNEL:
+			c::channel::deleteChannel(gcol->getChannel());
 			break;
-		}
 	}
 }
 
@@ -344,8 +341,8 @@ void gdColumn::cb_button()
 	using namespace giada;
 
 	Fl_Menu_Item rclick_menu[] = {
-		{"Rename column", 		0, buttonCallback, (void*) Menu::RENAME_CHANNEL},
-		{"Delete column", 		0, buttonCallback, (void*) Menu::DELETE_CHANNEL},
+		{"Rename column", 		0, columnButtonCallback, (void*) Menu::RENAME_CHANNEL},
+		{"Delete column", 		0, columnButtonCallback, (void*) Menu::DELETE_CHANNEL},
 		{0}
 	};
 

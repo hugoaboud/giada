@@ -190,6 +190,7 @@ public:
 	int   trackerPreview;  // chan position for audio preview
 	int   shift;
 	int   mode;            // mode: see const.h
+	int   recMode;         // recMode: see const.h
 	bool  qWait;           // quantizer wait
 
 	/* midi stuff */

@@ -52,10 +52,10 @@ Adds an empty new channel to the stack. Returns the new channel. */
 
 ColumnChannel* addColumnChannel(int width);
 
-/* deleteColumnChannel
-Removes a ColumnChannel from Mixer. */
+/* deletChannel
+Removes a Channel from Mixer. */
 
-void deleteColumnChannel(ColumnChannel* ch);
+void deleteChannel(Channel* ch, bool warn=true);
 
 /**
 	ResourceChannel

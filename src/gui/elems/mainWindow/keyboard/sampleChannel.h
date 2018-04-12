@@ -34,6 +34,7 @@
 
 class SampleChannel;
 class geChannelMode;
+class geChannelRecMode;
 class geButton;
 
 
@@ -65,8 +66,9 @@ public:
 	void showActionButton();
 	void hideActionButton();
 
-	geChannelMode* modeBox;
-	geButton*      readActions;
+	geChannelMode* 		modeBox;
+	geChannelRecMode* recModeBox;
+	geButton*      		readActions;
 };
 
 

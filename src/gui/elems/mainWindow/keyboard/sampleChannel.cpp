@@ -53,6 +53,7 @@
 #include "../../basics/dial.h"
 #include "channelStatus.h"
 #include "channelMode.h"
+#include "channelRecMode.h"
 #include "sampleChannelButton.h"
 #include "keyboard.h"
 #include "column.h"
@@ -217,7 +218,8 @@ geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
 	mainButton  = new geSampleChannelButton(status->x()+status->w()+4, y(), G_GUI_UNIT, H, "-- no sample --");
 	readActions = new geButton(mainButton->x()+mainButton->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", readActionOff_xpm, readActionOn_xpm);
 	modeBox     = new geChannelMode(readActions->x()+readActions->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, ch);
-	mute        = new geButton(modeBox->x()+modeBox->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", muteOff_xpm, muteOn_xpm);
+	recModeBox  = new geChannelRecMode(modeBox->x()+modeBox->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, ch);
+	mute        = new geButton(recModeBox->x()+recModeBox->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", muteOff_xpm, muteOn_xpm);
 	solo        = new geButton(mute->x()+mute->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", soloOff_xpm, soloOn_xpm);
 #ifdef WITH_VST
 	fx          = new geStatusButton(solo->x()+solo->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, fxOff_xpm, fxOn_xpm);
@@ -444,6 +446,9 @@ void geSampleChannel::update()
 	modeBox->value(sch->mode);
 	modeBox->redraw();
 
+	recModeBox->value(sch->recMode);
+	recModeBox->redraw();
+
 	vol->value(sch->volume);
 	mute->value(sch->mute);
 	solo->value(sch->solo);
@@ -491,6 +496,7 @@ void geSampleChannel::resize(int X, int Y, int W, int H)
 
 	arm->hide();
 	modeBox->hide();
+	recModeBox->hide();
 	readActions->hide();
 #ifdef WITH_VST
 	fx->hide();
@@ -504,6 +510,8 @@ void geSampleChannel::resize(int X, int Y, int W, int H)
 #endif
 	if (w() > BREAK_MODE_BOX)
 		modeBox->show();
+	if (w() > BREAK_MODE_BOX)
+			recModeBox->show();
 	if (w() > BREAK_READ_ACTIONS && ch->hasActions)
 		readActions->show();
 
@@ -519,5 +527,6 @@ void geSampleChannel::changeSize(int H)
 
 	status->resize(x(), Y, w(), G_GUI_UNIT);
 	modeBox->resize(x(), Y, w(), G_GUI_UNIT);
+	recModeBox->resize(x(), Y, w(), G_GUI_UNIT);
 	readActions->resize(x(), Y, w(), G_GUI_UNIT);
 }

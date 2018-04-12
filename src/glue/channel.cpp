@@ -27,6 +27,8 @@
 #include <FL/Fl.H>
 #include "../gui/dialogs/gd_mainWindow.h"
 #include "../gui/dialogs/sampleEditor.h"
+#include "../gui/dialogs/columnList.h"
+#include "../gui/dialogs/inputList.h"
 #include "../gui/dialogs/gd_warnings.h"
 #include "../gui/elems/basics/input.h"
 #include "../gui/elems/basics/dial.h"
@@ -39,6 +41,7 @@
 #include "../gui/elems/sampleEditor/waveform.h"
 #include "../gui/elems/mainWindow/keyboard/keyboard.h"
 #include "../gui/elems/mainWindow/keyboard/channel.h"
+#include "../gui/elems/mainWindow/keyboard/column.h"
 #include "../gui/elems/mainWindow/keyboard/sampleChannel.h"
 #include "../gui/elems/mainWindow/keyboard/channelButton.h"
 #include "../utils/gui.h"
@@ -117,14 +120,78 @@ ColumnChannel* addColumnChannel(int width) {
   ColumnChannel* ch    = m::mh::addColumnChannel();
 	geColumn* gch = G_MainWin->keyboard->addColumn(ch, width);
 	ch->guiChannel = (geChannel*) gch;
+
+	gdColumnList* gdColumn = static_cast<gdColumnList*>(gu_getSubwindow(G_MainWin, WID_COLUMN_LIST));
+	if (gdColumn) {
+		Fl::lock();
+		gdColumn->refreshList();
+		Fl::unlock();
+	}
+	gch->update();
+
 	return ch;
 }
 
-/* deleteColumnChannel
-Removes a ColumnChannel from Mixer. */
+/* deleteChannel
+Removes a Channel from Mixer. */
 
-void deleteColumnChannel(ColumnChannel* ch) {
-  // TODO
+void deleteChannel(Channel* ch, bool warn) {
+	using namespace giada::m;
+
+	if (warn) {
+		switch (ch->type) {
+			case G_CHANNEL_INPUT:
+				if (!gdConfirmWin("Warning", "Delete input: are you sure?"))
+					return;
+				break;
+			case G_CHANNEL_COLUMN:
+				if (!gdConfirmWin("Warning", "Delete column: are you sure?"))
+					return;
+				break;
+			case G_CHANNEL_SAMPLE:
+			case G_CHANNEL_MIDI:
+				if (!gdConfirmWin("Warning", "Delete channel: are you sure?"))
+					return;
+				break;
+		}
+	}
+
+	recorder::clearChan(ch->index);
+	ch->hasActions = false;
+#ifdef WITH_VST
+	pluginHost::freeStack(&mixer::mutex_plugins, ch);
+#endif
+
+	Fl::lock();
+	if (ch->type == G_CHANNEL_SAMPLE || ch->type == G_CHANNEL_MIDI)
+		G_MainWin->keyboard->deleteChannel(ch->guiChannel);
+	else if (ch->type == G_CHANNEL_COLUMN)
+		G_MainWin->keyboard->deleteColumn((geColumn*)ch->guiChannel);
+	Fl::unlock();
+
+	if (ch->type == G_CHANNEL_INPUT) {
+			mh::deleteInputChannel((InputChannel*)ch);
+			gdInputList* gdInput = static_cast<gdInputList*>(gu_getSubwindow(G_MainWin, WID_INPUT_LIST));
+			if (gdInput) {
+				Fl::lock();
+				gdInput->refreshList();
+				Fl::unlock();
+			}
+	}
+	else if (ch->type == G_CHANNEL_COLUMN) {
+			mh::deleteColumnChannel((ColumnChannel*)ch);
+			gdColumnList* gdColumn = static_cast<gdColumnList*>(gu_getSubwindow(G_MainWin, WID_COLUMN_LIST));
+			if (gdColumn) {
+				Fl::lock();
+				gdColumn->refreshList();
+				Fl::unlock();
+			}
+	}
+	else if (ch->type == G_CHANNEL_SAMPLE || ch->type == G_CHANNEL_MIDI) {
+			mh::deleteResourceChannel((ResourceChannel*)ch);
+	}
+
+	gu_closeAllSubwindows();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -364,7 +431,24 @@ void setBoost(SampleChannel* ch, float val)
 void setName(Channel* ch, const string& name)
 {
 	ch->name = name;
-	ch->guiChannel->update();
+	if (ch->guiChannel != nullptr) ch->guiChannel->update();
+
+	if (ch->type == G_CHANNEL_INPUT) {
+		gdInputList* gdInput = static_cast<gdInputList*>(gu_getSubwindow(G_MainWin, WID_INPUT_LIST));
+		if (gdInput) {
+			Fl::lock();
+			gdInput->refreshList();
+			Fl::unlock();
+		}
+	}
+	else if (ch->type == G_CHANNEL_COLUMN) {
+		gdColumnList* gdColumn = static_cast<gdColumnList*>(gu_getSubwindow(G_MainWin, WID_COLUMN_LIST));
+		if (gdColumn) {
+			Fl::lock();
+			gdColumn->refreshList();
+			Fl::unlock();
+		}
+	}
 }
 
 

@@ -1,0 +1,87 @@
+/* -----------------------------------------------------------------------------
+ *
+ * Giada - Your Hardcore Loopmachine
+ *
+ * ge_modeBox
+ *
+ * -----------------------------------------------------------------------------
+ *
+ * Copyright (C) 2010-2018 Giovanni A. Zuliani | Monocasual
+ *
+ * This file is part of Giada - Your Hardcore Loopmachine.
+ *
+ * Giada - Your Hardcore Loopmachine is free software: you can
+ * redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * Giada - Your Hardcore Loopmachine is distributed in the hope that it
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Giada - Your Hardcore Loopmachine. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * -------------------------------------------------------------------------- */
+
+
+#include <FL/fl_draw.H>
+#include "../../../../utils/gui.h"
+#include "../../../../core/graphics.h"
+#include "../../../../core/sampleChannel.h"
+#include "../../../../core/const.h"
+#include "../../basics/boxtypes.h"
+#include "channelRecMode.h"
+
+
+geChannelRecMode::geChannelRecMode(int x, int y, int w, int h, SampleChannel *ch,
+  const char *L)
+  : Fl_Menu_Button(x, y, w, h, L), ch(ch)
+{
+  box(G_CUSTOM_BORDER_BOX);
+  textsize(G_GUI_FONT_SIZE_BASE);
+  textcolor(G_COLOR_LIGHT_2);
+  color(G_COLOR_GREY_2);
+
+  add("Loop . basic",      0, cb_changeMode, (void *)REC_LOOP_BASIC);
+  add("Loop . once",       0, cb_changeMode, (void *)REC_LOOP_ONCE);
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
+void geChannelRecMode::draw() {
+  fl_rect(x(), y(), w(), h(), G_COLOR_GREY_4);    // border
+  switch (ch->recMode) {
+    case REC_LOOP_BASIC:
+      fl_draw_pixmap(loopBasic_xpm, x()+1, y()+1);
+      break;
+    case REC_LOOP_ONCE:
+      fl_draw_pixmap(loopOnce_xpm, x()+1, y()+1);
+      break;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
+void geChannelRecMode::cb_changeMode(Fl_Widget *v, void *p) { ((geChannelRecMode*)v)->__cb_changeMode((intptr_t)p); }
+
+
+/* -------------------------------------------------------------------------- */
+
+
+void geChannelRecMode::__cb_changeMode(int mode)
+{
+  ch->recMode = mode;
+
+  /* what to do when the channel is playing and you change the mode?
+   * Nothing, since v0.5.3. Just refresh the action editor window, in
+   * case it's open */
+
+  gu_refreshActionEditor();
+}

@@ -101,8 +101,6 @@ private:
 	void cb_changeVol();
 	void cb_inputMonitor();
 
-	int openColumnChannelMenu();
-
 public:
 
 	geIdButton	   *button;

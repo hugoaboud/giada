@@ -28,6 +28,8 @@
 #include <cassert>
 #include <FL/fl_draw.H>
 #include <FL/Fl_Menu_Button.H>
+#include "../../../../utils/gui.h"
+#include "../../../dialogs/gd_mainWindow.h"
 #include "../../../../core/sampleChannel.h"
 #include "../../../../core/columnChannel.h"
 #include "../../../../core/midiChannel.h"
@@ -36,6 +38,7 @@
 #include "../../../../utils/fs.h"
 #include "../../../../utils/string.h"
 #include "../../../dialogs/gd_warnings.h"
+#include "../../../dialogs/channelNameInput.h"
 #include "../../../elems/basics/boxtypes.h"
 #include "../../../elems/basics/resizerBar.h"
 #include "keyboard.h"
@@ -43,6 +46,7 @@
 #include "midiChannel.h"
 #include "column.h"
 
+extern gdMainWindow* G_MainWin;
 
 using std::vector;
 using std::string;
@@ -67,19 +71,19 @@ void menuCallback(Fl_Widget* w, void* v)
 
 	switch (selectedItem) {
 		case Menu::ADD_SAMPLE_CHANNEL: {
-			c::channel::addResourceChannel(gcol->channel, G_CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1);
+			c::channel::addResourceChannel((ColumnChannel*)gcol->ch, G_CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1);
 			break;
 		}
 		case Menu::ADD_MIDI_CHANNEL: {
-			c::channel::addResourceChannel(gcol->channel, G_CHANNEL_MIDI, G_GUI_CHANNEL_H_1);
+			c::channel::addResourceChannel((ColumnChannel*)gcol->ch, G_CHANNEL_MIDI, G_GUI_CHANNEL_H_1);
 			break;
 		}
 		case Menu::RENAME_CHANNEL: {
-			//gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
+			gu_openSubWindow(G_MainWin, new gdChannelNameInput(gcol->ch), WID_SAMPLE_NAME);
 			break;
 		}
 		case Menu::DELETE_CHANNEL: {
-			c::channel::deleteColumnChannel(gcol->channel);
+			c::channel::deleteChannel(gcol->ch);
 			break;
 		}
 	}
@@ -151,7 +155,7 @@ int geColumn::handle(int e)
 			for (string& path : paths) {
 				gu_log("[geColumn::handle] loading %s...\n", path.c_str());
 				SampleChannel* c = static_cast<SampleChannel*>(c::channel::addResourceChannel(
-					channel, G_CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
+					(ColumnChannel*)ch, G_CHANNEL_SAMPLE, G_GUI_CHANNEL_H_1));
 				result = c::channel::loadChannel(c, gu_stripFileUrl(path));
 				if (result != G_RES_OK) {
 					deleteChannel(c->guiChannel);
@@ -341,7 +345,9 @@ Channel* geColumn::getChannel(int i)
 
 /* -------------------------------------------------------------------------- */
 
-void geColumn::update() {}
+void geColumn::update() {
+	m_titleBtn->label(ch->getName().c_str());
+}
 void geColumn::reset() {}
 
 /* -------------------------------------------------------------------------- */

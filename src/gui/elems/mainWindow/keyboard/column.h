@@ -93,8 +93,6 @@ public:
 	void update() override;
 	void reset() override;
 
-	ColumnChannel* channel;
-
 	Channel* getChannel(int i);
 	int getIndex();
 	void setIndex(int i);

@@ -66,9 +66,9 @@ geMainTimer::geMainTimer(int x, int y)
 	bpm->callback(cb_bpm, (void*)this);
 
 	meter->callback(cb_meter, (void*)this);
-	
+
 	multiplier->callback(cb_multiplier, (void*)this);
-	
+
 	divider->callback(cb_divider, (void*)this);
 
 	quantizer->add("off", 0, cb_quantizer, (void*)this);
@@ -159,15 +159,15 @@ void geMainTimer::setLock(bool v)
 {
   if (v) {
     bpm->deactivate();
-    meter->deactivate();
-    multiplier->deactivate();
-    divider->deactivate();
+    //meter->deactivate();
+    //multiplier->deactivate();
+    //divider->deactivate();
   }
   else {
     bpm->activate();
-    meter->activate();
-    multiplier->activate();
-    divider->activate();
+    //meter->activate();
+    //multiplier->activate();
+    //divider->activate();
   }
 }
 

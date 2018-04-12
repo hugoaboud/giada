@@ -301,6 +301,8 @@ src/gui/elems/mainWindow/beatMeter.h       \
 src/gui/elems/mainWindow/beatMeter.cpp     \
 src/gui/elems/mainWindow/keyboard/channelMode.h           \
 src/gui/elems/mainWindow/keyboard/channelMode.cpp         \
+src/gui/elems/mainWindow/keyboard/channelRecMode.h        \
+src/gui/elems/mainWindow/keyboard/channelRecMode.cpp      \
 src/gui/elems/mainWindow/keyboard/channelButton.h         \
 src/gui/elems/mainWindow/keyboard/channelButton.cpp       \
 src/gui/elems/mainWindow/keyboard/channelStatus.h         \

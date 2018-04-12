@@ -47,7 +47,6 @@ public:
 	~ColumnChannel();
 
 	/* [Channel] inheritance */
-	std::string getName() const override;
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
 	void readPatch(const std::string& basePath, int i) override;
 	void writePatch(bool isProject) override;
