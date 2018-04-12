@@ -150,6 +150,7 @@ public:
 	void onBar(int frame) override;
 	void rewind() override;
 	bool canInputRec() override;
+	bool startInputRec() override;
 
 	int   getBegin() const;
 	int   getEnd() const;

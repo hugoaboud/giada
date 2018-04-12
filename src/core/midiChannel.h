@@ -74,6 +74,7 @@ public:
 	void onBar(int frame) override;
 	void rewind() override;
 	bool canInputRec() override;
+	bool startInputRec() override;
 
 	/* sendMidi
 	 * send Midi event to the outside world. */

@@ -133,6 +133,11 @@ public:
 
 	virtual bool canInputRec() = 0;
 
+	/* startInputRec
+	Allocates resources for input recording.*/
+
+	virtual bool startInputRec() = 0;
+
 	/* isPreview
 	Whethet a channel is previewing. */
 	bool isPreview();

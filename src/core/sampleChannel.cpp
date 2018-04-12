@@ -479,11 +479,8 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 	if (wave == nullptr)
 	{
 		if ((armed && mixer::recording) || recStatus == REC_WAITING) {
-			recStatus = REC_READING;
-			inputTracker = 0;
 			setReadActions(true, recsStopOnChanHalt);   // rec start
-			//newWave(); FIXME WaveManager?
-			((geSampleChannel*)guiChannel)->update();
+			startInputRec();
 		}
 		return;
 	}
@@ -768,7 +765,7 @@ void SampleChannel::pushWave(Wave* w)
 void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
 	if (!isNodeAlive()) return;
-	
+
 	assert(out.countSamples() == vChan.countSamples());
 	assert(in.countSamples()  == vChan.countSamples());
 
@@ -781,11 +778,15 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 		}
 		else {
 			for (int i=0; i<vChan.countFrames(); i++) {
-				for (int j=0; j<vChan.countChannels(); j++)
-					(*wave)[i][j] += in[i][j];   // add, don't overwrite
-				inputTracker++;
-				if (inputTracker >= clock::getFramesInSeq())
+				if (i+inputTracker >= wave->getSize())
 					inputTracker = 0;
+				else {
+					for (int j=0; j<vChan.countChannels(); j++) {
+						(*wave)[i+inputTracker][j] += in[i][j];   // add, don't overwrite
+					}
+				}
+				inputTracker++;
+
 			}
 		}
 	}
@@ -918,6 +919,24 @@ void SampleChannel::readPatch(const string& basePath, int i)
 bool SampleChannel::canInputRec()
 {
 	return wave == nullptr && armed;
+}
+
+bool SampleChannel::startInputRec()
+{
+		Wave*  w = nullptr;
+		string name = string("TAKE-" + gu_iToString(patch::lastTakeId++)); // Increase lastTakeId
+
+		int result = waveManager::createEmpty(clock::getFramesInLoop(), G_MAX_IO_CHANS,
+			conf::samplerate, name + ".wav", &w);
+		if (result != G_RES_OK)
+			return false;
+
+		pushWave(w);
+
+		recStatus = REC_READING;
+		inputTracker = 0;
+		((geSampleChannel*)guiChannel)->update();
+		return true;
 }
 
 

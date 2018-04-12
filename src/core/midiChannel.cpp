@@ -332,6 +332,15 @@ bool MidiChannel::canInputRec()
 	return false; // midi channels don't handle input audio
 }
 
+/* -------------------------------------------------------------------------- */
+
+
+bool MidiChannel::startInputRec()
+{
+	// TODO
+	return false;
+}
+
 
 /* -------------------------------------------------------------------------- */
 

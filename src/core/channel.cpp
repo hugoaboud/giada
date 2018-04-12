@@ -102,7 +102,7 @@ bool Channel::allocBuffers()
 /* -------------------------------------------------------------------------- */
 
 void Channel::clearBuffers() {
-	vChan.free();
+	vChan.clear();
 }
 
 

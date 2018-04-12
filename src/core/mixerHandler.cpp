@@ -128,7 +128,7 @@ bool uniqueSamplePath(const SampleChannel* skip, const string& path)
 InputChannel* addInputChannel()
 {
 	InputChannel* ch;
-	int bufferSize = kernelAudio::getRealBufSize()*2;
+	int bufferSize = kernelAudio::getRealBufSize();
 
 	ch = new InputChannel(bufferSize);
 
@@ -191,7 +191,7 @@ InputChannel* getInputChannelByIndex(int index)
 
 ColumnChannel* addColumnChannel() {
 	ColumnChannel* ch;
-	int bufferSize = kernelAudio::getRealBufSize()*2;
+	int bufferSize = kernelAudio::getRealBufSize();
 
 	ch = new ColumnChannel(bufferSize);
 
@@ -254,7 +254,7 @@ ColumnChannel* getColumnChannelByIndex(int index) {
 ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 {
 	ResourceChannel* ch;
-	int bufferSize = kernelAudio::getRealBufSize()*2;
+	int bufferSize = kernelAudio::getRealBufSize();
 
 	if (type == G_CHANNEL_SAMPLE)
 		ch = new SampleChannel(bufferSize);

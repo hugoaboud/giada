@@ -209,7 +209,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	button->value(0);
 
 	inputAudio->add("- no audio source -");
-	for (int i = 0; i < conf::channelsIn; i++) inputAudio->add(std::to_string(i+1).c_str());
+	for (int i = 0; i < G_MAX_IO_CHANS/2; i++) inputAudio->add(std::to_string(i+1).c_str());
 	inputAudio->value(i->inputIndex+1);
 	inputAudio->callback(cb_setInputAudio, (void*)this);
 
