@@ -200,7 +200,9 @@ void init_shutdown()
 
 #ifdef WITH_VST
 
-	pluginHost::freeAllStacks(&mixer::channels, &mixer::mutex_plugins);
+	pluginHost::freeAllStacks((std::vector<Channel*>*)&mixer::inputChannels, &mixer::mutex_plugins);
+	pluginHost::freeAllStacks((std::vector<Channel*>*)&mixer::columnChannels, &mixer::mutex_plugins);
+
   pluginHost::close();
 	gu_log("[init] PluginHost cleaned up\n");
 

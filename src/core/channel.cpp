@@ -169,7 +169,7 @@ void Channel::sendMidiLmessage(uint32_t learn, const midimap::message_t& msg)
 /* -------------------------------------------------------------------------- */
 
 
-void Channel::writePatch(int i, bool isProject)
+void Channel::writePatch(bool isProject)
 {
 	channelManager::writePatch(this, isProject);
 }
@@ -238,7 +238,8 @@ bool Channel::isMidiInAllowed(int c) const
 void Channel::input(giada::m::AudioBuffer& in)
 {
 	assert(in.countSamples() == vChan.countSamples());
-	assert(!pre_mute);
+
+	if(pre_mute) return;
 
 	/* Copy input buffer to vChan.
 	The vChan will be overwritten later by pluginHost::processStack,
@@ -256,13 +257,11 @@ void Channel::input(giada::m::AudioBuffer& in)
 
 void Channel::output(giada::m::AudioBuffer& out) {
 	assert(out.countSamples() == vChan.countSamples());
+	if (mute) return;
+
 	for (int i=0; i<out.countFrames(); i++)
 		for (int j=0; j<out.countChannels(); j++)
 			out[i][j] += vChan[i][j] * volume * calcPanning(j) * boost;
-}
-
-bool Channel::isNodeAlive() {
-	return inputMonitor && !mute;
 }
 
 /* -------------------------------------------------------------------------- */

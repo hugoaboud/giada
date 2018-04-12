@@ -48,10 +48,9 @@ public:
 	~MidiChannel();
 
 	/* [Channel] inheritance */
-	bool isNodeAlive() override;
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
 	void readPatch(const std::string& basePath, int i) override;
-	void writePatch(int i, bool isProject) override;
+	void writePatch(bool isProject) override;
 	void clearBuffers() override;
 	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
 	void setMute(bool internal) override;

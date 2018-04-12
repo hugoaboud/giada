@@ -118,7 +118,7 @@ public:
 	Fills a patch with channel values. Returns the index of the last
 	Patch::channel_t added. */
 
-	virtual void writePatch(int i, bool isProject);
+	virtual void writePatch(bool isProject);
 
 	/* allocBuffers
 	Mandatory method to allocate memory for internal buffers. Call it after the
@@ -130,12 +130,6 @@ public:
 	Clears all memory buffers. */
 
 	virtual void clearBuffers();
-
-	/* isNodeAlive
-	Checks whether it's necessary to input audio (at some point in the
-	chain, monitoring/recording requires this channel audio). */
-
-	virtual bool isNodeAlive();
 
 	/* input
 	Merge input to vChan. */

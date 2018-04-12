@@ -52,7 +52,7 @@ public:
 	// [ Channel inheritance ]
 	virtual void copy(const Channel* src, pthread_mutex_t* pluginMutex) = 0;
 	virtual void readPatch(const std::string& basePath, int i);
-	virtual void writePatch(int i, bool isProject);
+	virtual void writePatch(bool isProject);
 
 	/* Preview
 	Makes itself audibile for audio preview, such as Sample Editor or other
@@ -152,6 +152,11 @@ public:
 	If status == STATUS_PLAY | STATUS_ENDING return true. */
 
 	bool isPlaying();
+
+	/* isRecording
+	If recStatus == REC_READING return true. */
+
+	bool isRecording();
 
 	/* sendMidiL*
 	 * send MIDI lightning events to a physical device. */

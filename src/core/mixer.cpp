@@ -86,17 +86,16 @@ bool tickPlay, tockPlay = false; // 1 = play, 0 = stop
 
 void routeAudio(AudioBuffer& out, AudioBuffer& in, unsigned bufferSize)
 {
-	if (!kernelAudio::isInputEnabled())
-		return;
-
-	// Feeds InputChannels that are currently being used on a recording or being
+	// Feed InputChannels that are currently being used on a recording or being
 	// monitored with the input buffer.
 	// InputChannel copies de-interleaved buffer[inputIndex] to it's own virtual
 	// channel and process throught VSTs.
 	// If the InputChannel is monitoring, writes the processed output to outBuf.
 	// Also feeds the ColumnChannel it's routed to with the processed output.
-	for (unsigned i=0; i<inputChannels.size(); i++) {
-		inputChannels[i]->process(out, in);
+	if (kernelAudio::isInputEnabled()) {
+		for (unsigned i=0; i<inputChannels.size(); i++) {
+			inputChannels[i]->process(out, in);
+		}
 	}
 
 	// Process ColumnChannels
@@ -117,12 +116,14 @@ void clearAllBuffers(AudioBuffer& outBuf)
 	outBuf.clear();
 
 	pthread_mutex_lock(&mutex_chans);
-	for (InputChannel* ichannel : inputChannels)
-		ichannel->clearBuffers();
-	for (ColumnChannel* cchannel : columnChannels)
-		cchannel->clearBuffers();
-	for (Channel* channel : channels)
-		channel->clearBuffers();
+	for (InputChannel* ich : inputChannels)
+		ich->clearBuffers();
+	for (ColumnChannel* cch : columnChannels) {
+		cch->clearBuffers();
+		for (ResourceChannel* rch : (*cch)) {
+			rch->clearBuffers();
+		}
+	}
 	pthread_mutex_unlock(&mutex_chans);
 }
 
@@ -290,7 +291,6 @@ void testLastBeat()
 
 std::vector<InputChannel*> inputChannels;
 std::vector<ColumnChannel*> columnChannels;
-std::vector<Channel*> channels;
 
 bool   recording    = false;
 bool   ready        = true;

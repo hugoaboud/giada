@@ -73,7 +73,7 @@ void ColumnChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
 /* -------------------------------------------------------------------------- */
 
 
-void ColumnChannel::writePatch(int i, bool isProject)
+void ColumnChannel::writePatch(bool isProject)
 {
 	/*
 		TODO
@@ -101,15 +101,15 @@ void ColumnChannel::parseAction(giada::m::recorder::action* a, int localFrame, i
 
 void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
-	if (!isNodeAlive()) return;
-
+	if (mute) return;
+	
 	assert(out.countSamples() == vChan.countSamples());
 	// Ignore input, receive only throught ColumnChannel::input()
 
 	if (!pre_mute) {
-		for (unsigned i=0; i<resources.size(); i++) {
-			resources[i]->process(out, vChan);
-			resources[i]->preview(out);
+		for (ResourceChannel* ch : resources) {
+			ch->process(out, vChan);
+			//ch->preview(out);
 		}
 	}
 
@@ -119,16 +119,6 @@ void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 
 	if (inputMonitor)
 		output(out);
-}
-
-/* -------------------------------------------------------------------------- */
-
-
-bool ColumnChannel::isNodeAlive() {
-	if (mute) return false;
-	if (inputMonitor) return true;
-	for (unsigned i = 0; i < resources.size(); i++) if (resources[i]->isNodeAlive()) return true;
-	return false;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -153,8 +143,7 @@ unsigned ColumnChannel::getResourceCount() {
 
 void ColumnChannel::recArmedResources() {
 	gu_log("recArmedResources\n");
-	for (unsigned i=0; i<resources.size(); i++) {
-		ResourceChannel* ch = mixer::columnChannels[i]->getResource(i);
+	for (ResourceChannel* ch : resources) {
 		if (ch->armed && ch->recStatus == REC_STOPPED) {
 			ch->recStart();
 		}
@@ -162,8 +151,7 @@ void ColumnChannel::recArmedResources() {
 }
 
 void ColumnChannel::stopRecResources() {
-	for (unsigned i=0; i<resources.size(); i++) {
-		ResourceChannel* ch = mixer::columnChannels[i]->getResource(i);
+	for (ResourceChannel* ch : resources) {
 		if (ch->armed || ch->recStatus != REC_STOPPED) {
 			ch->recStop();
 		}
@@ -171,15 +159,15 @@ void ColumnChannel::stopRecResources() {
 }
 
 void ColumnChannel::clearAllResources() {
-	for (unsigned i = 0; i < resources.size(); i++) {
-		resources.at(i)->empty();
-		resources.at(i)->guiChannel->reset();
+	for (ResourceChannel* ch : resources) {
+		ch->empty();
+		ch->guiChannel->reset();
 	}
 }
 
 bool ColumnChannel::isSilent() {
-	for (unsigned i = 0; i < resources.size(); i++) {
-		int status = resources.at(i)->status;
+	for (ResourceChannel* ch : resources) {
+		int status = ch->status;
 		if (status == STATUS_PLAY || status == STATUS_ENDING) return false;
 	}
 	return true;

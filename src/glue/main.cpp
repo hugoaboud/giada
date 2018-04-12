@@ -214,8 +214,9 @@ void glue_clearAllSamples()
 void glue_clearAllActions()
 {
 	recorder::init();
-	for (Channel* ch : mixer::channels)
-		ch->hasActions = false;
+	for (ColumnChannel* cch : mixer::columnChannels)
+		for (ResourceChannel* ch : (*cch))
+			ch->hasActions = false;
 	gu_updateControls();
 }
 
@@ -231,7 +232,8 @@ void glue_resetToInitState(bool resetGui, bool createColumns)
 	mixer::init(clock::getFramesInLoop(), kernelAudio::getRealBufSize());
 	recorder::init();
 #ifdef WITH_VST
-	pluginHost::freeAllStacks(&mixer::channels, &mixer::mutex_plugins);
+	pluginHost::freeAllStacks((std::vector<Channel*>*)&mixer::inputChannels, &mixer::mutex_plugins);
+	pluginHost::freeAllStacks((std::vector<Channel*>*)&mixer::columnChannels, &mixer::mutex_plugins);
 #endif
 
 	G_MainWin->keyboard->clear();

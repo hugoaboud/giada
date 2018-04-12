@@ -102,7 +102,7 @@ void ResourceChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex)
 /* -------------------------------------------------------------------------- */
 
 
-void ResourceChannel::writePatch(int i, bool isProject)
+void ResourceChannel::writePatch(bool isProject)
 {
 	/*
 		TODO
@@ -123,10 +123,16 @@ void ResourceChannel::readPatch(const std::string& basePath, int i)
 
 /* -------------------------------------------------------------------------- */
 
-
 bool ResourceChannel::isPlaying()
 {
 	return status & (STATUS_PLAY | STATUS_ENDING);
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool ResourceChannel::isRecording()
+{
+	return recStatus == REC_READING;
 }
 
 /* -------------------------------------------------------------------------- */

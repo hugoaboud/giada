@@ -81,7 +81,7 @@ gdColumnList::gdColumnList()
 	list->end();
 
 	end();
-	set_non_modal();	
+	set_non_modal();
 	label("Column Channels");
 	gu_setFavicon(this);
 	show();
@@ -122,7 +122,7 @@ void gdColumnList::cb_refreshList(Fl_Widget* v, void* p)
 	 * well, who cares */
 
 	((gdColumnList*)p)->refreshList();
-	((gdColumnList*)p)->redraw();	
+	((gdColumnList*)p)->redraw();
 }
 
 
@@ -160,14 +160,14 @@ void gdColumnList::refreshList()
 	 * the 'add new' button. Warning: if ch == nullptr we are working with
 	 * master in/master out stacks. */
 
-	
+
 	//int numColumns = pluginHost::countPlugins(stackType, ch);
 	//int numColumns = 0;
 	int numColumns = mixer::columnChannels.size();
 	int i = 0;
 
 	while (i<numColumns) {
-		ColumnChannel *pColumn = mh::getColumnChannelByIndex(i);
+		ColumnChannel *pColumn = mixer::columnChannels.at(i);
 		gdColumn *gdi     = new gdColumn(this, pColumn, list->x(), list->y()-list->yposition()+(i*24), 836);
 		list->add(gdi);
 		i++;
@@ -212,7 +212,7 @@ gdColumn::gdColumn(gdColumnList* gdi, ColumnChannel* i, int X, int Y, int W)
 	button->copy_label(i->getName().c_str());
 	button->callback(cb_button, (void*)this);
 	button->value(0);
-	
+
 	preMute->type(FL_TOGGLE_BUTTON);
 	preMute->value(i->pre_mute);
 	preMute->callback(cb_preMute, (void*)this);

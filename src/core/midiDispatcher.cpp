@@ -34,6 +34,7 @@
 #include "../utils/log.h"
 #include "channel.h"
 #include "sampleChannel.h"
+#include "columnChannel.h"
 #include "midiChannel.h"
 #include "conf.h"
 #include "const.h"
@@ -105,68 +106,70 @@ void processChannels(const MidiEvent& midiEvent)
 
 	uint32_t pure = midiEvent.getRaw(conf::noNoteOff);
 
-	for (Channel* ch : mixer::channels) {
+	for (ColumnChannel* cch : mixer::columnChannels) {
+		for (ResourceChannel* ch : (*cch)) {
 
-		/* Do nothing on this channel if MIDI in is disabled or filtered out for
-		the current MIDI channel. */
+			/* Do nothing on this channel if MIDI in is disabled or filtered out for
+			the current MIDI channel. */
 
-		if (!ch->midiIn || !ch->isMidiInAllowed(midiEvent.getChannel()))
-			continue;
+			if (!ch->midiIn || !ch->isMidiInAllowed(midiEvent.getChannel()))
+				continue;
 
-		if (pure == ch->midiInMute) {
-			gu_log("  >>> mute ch=%d (pure=0x%X)\n", ch->index, pure);
-			c::channel::toggleMute(ch, false);
-		}
-		else if (pure == ch->midiInSolo) {
-			gu_log("  >>> solo ch=%d (pure=0x%X)\n", ch->index, pure);
-			c::channel::toggleSolo(ch, false);
-		}
-		else if (pure == ch->midiInVolume) {
-			float vf = midiEvent.getVelocity() / 127.0f;
-			gu_log("  >>> volume ch=%d (pure=0x%X, value=%d, float=%f)\n",
-				ch->index, pure, midiEvent.getVelocity(), vf);
-			c::channel::setVolume(ch, vf, false);
-		}
-		else {
-			ResourceChannel* rch = static_cast<ResourceChannel*>(ch);
-			if      (pure == rch->midiInKeyPress) {
-				gu_log("  >>> keyPress, ch=%d (pure=0x%X)\n", ch->index, pure);
-				c::io::keyPress(rch, false, false, midiEvent.getVelocity());
+			if (pure == ch->midiInMute) {
+				gu_log("  >>> mute ch=%d (pure=0x%X)\n", ch->index, pure);
+				c::channel::toggleMute(ch, false);
 			}
-			else if (pure == rch->midiInKeyRel) {
-				gu_log("  >>> keyRel ch=%d (pure=0x%X)\n", ch->index, pure);
-				c::io::keyRelease(rch, false, false);
+			else if (pure == ch->midiInSolo) {
+				gu_log("  >>> solo ch=%d (pure=0x%X)\n", ch->index, pure);
+				c::channel::toggleSolo(ch, false);
 			}
-			else if (pure == rch->midiInKill) {
-				gu_log("  >>> kill ch=%d (pure=0x%X)\n", ch->index, pure);
-				c::channel::kill(rch);
+			else if (pure == ch->midiInVolume) {
+				float vf = midiEvent.getVelocity() / 127.0f;
+				gu_log("  >>> volume ch=%d (pure=0x%X, value=%d, float=%f)\n",
+					ch->index, pure, midiEvent.getVelocity(), vf);
+				c::channel::setVolume(ch, vf, false);
 			}
-			else if (pure == rch->midiInArm) {
-				gu_log("  >>> arm ch=%d (pure=0x%X)\n", ch->index, pure);
-				c::io::recPress(rch, false, false);
-			}
-			else if (pure == rch->midiInReadActions) {
-				gu_log("  >>> toggle read actions ch=%d (pure=0x%X)\n", rch->index, pure);
-				c::channel::toggleReadingRecs(rch, false);
-			}
-			else if (rch->type == G_CHANNEL_SAMPLE) {
-				SampleChannel *sch = static_cast<SampleChannel*>(ch);
-				if (pure == sch->midiInPitch) {
-					float vf = midiEvent.getVelocity() / (127/4.0f); // [0-127] ~> [0.0-4.0]
-					gu_log("  >>> pitch ch=%d (pure=0x%X, value=%d, float=%f)\n",
-						sch->index, pure, midiEvent.getVelocity(), vf);
-					c::channel::setPitch(sch, vf);
+			else {
+				ResourceChannel* rch = static_cast<ResourceChannel*>(ch);
+				if      (pure == rch->midiInKeyPress) {
+					gu_log("  >>> keyPress, ch=%d (pure=0x%X)\n", ch->index, pure);
+					c::io::keyPress(rch, false, false, midiEvent.getVelocity());
+				}
+				else if (pure == rch->midiInKeyRel) {
+					gu_log("  >>> keyRel ch=%d (pure=0x%X)\n", ch->index, pure);
+					c::io::keyRelease(rch, false, false);
+				}
+				else if (pure == rch->midiInKill) {
+					gu_log("  >>> kill ch=%d (pure=0x%X)\n", ch->index, pure);
+					c::channel::kill(rch);
+				}
+				else if (pure == rch->midiInArm) {
+					gu_log("  >>> arm ch=%d (pure=0x%X)\n", ch->index, pure);
+					c::io::recPress(rch, false, false);
+				}
+				else if (pure == rch->midiInReadActions) {
+					gu_log("  >>> toggle read actions ch=%d (pure=0x%X)\n", rch->index, pure);
+					c::channel::toggleReadingRecs(rch, false);
+				}
+				else if (rch->type == G_CHANNEL_SAMPLE) {
+					SampleChannel *sch = static_cast<SampleChannel*>(ch);
+					if (pure == sch->midiInPitch) {
+						float vf = midiEvent.getVelocity() / (127/4.0f); // [0-127] ~> [0.0-4.0]
+						gu_log("  >>> pitch ch=%d (pure=0x%X, value=%d, float=%f)\n",
+							sch->index, pure, midiEvent.getVelocity(), vf);
+						c::channel::setPitch(sch, vf);
+					}
 				}
 			}
+
+	#ifdef WITH_VST
+			processPlugins(ch, midiEvent); // Process plugins' parameters
+	#endif
+
+			/* Redirect full midi message (pure + velocity) to plugins. */
+
+			ch->receiveMidi(midiEvent.getRaw());
 		}
-
-#ifdef WITH_VST
-		processPlugins(ch, midiEvent); // Process plugins' parameters
-#endif
-
-		/* Redirect full midi message (pure + velocity) to plugins. */
-
-		ch->receiveMidi(midiEvent.getRaw());
 	}
 }
 

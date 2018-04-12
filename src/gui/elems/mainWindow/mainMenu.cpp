@@ -182,16 +182,17 @@ void geMainMenu::__cb_edit()
 
 	menu[3].deactivate();
 
-	for (unsigned i=0; i<mixer::channels.size(); i++)
-		if (mixer::channels.at(i)->hasActions) {
-			menu[3].activate();
-			break;
-		}
+	for (ColumnChannel* cch : mixer::columnChannels)
+		for (ResourceChannel* ch : (*cch))
+			if (ch->hasActions) {
+				menu[3].activate();
+				break;
+			}
 
-	for (unsigned i=0; i<mixer::columnChannels.size(); i++) {
-		ColumnChannel* cch = mixer::columnChannels.at(i);
-		for (unsigned j=0; j<cch->getResourceCount(); j++) {
-			SampleChannel* sch = static_cast<SampleChannel*>(cch->getResource(j));
+	for (ColumnChannel* cch : mixer::columnChannels) {
+		for (ResourceChannel* rch : (*cch)) {
+			if (rch->type != G_CHANNEL_SAMPLE) return;
+			SampleChannel* sch = static_cast<SampleChannel*>(rch);
 			if (sch != nullptr && sch->wave != nullptr) {
 				menu[2].activate();
 				break;

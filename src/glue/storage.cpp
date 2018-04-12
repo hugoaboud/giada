@@ -32,6 +32,9 @@
 #include "../core/plugin.h"
 #include "../core/conf.h"
 #include "../core/patch.h"
+#include "../core/inputChannel.h"
+#include "../core/columnChannel.h"
+#include "../core/resourceChannel.h"
 #include "../core/sampleChannel.h"
 #include "../core/midiChannel.h"
 #include "../core/waveManager.h"
@@ -87,7 +90,8 @@ static void glue_fillPatchGlobalsPlugins__(vector <Plugin*>* host, vector<m::pat
 
 static void glue_fillPatchColumns__()
 {
-	using namespace giada::m;
+	// FIXME
+	/*using namespace giada::m;
 
 	for (unsigned i=0; i<G_MainWin->keyboard->getTotalColumns(); i++) {
 		geColumn *gCol = G_MainWin->keyboard->getColumn(i);
@@ -105,7 +109,7 @@ static void glue_fillPatchColumns__()
 			}
 		}
 		patch::columns.push_back(pCol);
-	}
+	}*/
 }
 
 
@@ -116,8 +120,13 @@ static void glue_fillPatchChannels__(bool isProject)
 {
 	using namespace giada::m;
 
-	for (unsigned i=0; i<mixer::channels.size(); i++) {
-		mixer::channels.at(i)->writePatch(i, isProject);
+	for (InputChannel* ich : mixer::inputChannels)
+		ich->writePatch(isProject);
+
+	for (ColumnChannel* cch : mixer::columnChannels) {
+		cch->writePatch(isProject);
+		for (ResourceChannel* ch : (*cch))
+			ch->writePatch(isProject);
 	}
 }
 
@@ -360,22 +369,23 @@ void glue_saveProject(void* data)
 	project folder (folderPath). Also make sure the file path is unique inside the
 	project folder.*/
 
-	//TODO: fix this
-	for (const Channel* ch : mixer::channels) {
+	for (ColumnChannel* cch : mixer::columnChannels) {
+		for (ResourceChannel* ch : (*cch)) {
 
-		if (ch->type == G_CHANNEL_MIDI)
-			continue;
+			if (ch->type == G_CHANNEL_MIDI)
+				continue;
 
-		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
+			const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
 
-		if (sch == nullptr || sch->wave == nullptr)
-			continue;
+			if (sch == nullptr || sch->wave == nullptr)
+				continue;
 
-		sch->wave->setPath(glue_makeUniqueSamplePath__(fullPath, sch));
+			sch->wave->setPath(glue_makeUniqueSamplePath__(fullPath, sch));
 
-		gu_log("[glue_saveProject] Save file to %s\n", sch->wave->getPath().c_str());
+			gu_log("[glue_saveProject] Save file to %s\n", sch->wave->getPath().c_str());
 
-		waveManager::save(sch->wave, sch->wave->getPath()); // TODO - error checking
+			waveManager::save(sch->wave, sch->wave->getPath()); // TODO - error checking
+		}
 	}
 
 	string gptcPath = fullPath + G_SLASH + name + ".gptc";

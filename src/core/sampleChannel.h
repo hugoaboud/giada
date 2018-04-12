@@ -124,10 +124,9 @@ public:
 	~SampleChannel();
 
 	/* [Channel] inheritance */
-	bool isNodeAlive() override;
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
 	void readPatch(const std::string& basePath, int i) override;
-	void writePatch(int i, bool isProject) override;
+	void writePatch(bool isProject) override;
 	bool allocBuffers() override;
 	void clearBuffers() override;
 	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;

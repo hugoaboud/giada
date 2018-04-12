@@ -38,6 +38,8 @@
 #include "../core/clock.h"
 #include "../core/pluginHost.h"
 #include "../core/channel.h"
+#include "../core/columnChannel.h"
+#include "../core/resourceChannel.h"
 #include "../core/conf.h"
 #include "../core/graphics.h"
 #include "../gui/dialogs/gd_warnings.h"
@@ -118,8 +120,9 @@ int gu_getBlinker()
 
 void gu_updateControls()
 {
-	for (const Channel* ch : mixer::channels)
-		ch->guiChannel->update();
+	for (ColumnChannel* cch : mixer::columnChannels)
+		for (ResourceChannel* ch : (*cch))
+			ch->guiChannel->update();
 
 	G_MainWin->mainIO->setOutVol(mixer::outVol);
 	G_MainWin->mainIO->setInVol(mixer::inVol);

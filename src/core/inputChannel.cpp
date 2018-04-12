@@ -30,6 +30,7 @@
 #include "pluginHost.h"
 #include "inputChannel.h"
 #include "columnChannel.h"
+#include "resourceChannel.h"
 #include "../utils/log.h"
 using namespace giada::m;
 
@@ -67,7 +68,7 @@ void InputChannel::copy(const Channel *src, pthread_mutex_t *pluginMutex) {
 /* -------------------------------------------------------------------------- */
 
 
-void InputChannel::writePatch(int i, bool isProject)
+void InputChannel::writePatch(bool isProject)
 {
 	/*
 		TODO
@@ -89,11 +90,29 @@ void InputChannel::readPatch(const std::string& basePath, int i)
 
 void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
-	if (inputIndex < 0 || !isNodeAlive()) return;
+	if (inputIndex < 0 || mute) return;
+
+	// Check if any Column's resource needs input.
+	// If the column doesn't exists neither needs input and
+	// inputMonitor is off, avoid processing.
+	bool colInput = false;
+	if (outColumn != nullptr) {
+		colInput = outColumn->inputMonitor;
+		for (ResourceChannel* ch : (*outColumn)) {
+			if (ch->inputMonitor || ch->isRecording()) {
+				colInput = true;
+				break;
+			}
+			if (!inputMonitor && !colInput) return;
+		}
+	}
+	else if (!inputMonitor) return;
+
 	assert(out.countSamples() == vChan.countSamples());
 	assert(in.countSamples() == vChan.countSamples());
 
-	input(in);
+	if (!pre_mute)
+		input(in);
 
 #ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
@@ -103,20 +122,10 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 		output(out);
 
 	// feed outColumn ColumnChannel
-	if (outColumn != nullptr && outColumn->isNodeAlive()) {
+	if (colInput)
 		outColumn->input(vChan);
-	}
 }
 
 void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) {
 
-}
-
-/* -------------------------------------------------------------------------- */
-
-bool InputChannel::isNodeAlive() {
-	if (mute || pre_mute) return false;
-	if (inputMonitor) return true;
-	if (outColumn == nullptr) return false;
-	return outColumn->isNodeAlive();
 }

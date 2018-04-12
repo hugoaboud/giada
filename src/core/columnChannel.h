@@ -29,6 +29,7 @@
 #define G_COLUMN_CHANNEL_H
 
 #include "channel.h"
+#include "const.h"
 
 class ResourceChannel;
 class geColumn;
@@ -47,10 +48,9 @@ public:
 
 	/* [Channel] inheritance */
 	std::string getName() const override;
-	bool isNodeAlive() override;
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
 	void readPatch(const std::string& basePath, int i) override;
-	void writePatch(int i, bool isProject) override;
+	void writePatch(bool isProject) override;
 	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
 
@@ -71,6 +71,19 @@ public:
 
 	/* Output */
 	int	outputIndex;
+
+	/* iterator */
+	explicit ColumnChannel(std::initializer_list<ResourceChannel*> init) : Channel(G_CHANNEL_COLUMN, bufferSize), resources(init) {}
+
+  using iterator = std::vector<ResourceChannel*>::iterator;
+  using const_iterator = std::vector<ResourceChannel*>::const_iterator;
+
+  iterator begin() { return resources.begin(); }
+  iterator end() { return resources.end(); }
+	const_iterator begin() const { return resources.begin(); }
+  const_iterator end() const { return resources.end(); }
+  const_iterator cbegin() const { return resources.cbegin(); }
+  const_iterator cend() const { return resources.cend(); }
 };
 
 

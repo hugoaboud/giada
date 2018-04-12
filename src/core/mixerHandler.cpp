@@ -111,12 +111,14 @@ int getNewChannelIndex()
 
 bool uniqueSamplePath(const SampleChannel* skip, const string& path)
 {
-	for (const Channel* ch : mixer::channels) {
-		if (skip == ch || ch->type != G_CHANNEL_SAMPLE) // skip itself and MIDI channels
-			continue;
-		const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
-		if (sch->wave != nullptr && path == sch->wave->getPath())
-			return false;
+	for (ColumnChannel* cch : mixer::columnChannels) {
+		for (ResourceChannel* ch : (*cch)) {
+			if (skip == ch || ch->type != G_CHANNEL_SAMPLE) // skip itself and MIDI channels
+				continue;
+			const SampleChannel* sch = static_cast<const SampleChannel*>(ch);
+			if (sch->wave != nullptr && path == sch->wave->getPath())
+				return false;
+		}
 	}
 	return true;
 }
@@ -146,7 +148,7 @@ InputChannel* addInputChannel()
 	}
 
 	ch->index = getNewChannelIndex();
-	gu_log("[addInputChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
+	gu_log("[addInputChannel] channel index=%d added, total=%d\n", ch->index, mixer::inputChannels.size());
 	return ch;
 }
 
@@ -210,7 +212,7 @@ ColumnChannel* addColumnChannel() {
 
 	ch->index = getNewChannelIndex();
 	ch->setName(("Column " + std::to_string(ch->index)).c_str());
-	gu_log("[addColumnChannel] column channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
+	gu_log("[addColumnChannel] column channel index=%d added, total=%d\n", ch->index, mixer::columnChannels.size());
 	return ch;
 }
 
@@ -269,14 +271,14 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type)
 	while (true) {
 		if (pthread_mutex_trylock(&mixer::mutex_chans) != 0)
 			continue;
-		mixer::channels.push_back(ch);
+		col->addResource(ch);
 		pthread_mutex_unlock(&mixer::mutex_chans);
 		break;
 	}
 
 	ch->index = getNewChannelIndex();
 	ch->column = col;
-	gu_log("[addResourceChannel] channel index=%d added, total=%d\n", ch->index, mixer::channels.size());
+	gu_log("[addResourceChannel] channel index=%d added, total on column=%d\n", ch->index, col->getResourceCount());
 	return ch;
 }
 
@@ -395,11 +397,12 @@ void stopSequencer()
 
 void updateSoloCount()
 {
-	for (Channel* ch : mixer::channels)
-		if (ch->solo) {
-			mixer::hasSolos = true;
-			return;
-		}
+	for (ColumnChannel* cch : mixer::columnChannels)
+		for (ResourceChannel* ch : (*cch))
+			if (ch->solo) {
+				mixer::hasSolos = true;
+				return;
+			}
 	mixer::hasSolos = false;
 }
 

@@ -158,14 +158,7 @@ void SampleChannel::clearBuffers()
 
 	vChan.clear();
 	pChan.clear();
-
-	if (status & (STATUS_PLAY | STATUS_ENDING)) {
-		tracker = fillChan(vChan, tracker, 0);
-		if (fadeoutOn && fadeoutType == XFADE) {
-			gu_log("[clear] filling pChan fadeoutTracker=%d\n", fadeoutTracker);
-			fadeoutTracker = fillChan(pChan, fadeoutTracker, 0);
-		}
-	}
+	vChanPreview.clear();
 }
 
 
@@ -647,14 +640,6 @@ void SampleChannel::unsetMute(bool internal)
 	sendMidiLmute();
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-bool SampleChannel::isNodeAlive() {
-	return Channel::isNodeAlive() || recStatus != REC_STOPPED || isPlaying();
-}
-
-
 /* -------------------------------------------------------------------------- */
 
 
@@ -764,15 +749,15 @@ void SampleChannel::pushWave(Wave* w)
 
 void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
-	if (!isNodeAlive()) return;
-
+	if (mute) return;
 	assert(out.countSamples() == vChan.countSamples());
 	assert(in.countSamples()  == vChan.countSamples());
 
-	input(in);
+	if (!pre_mute && (inputMonitor || isRecording()))
+		input(in);
 
 	// recording
-	if (recStatus == REC_READING) {
+	if (isRecording()) {
 		if (waitRec < conf::delayComp) {
 			waitRec++;
 		}
@@ -786,15 +771,15 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 					}
 				}
 				inputTracker++;
-
 			}
 		}
 	}
 
 	if (isPlaying() && !pre_mute) {
-		//
-		for (int i=0; i<vChan.countFrames(); i++) {
-			sum(i);
+		tracker = fillChan(vChan, tracker, 0);
+		if (fadeoutOn && fadeoutType == XFADE) {
+			gu_log("[clear] filling pChan fadeoutTracker=%d\n", fadeoutTracker);
+			fadeoutTracker = fillChan(pChan, fadeoutTracker, 0);
 		}
 	}
 
@@ -802,7 +787,8 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 		pluginHost::processStack(vChan, this);
 	#endif
 
-	output(out);
+	if (inputMonitor || isPlaying())
+		output(out);
 }
 
 
@@ -813,8 +799,6 @@ void SampleChannel::preview(giada::m::AudioBuffer& out)
 {
 	if (previewMode == G_PREVIEW_NONE)
 		return;
-
-	vChanPreview.clear();
 
 	/* If the tracker exceedes the end point and preview is looped, split the
 	rendering as in SampleChannel::reset(). */
@@ -1068,10 +1052,10 @@ void SampleChannel::recStop() {
 
 /* -------------------------------------------------------------------------- */
 
-void SampleChannel::writePatch(int i, bool isProject)
+void SampleChannel::writePatch(bool isProject)
 {
-	Channel::writePatch(i, isProject);
-	channelManager::writePatch(this, isProject, i);
+	Channel::writePatch(isProject);
+	channelManager::writePatch(this, isProject, index);
 }
 
 

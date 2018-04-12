@@ -63,17 +63,6 @@ Rewinds sequencer to frame 0. */
 
 void rewind();
 
-/* startInputRec
-Starts input recording on frame clock::getCurrentFrame(). */
-
-void startInputRec();
-
-/* mergeVirtualInput
-Copies the virtual channel input in the channels designed for input recording.
-Called by mixerHandler on stopInputRec(). */
-
-void mergeVirtualInput();
-
 enum {    // const - what to do when a fadeout ends
 	DO_STOP   = 0x01,
 	DO_MUTE   = 0x02,
@@ -87,7 +76,6 @@ enum {    // const - fade types
 
 extern std::vector<InputChannel*> inputChannels;
 extern std::vector<ColumnChannel*> columnChannels;
-extern std::vector<Channel*> channels; // this is about to disappear
 //extern std::vector<MasterChannel*> masterChannels;
 
 extern bool   recording;         // is recording something?

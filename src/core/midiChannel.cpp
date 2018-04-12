@@ -276,10 +276,10 @@ void MidiChannel::rewind()
 /* -------------------------------------------------------------------------- */
 
 
-void MidiChannel::writePatch(int i, bool isProject)
+void MidiChannel::writePatch(bool isProject)
 {
-	Channel::writePatch(i, isProject);
-	channelManager::writePatch(this, isProject, i);
+	Channel::writePatch(isProject);
+	channelManager::writePatch(this, isProject, index);
 }
 
 
@@ -316,13 +316,6 @@ void MidiChannel::receiveMidi(const MidiEvent& midiEvent)
 		hasActions = true;
 	}
 }
-
-/* -------------------------------------------------------------------------- */
-
-bool MidiChannel::isNodeAlive() {
-	return false;
-}
-
 
 /* -------------------------------------------------------------------------- */
 

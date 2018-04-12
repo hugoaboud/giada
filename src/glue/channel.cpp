@@ -156,8 +156,7 @@ void deleteResourceChannel(ResourceChannel* ch)
 	Fl::lock();
 	G_MainWin->keyboard->deleteChannel(ch->guiChannel);
 	Fl::unlock();
-	//FIXME
-	//mh::deleteChannel(ch);
+	mh::deleteResourceChannel(ch);
 	gu_closeAllSubwindows();
 }
 

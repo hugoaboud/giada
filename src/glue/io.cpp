@@ -389,12 +389,14 @@ void stopInputRec(bool gui)
 	they must start playing right away at the current frame, not at the next first
 	beat. */
 
-	for (Channel* ch : mixer::channels) {
-		if (ch->type == G_CHANNEL_MIDI)
-			continue;
-		SampleChannel* sch = static_cast<SampleChannel*>(ch);
-		if (sch->mode & (LOOP_ANY) && sch->status == STATUS_OFF && sch->armed)
-			sch->start(clock::getCurrentFrame(), true, clock::isRunning(), true, true);
+	for (ColumnChannel* cch : mixer::columnChannels) {
+		for (ResourceChannel* ch : (*cch)) {
+			if (ch->type == G_CHANNEL_MIDI)
+				continue;
+			SampleChannel* sch = static_cast<SampleChannel*>(ch);
+			if (sch->mode & (LOOP_ANY) && sch->status == STATUS_OFF && sch->armed)
+				sch->start(clock::getCurrentFrame(), true, clock::isRunning(), true, true);
+		}
 	}
 
 	Fl::lock();

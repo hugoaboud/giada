@@ -198,9 +198,13 @@ int writePatch(const Channel* ch, bool isProject)
 
 void writePatch(const MidiChannel* ch, bool isProject, int index)
 {
-	patch::channel_t& pch = patch::channels.at(index);
-	pch.midiOut     = ch->midiOut;
-	pch.midiOutChan = ch->midiOutChan;
+	for (patch::channel_t& pch : patch::channels) {
+		if (pch.index == index) {
+			pch.midiOut     = ch->midiOut;
+			pch.midiOutChan = ch->midiOutChan;
+			return;
+		}
+	}
 }
 
 

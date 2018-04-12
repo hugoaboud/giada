@@ -261,7 +261,6 @@ geChannel* geColumn::addChannel(ResourceChannel* ch, int size)
 	else
 		gch = new geMidiChannel(x(), 0, w(), size, static_cast<MidiChannel*>(ch));
 
-	channel->addResource(ch);
 	add(gch);
 
 	repositionChannels();
