@@ -83,12 +83,12 @@ public:
 	/* stop
 	What to do when recording on this channel is stopped normally (via key or MIDI). */
 
-	virtual void recStart() = 0;
+	virtual void recStart(bool force=false) = 0;
 
 	/* stop
 	What to do when recording on this channel is stopped normally (via key or MIDI). */
 
-	virtual void recStop() = 0;
+	virtual void recStop(bool force=false) = 0;
 
 	/* kill
 	What to do when channel stops abruptly. */
@@ -134,9 +134,14 @@ public:
 	virtual bool canInputRec() = 0;
 
 	/* startInputRec
-	Allocates resources for input recording.*/
+	Handle start recording input.*/
 
 	virtual bool startInputRec() = 0;
+
+	/* stopInputRec
+	Handle stop recording input.*/
+
+	virtual void stopInputRec() = 0;
 
 	/* isPreview
 	Whethet a channel is previewing. */
@@ -153,7 +158,7 @@ public:
 
 	bool isPlaying();
 
-	/* isRecording
+	/*
 	If recStatus == REC_READING return true. */
 
 	bool isRecording();

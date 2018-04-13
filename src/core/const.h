@@ -153,7 +153,7 @@
 #define G_DEFAULT_OUT_VOL          1.0f
 #define G_DEFAULT_IN_VOL           1.0f
 #define G_DEFAULT_CHANMODE         SINGLE_BASIC
-#define G_DEFAULT_CHANRECMODE      REC_LOOP_ONCE
+#define G_DEFAULT_CHANRECMODE      REC_SINGLE_ZERO_PLAY
 #define G_DEFAULT_BPM              120.0f
 #define G_DEFAULT_BEATS            4
 #define G_DEFAULT_BARS             1
@@ -180,8 +180,20 @@
 #define LOOP_ANY				 0xA3 // 1010 0011  chanMode - any loop mode
 #define SINGLE_ANY		   0x5C // 0101 1100  chanMode - any single mode
 
-#define REC_LOOP_BASIC	0x01 // 0000 0001  chanRecMode
-#define REC_LOOP_ONCE		0x02 // 0000 0010  chanRecMode
+#define REC_SINGLE_ZERO 				0x01 // 0000 0001  chanRecMode
+#define REC_SINGLE_ZERO_PLAY		0x02 // 0000 0010  chanRecMode
+#define	REC_SINGLE_Q			 			0x04 // 0000 0100  chanRecMode
+#define REC_SINGLE_Q_PLAY				0x08 // 0000 1000  chanRecMode
+#define REC_OVERDUB_ZERO				0x10 // 0001 0000  chanRecMode
+#define REC_OVERDUB_ZERO_PLAY 	0x20 // 0010 0000  chanRecMode
+#define REC_OVERDUB_Q						0x40 // 0100 0000  chanRecMode
+#define REC_OVERDUB_Q_PLAY			0x80 // 1000 0000  chanRecMode
+
+#define REC_SINGLE_ANY				0x0F // 0000 1111 chanRecMode - any single mode
+#define REC_OVERDUB_ANY				0xF0 // 1111 0000 chanRecMode - any overdub mode
+#define REC_ZERO_ANY					0x33 // 0011 0011 chanRecMode - any zero mode
+#define REC_Q_ANY							0xCC // 1100 1100 chanRecMode - any quantize mode
+#define REC_PLAY_ANY					0xAA // 1010 1010 chanRecMode - any play mode
 
 #define	STATUS_ENDING		 0x01 // 0000 0001  chanStatus - ending            (loop mode only)
 #define	STATUS_WAIT			 0x02 // 0000 0010  chanStatus - waiting for start (loop mode only)

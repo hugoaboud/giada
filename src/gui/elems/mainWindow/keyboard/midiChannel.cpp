@@ -136,7 +136,7 @@ void menuCallback(Fl_Widget* w, void* v)
 			gu_openSubWindow(G_MainWin, new gdChannelNameInput(gch->ch), WID_SAMPLE_NAME);
 			break;
 		case Menu::DELETE_CHANNEL:
-			c::channel::deleteResourceChannel((ResourceChannel*)gch->ch);
+			c::channel::deleteChannel(gch->ch);
 			break;
 	}
 }

@@ -76,11 +76,6 @@ Unloads the sample from a sample channel. */
 
 void freeResourceChannel(ResourceChannel* ch);
 
-/* deleteResourceChannel
-Removes a ResourceChannel from Mixer. */
-
-void deleteResourceChannel(ResourceChannel* ch);
-
 /* cloneResourceChannel
 Makes an exact copy of Channel *ch. */
 

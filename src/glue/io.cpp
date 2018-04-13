@@ -144,12 +144,12 @@ void cleanPress(SampleChannel* ch, int velocity)
 	if (ch->mode & SINGLE_ANY && ch->midiInVeloAsVol)
 		ch->setVolumeI(u::math::map((float)velocity, 0.0f, 127.0f, 0.0f, 1.0f));
 
-	ch->start(0, true, m::clock::isRunning(), false, true);
+	ch->start(0, m::clock::getQuantize() != 0, m::clock::isRunning(), false, true);
 }
 
 void cleanRecPress(SampleChannel* ch)
 {
-	ch->rec(0, true, m::clock::isRunning(), false, true);
+	ch->rec(0, m::clock::getQuantize() != 0, m::clock::isRunning(), false, true);
 }
 
 } // {anonymous}
@@ -367,7 +367,6 @@ bool startInputRec(bool gui)
 	/* Update sample name inside sample channels' main button. This is useless for
 	midi channel, but let's do it anyway. */
 
-	// TODO: ResourceChannels instead
 	//for (Channel* ch : m::mixer::channels)
 	//		ch->guiChannel->update();
 

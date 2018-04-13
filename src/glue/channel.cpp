@@ -205,29 +205,6 @@ ResourceChannel* addResourceChannel(ColumnChannel* col, int type, int size)
 	return ch;
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-
-void deleteResourceChannel(ResourceChannel* ch)
-{
-	using namespace giada::m;
-
-	if (!gdConfirmWin("Warning", "Delete channel: are you sure?"))
-		return;
-	recorder::clearChan(ch->index);
-	ch->hasActions = false;
-#ifdef WITH_VST
-	pluginHost::freeStack(&mixer::mutex_plugins, ch);
-#endif
-	Fl::lock();
-	G_MainWin->keyboard->deleteChannel(ch->guiChannel);
-	Fl::unlock();
-	mh::deleteResourceChannel(ch);
-	gu_closeAllSubwindows();
-}
-
-
 /* -------------------------------------------------------------------------- */
 
 

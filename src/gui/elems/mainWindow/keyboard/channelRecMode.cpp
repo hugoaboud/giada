@@ -45,8 +45,15 @@ geChannelRecMode::geChannelRecMode(int x, int y, int w, int h, SampleChannel *ch
   textcolor(G_COLOR_LIGHT_2);
   color(G_COLOR_GREY_2);
 
-  add("Loop . basic",      0, cb_changeMode, (void *)REC_LOOP_BASIC);
-  add("Loop . once",       0, cb_changeMode, (void *)REC_LOOP_ONCE);
+  add("Single . zero",              0, cb_changeMode, (void *)REC_SINGLE_ZERO);
+  add("Single . zero . play",       0, cb_changeMode, (void *)REC_SINGLE_ZERO_PLAY);
+  add("Single . quantize",          0, cb_changeMode, (void *)REC_SINGLE_Q);
+  add("Single . quantize . play",   0, cb_changeMode, (void *)REC_SINGLE_Q_PLAY);
+  add("Overdub . zero",             0, cb_changeMode, (void *)REC_OVERDUB_ZERO);
+  add("Overdub . zero . play",      0, cb_changeMode, (void *)REC_OVERDUB_ZERO_PLAY);
+  add("Overdub . quantize",         0, cb_changeMode, (void *)REC_OVERDUB_Q);
+  add("Overdub . quantize . play",  0, cb_changeMode, (void *)REC_OVERDUB_Q_PLAY);
+
 }
 
 
@@ -56,11 +63,29 @@ geChannelRecMode::geChannelRecMode(int x, int y, int w, int h, SampleChannel *ch
 void geChannelRecMode::draw() {
   fl_rect(x(), y(), w(), h(), G_COLOR_GREY_4);    // border
   switch (ch->recMode) {
-    case REC_LOOP_BASIC:
+    case REC_SINGLE_ZERO:
+      fl_draw_pixmap(oneshotBasic_xpm, x()+1, y()+1);
+      break;
+    case REC_SINGLE_ZERO_PLAY:
+      fl_draw_pixmap(oneshotRetrig_xpm, x()+1, y()+1);
+      break;
+    case REC_SINGLE_Q:
+      fl_draw_pixmap(oneshotPress_xpm, x()+1, y()+1);
+      break;
+    case REC_SINGLE_Q_PLAY:
+      fl_draw_pixmap(oneshotEndless_xpm, x()+1, y()+1);
+      break;
+    case REC_OVERDUB_ZERO:
       fl_draw_pixmap(loopBasic_xpm, x()+1, y()+1);
       break;
-    case REC_LOOP_ONCE:
+    case REC_OVERDUB_ZERO_PLAY:
+      fl_draw_pixmap(loopOnceBar_xpm, x()+1, y()+1);
+      break;
+    case REC_OVERDUB_Q:
       fl_draw_pixmap(loopOnce_xpm, x()+1, y()+1);
+      break;
+    case REC_OVERDUB_Q_PLAY:
+      fl_draw_pixmap(loopRepeat_xpm, x()+1, y()+1);
       break;
   }
 }

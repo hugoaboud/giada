@@ -69,7 +69,7 @@ kernelAudio::JackState jackStatePrev;
 void updateQuanto()
 {
 	if (quantize != 0)
-		quanto = framesInBeat / quantize;
+		quanto = framesInBeat * quantize;
 }
 
 }; // {anonymous}
@@ -220,7 +220,7 @@ void rewind()
 
 void updateFrameBars()
 {
-	/* framesInLoop ... loop length in frames, or samplerate * # frames per 
+	/* framesInLoop ... loop length in frames, or samplerate * # frames per
 	 *                  current bpm * beats;
 	 * framesInBar .... n. of frames within a bar;
 	 * framesInBeat ... n. of frames within a beat;

@@ -52,7 +52,7 @@ using namespace giada::m;
 Channel::Channel(int type, int bufferSize)
 : type					(type),
 	bufferSize    (bufferSize),
-	volume_i      (0.0f),
+	volume_i      (1.0f),
 	volume_d      (0.0f),
 	boost         (G_DEFAULT_BOOST),
 	mute_i        (false),

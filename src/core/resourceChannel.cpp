@@ -132,7 +132,7 @@ bool ResourceChannel::isPlaying()
 
 bool ResourceChannel::isRecording()
 {
-	return recStatus == REC_READING;
+	return recStatus & (REC_READING | REC_ENDING);
 }
 
 /* -------------------------------------------------------------------------- */

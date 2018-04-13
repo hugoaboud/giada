@@ -253,11 +253,11 @@ int geResourceChannel::handleKey(int e, int key)
 void geResourceChannel::changeSize(int H)
 {
 	size(w(), H);
-	
+
 	int Y = y() + (H / 2 - (G_GUI_UNIT / 2));
 
 	button->resize(x(), Y, w(), G_GUI_UNIT);
-	arm->resize(x(), Y, w(), G_GUI_UNIT);   
+	arm->resize(x(), Y, w(), G_GUI_UNIT);
 	mainButton->resize(x(), y(), w(), H);
 	mute->resize(x(), Y, w(), G_GUI_UNIT);
 	solo->resize(x(), Y, w(), G_GUI_UNIT);

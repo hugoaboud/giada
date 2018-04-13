@@ -334,6 +334,13 @@ bool MidiChannel::startInputRec()
 	return false;
 }
 
+/* -------------------------------------------------------------------------- */
+
+
+void MidiChannel::stopInputRec()
+{
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -343,5 +350,5 @@ void MidiChannel::clearBuffers() {}
 /* -------------------------------------------------------------------------- */
 
 void MidiChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) {}
-void MidiChannel::recStart() {}
-void MidiChannel::recStop() {}
+void MidiChannel::recStart(bool force) {}
+void MidiChannel::recStop(bool force) {}

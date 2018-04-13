@@ -75,6 +75,7 @@ SampleChannel::SampleChannel(int bufferSize)
 		mode             (G_DEFAULT_CHANMODE),
 		recMode          (G_DEFAULT_CHANRECMODE),
 		qWait	           (false),
+		qRecWait	           (false),
 		midiInReadActions(0x0),
 		midiInPitch      (0x0)
 {
@@ -226,7 +227,7 @@ void SampleChannel::onBar(int frame)
 	}
 	else
 	if (mode == LOOP_ONCE_BAR) {
-		if (status == STATUS_WAIT) {
+		if (status == STATUS_WAIT && !qWait) {
 			status  = STATUS_PLAY;
 			tracker = fillChan(vChan, tracker, frame);
 			sendMidiLplay();
@@ -359,7 +360,7 @@ void SampleChannel::parseAction(recorder::action* a, int localFrame, int globalF
 
 void SampleChannel::sum(int frame)
 {
-	if (wave == nullptr || status & ~(STATUS_PLAY | STATUS_ENDING))
+	if (wave == nullptr || !(isPlaying()))
 		return;
 
 	bool running = clock::isRunning();
@@ -473,7 +474,7 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 {
 	if (wave == nullptr)
 	{
-		if ((armed && mixer::recording) || recStatus == REC_WAITING) {
+		if (recMode & REC_ZERO_ANY && recStatus == REC_WAITING) {
 			setReadActions(true, recsStopOnChanHalt);   // rec start
 			startInputRec();
 		}
@@ -501,23 +502,18 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 
 	if (status == STATUS_WAIT) { /// FIXME - should be inside previous if!
 		status  = STATUS_PLAY;
+		qWait = false;
 		sendMidiLplay();
 		tracker = fillChan(vChan, tracker, frame);
 	}
 
-	if (recStatus == REC_READING) {
-		recStatus = REC_STOPPED;
-		waitRec = 0;
-		armed = false;
-		((geSampleChannel*)guiChannel)->update();
-	}
-	else if (recStatus == REC_ENDING) {
-		recStatus = REC_STOPPED;
-		waitRec = 0;
-		armed = false;
+	if ((recMode & REC_SINGLE_ANY & REC_ZERO_ANY) && isRecording()) {
 		setReadActions(false, recsStopOnChanHalt);  // rec stop
-		((geSampleChannel*)guiChannel)->update();
+		stopInputRec();
+		armed = false;
 	}
+
+	((geSampleChannel*)guiChannel)->update();
 }
 
 
@@ -528,34 +524,40 @@ void SampleChannel::quantize(int index, int localFrame, int globalFrame)
 {
 	/* skip if LOOP_ANY or not in quantizer-wait mode */
 
-	if ((mode & LOOP_ANY) || !qWait)
-		return;
+	if ((mode & SINGLE_ANY) && qWait) {
 
-	/* no fadeout if the sample starts for the first time (from a
-	 * STATUS_OFF), it would be meaningless. */
+		/* no fadeout if the sample starts for the first time (from a
+		 * STATUS_OFF), it would be meaningless. */
 
-	if (status == STATUS_OFF) {
-		status  = STATUS_PLAY;
-		sendMidiLplay();
-		qWait   = false;
-		tracker = fillChan(vChan, tracker, localFrame); /// FIXME: ???
-	}
-	else
-		//setXFade(localFrame * 2);
-		reset(localFrame);
-
-	/* this is the moment in which we record the keypress, if the
-	 * quantizer is on. SINGLE_PRESS needs overdub */
-
-	if (recorder::canRec(this, clock::isRunning(), mixer::recording)) {
-		if (mode == SINGLE_PRESS) {
-			recorder::startOverdub(index, G_ACTION_KEYS, globalFrame,
-				kernelAudio::getRealBufSize());
-      readActions = false;   // don't read actions while overdubbing
-    }
+		if (status == STATUS_WAIT) {
+			status  = STATUS_PLAY;
+			sendMidiLplay();
+			qWait   = false;
+			tracker = fillChan(vChan, tracker, localFrame); /// FIXME: ???
+		}
 		else
-			recorder::rec(index, G_ACTION_KEYPRESS, globalFrame);
-    hasActions = true;
+			//setXFade(localFrame * 2);
+			reset(localFrame);
+
+		/* this is the moment in which we record the keypress, if the
+		 * quantizer is on. SINGLE_PRESS needs overdub */
+
+		if (recorder::canRec(this, clock::isRunning(), mixer::recording)) {
+			if (mode == SINGLE_PRESS) {
+				recorder::startOverdub(index, G_ACTION_KEYS, globalFrame,
+					kernelAudio::getRealBufSize());
+	      readActions = false;   // don't read actions while overdubbing
+	    }
+			else
+				recorder::rec(index, G_ACTION_KEYPRESS, globalFrame);
+	    hasActions = true;
+		}
+
+	}
+
+	if ((recMode & REC_Q_ANY) && qRecWait) {
+		if (recStatus == REC_STOPPED) startInputRec();
+		else stopInputRec();
 	}
 }
 
@@ -765,8 +767,13 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 		}
 		else {
 			for (int i=0; i<vChan.countFrames(); i++) {
-				if (i+inputTracker >= wave->getSize())
+				if (i+inputTracker >= wave->getSize()) {
 					inputTracker = 0;
+					if (recMode & REC_SINGLE_ANY) {
+						stopInputRec();
+						break;
+					}
+				}
 				else {
 					for (int j=0; j<vChan.countChannels(); j++) {
 						(*wave)[i+inputTracker][j] += in[i][j];   // add, don't overwrite
@@ -783,6 +790,7 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 			gu_log("[clear] filling pChan fadeoutTracker=%d\n", fadeoutTracker);
 			fadeoutTracker = fillChan(pChan, fadeoutTracker, 0);
 		}
+		for (int i = 0; i < bufferSize; i++) sum(i);
 	}
 
 	#ifdef WITH_VST
@@ -848,7 +856,7 @@ void SampleChannel::stopBySeq(bool chansStopOnSeqHalt)
 {
   /* Loop-mode samples in wait status get stopped right away. */
 
-	if (mode & LOOP_ANY && status == STATUS_WAIT) {
+	if (mode & LOOP_ANY && status == STATUS_WAIT && !qWait) {
 		status = STATUS_OFF;
     return;
   }
@@ -920,9 +928,22 @@ bool SampleChannel::startInputRec()
 		pushWave(w);
 
 		recStatus = REC_READING;
+		qRecWait = false;
+		waitRec = 0;
 		inputTracker = 0;
 		((geSampleChannel*)guiChannel)->update();
 		return true;
+}
+
+void SampleChannel::stopInputRec()
+{
+	recStatus = REC_STOPPED;
+	qRecWait = false;
+
+	// play mode
+	if (recMode & REC_PLAY_ANY) {
+		status = STATUS_PLAY;
+	}
 }
 
 
@@ -931,12 +952,15 @@ bool SampleChannel::startInputRec()
 
 void SampleChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
 {
+	// Stop recording if any
 	if (recStatus != REC_STOPPED) {
-		if (recStatus == REC_READING) {
-			recStatus = REC_ENDING;
-			status = STATUS_WAIT;
+		if (recStatus == REC_WAITING) {
+			recStatus = REC_STOPPED;
 		}
-		return;
+		else {
+			recStop();
+			status = STATUS_OFF;
+		}
 	}
 
 	switch (status)	{
@@ -955,14 +979,14 @@ void SampleChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool 
         }
         else
 				    status = STATUS_WAIT;
-				sendMidiLplay();
 			}
 			else {
-				if (mixerIsRunning && doQuantize)
+				if (mixerIsRunning && doQuantize) {
 					qWait = true;
+					status = STATUS_WAIT;
+				}
 				else {
 					status = STATUS_PLAY;
-					sendMidiLplay();
 
 					/* Do fillChan only if this is not a user-generated event (i.e. is an
 					action read by Mixer). Otherwise clear() will take take of calling
@@ -972,6 +996,7 @@ void SampleChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool 
 						tracker = fillChan(vChan, tracker, frame);
 				}
 			}
+			sendMidiLplay();
 			break;
 		}
 		case STATUS_PLAY:
@@ -995,6 +1020,7 @@ void SampleChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool 
 		case STATUS_WAIT:
 		{
 			status = STATUS_OFF;
+			qWait = false;
 			sendMidiLplay();
 			break;
 		}
@@ -1012,42 +1038,91 @@ void SampleChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool fo
 {
 	if (status != STATUS_EMPTY) return;
 
+	if (!mixer::recording) {
+		armed = !armed;
+		guiChannel->update();
+		return;
+	}
+
 	switch (recStatus) {
-
-		case REC_ENDING:
-			return;
-
+		case REC_ENDING: {
+			recStatus = REC_READING;
+			qRecWait = false;
+			break;
+		}
 		case REC_STOPPED:
-			if (mixer::recording) recStatus = REC_WAITING;
-			else armed = !armed;
-			return;
-
+		{
+			recStart(forceStart);
+			break;
+		}
 		case REC_READING:
-			recStatus = REC_ENDING;
-			armed = false;
-			return;
-
+		{
+			recStop(forceStart);
+			break;
+		}
 		case REC_WAITING:
+		{
 			recStatus = REC_STOPPED;
-			waitRec = 0;
-			armed = false;
+			qRecWait = false;
+			break;
+		}
 	}
 	guiChannel->update();
 }
 
 /* -------------------------------------------------------------------------- */
 
-void SampleChannel::recStart() {
+void SampleChannel::recStart(bool force) {
+	bool doQuantize = clock::getQuantize() != 0;
+	bool running = clock::isRunning();
+
 	if (status == STATUS_EMPTY && recStatus == REC_STOPPED) {
-		recStatus = REC_WAITING;
+
+		if (recMode & REC_ZERO_ANY) {
+			if (force) {
+				startInputRec();
+				setReadActions(true, false);
+			}
+			else recStatus = REC_WAITING;
+		}
+		else {
+			if (running && doQuantize) {
+				qRecWait = true;
+				recStatus = REC_WAITING;
+			}
+			else {
+				startInputRec();
+				setReadActions(true, false);
+			}
+		}
+
 		guiChannel->update();
 	}
 }
 
 /* -------------------------------------------------------------------------- */
 
-void SampleChannel::recStop() {
-	recStatus = REC_ENDING;
+void SampleChannel::recStop(bool force) {
+	bool doQuantize = clock::getQuantize() != 0;
+	bool running = clock::isRunning() != 0;
+
+	if (recMode & REC_ZERO_ANY) {
+		if (force) {
+			stopInputRec();
+			setReadActions(true, false);
+		}
+		recStatus = REC_ENDING;
+	}
+	else {
+		if (running && doQuantize) {
+			qRecWait = true;
+			recStatus = REC_ENDING;
+		}
+		else {
+			stopInputRec();
+			setReadActions(true, false);
+		}
+	}
 	armed = false;
 	guiChannel->update();
 }

@@ -63,8 +63,8 @@ public:
 	void start(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
 	void stop() override;
 	void rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated) override;
-	void recStart() override;
-	void recStop() override;
+	void recStart(bool force=false) override;
+	void recStop(bool force=false) override;
 	void kill(int frame) override;
 	void empty() override;
 	void stopBySeq(bool chansStopOnSeqHalt) override;
@@ -74,6 +74,7 @@ public:
 	void rewind() override;
 	bool canInputRec() override;
 	bool startInputRec() override;
+	void stopInputRec() override;
 
 	/* sendMidi
 	 * send Midi event to the outside world. */

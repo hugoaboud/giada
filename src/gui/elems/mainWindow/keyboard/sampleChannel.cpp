@@ -195,7 +195,7 @@ void menuCallback(Fl_Widget* w, void* v)
 			break;
 		}
 		case Menu::DELETE_CHANNEL: {
-			c::channel::deleteResourceChannel((ResourceChannel*)gch->ch);
+			c::channel::deleteChannel(gch->ch);
 			break;
 		}
 	}
@@ -296,7 +296,7 @@ void geSampleChannel::cb_openMenu()
 	/* If you're recording (input or actions) no menu is allowed; you can't do
 	anything, especially deallocate the channel */
 
-	if (m::mixer::recording || m::recorder::active)
+	if (((SampleChannel*)ch)->isRecording())
 		return;
 
 	Fl_Menu_Item rclick_menu[] = {
