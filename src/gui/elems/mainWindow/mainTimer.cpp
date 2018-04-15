@@ -72,12 +72,14 @@ geMainTimer::geMainTimer(int x, int y)
 	divider->callback(cb_divider, (void*)this);
 
 	quantizer->add("off", 0, cb_quantizer, (void*)this);
-	quantizer->add("1b",  0, cb_quantizer, (void*)this);
-	quantizer->add("2b",  0, cb_quantizer, (void*)this);
-	quantizer->add("3b",  0, cb_quantizer, (void*)this);
 	quantizer->add("4b",  0, cb_quantizer, (void*)this);
-	quantizer->add("6b",  0, cb_quantizer, (void*)this);
-	quantizer->add("8b",  0, cb_quantizer, (void*)this);
+	quantizer->add("2b",  0, cb_quantizer, (void*)this);
+	quantizer->add("1b",  0, cb_quantizer, (void*)this);
+	quantizer->add("/2b",  0, cb_quantizer, (void*)this);
+	quantizer->add("/3b",  0, cb_quantizer, (void*)this);
+	quantizer->add("/4b",  0, cb_quantizer, (void*)this);
+	quantizer->add("/6b",  0, cb_quantizer, (void*)this);
+	quantizer->add("/8b",  0, cb_quantizer, (void*)this);
 	quantizer->value(0); //  "off" by default
 }
 
@@ -115,7 +117,8 @@ void geMainTimer::__cb_meter()
 
 void geMainTimer::__cb_quantizer()
 {
-	glue_quantize(quantizer->value());
+	int q_val[] = {0,-4,-2,1,2,3,4,6,8};
+	glue_quantize(q_val[quantizer->value()]);
 }
 
 

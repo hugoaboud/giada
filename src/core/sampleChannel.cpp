@@ -507,7 +507,7 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 		tracker = fillChan(vChan, tracker, frame);
 	}
 
-	if ((recMode & REC_SINGLE_ANY & REC_ZERO_ANY) && isRecording()) {
+	if (recStatus & REC_ENDING || ((recMode & REC_SINGLE_ANY & REC_ZERO_ANY) && isRecording())) {
 		setReadActions(false, recsStopOnChanHalt);  // rec stop
 		stopInputRec();
 		armed = false;
@@ -556,7 +556,7 @@ void SampleChannel::quantize(int index, int localFrame, int globalFrame)
 	}
 
 	if ((recMode & REC_Q_ANY) && qRecWait) {
-		if (recStatus == REC_STOPPED) startInputRec();
+		if (recStatus & (REC_STOPPED | REC_WAITING)) startInputRec();
 		else stopInputRec();
 	}
 }
@@ -757,8 +757,23 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 	assert(out.countSamples() == vChan.countSamples());
 	assert(in.countSamples()  == vChan.countSamples());
 
-	if (!pre_mute && (inputMonitor || isRecording()))
-		input(in);
+	// playback
+	if (isPlaying() && !pre_mute) {
+		tracker = fillChan(vChan, tracker, 0);
+		if (fadeoutOn && fadeoutType == XFADE) {
+			gu_log("[clear] filling pChan fadeoutTracker=%d\n", fadeoutTracker);
+			fadeoutTracker = fillChan(pChan, fadeoutTracker, 0);
+		}
+		for (int i = 0; i < bufferSize; i++)
+			sum(i);
+	}
+
+	// overdub monitor
+	bool overdub = (recMode & REC_OVERDUB_ANY) && isRecording() && !pre_mute;
+	if (overdub) {
+		if (waitRec >= conf::delayComp)
+			fillChan(vChan, inputTracker, 0);
+	}
 
 	// recording
 	if (isRecording()) {
@@ -768,15 +783,15 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 		else {
 			for (int i=0; i<vChan.countFrames(); i++) {
 				if (i+inputTracker >= wave->getSize()) {
-					inputTracker = 0;
 					if (recMode & REC_SINGLE_ANY) {
 						stopInputRec();
 						break;
 					}
+					inputTracker = 0;
 				}
 				else {
 					for (int j=0; j<vChan.countChannels(); j++) {
-						(*wave)[i+inputTracker][j] += in[i][j];   // add, don't overwrite
+						(*wave)[inputTracker][j] += in[i][j];   // add, don't overwrite
 					}
 				}
 				inputTracker++;
@@ -784,20 +799,17 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 		}
 	}
 
-	if (isPlaying() && !pre_mute) {
-		tracker = fillChan(vChan, tracker, 0);
-		if (fadeoutOn && fadeoutType == XFADE) {
-			gu_log("[clear] filling pChan fadeoutTracker=%d\n", fadeoutTracker);
-			fadeoutTracker = fillChan(pChan, fadeoutTracker, 0);
-		}
-		for (int i = 0; i < bufferSize; i++) sum(i);
-	}
+	// input monitor
+	if (!pre_mute && inputMonitor)
+		input(in);
 
+	// processing
 	#ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
 	#endif
 
-	if (inputMonitor || isPlaying())
+	// output
+	if (inputMonitor || isPlaying() || overdub)
 		output(out);
 }
 
@@ -930,6 +942,7 @@ bool SampleChannel::startInputRec()
 		recStatus = REC_READING;
 		qRecWait = false;
 		waitRec = 0;
+		armed = false;
 		inputTracker = 0;
 		((geSampleChannel*)guiChannel)->update();
 		return true;
@@ -939,6 +952,7 @@ void SampleChannel::stopInputRec()
 {
 	recStatus = REC_STOPPED;
 	qRecWait = false;
+	setEnd(inputTracker);
 
 	// play mode
 	if (recMode & REC_PLAY_ANY) {
@@ -1036,7 +1050,7 @@ void SampleChannel::start(int frame, bool doQuantize, bool mixerIsRunning, bool 
 
 void SampleChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool forceStart, bool isUserGenerated)
 {
-	if (status != STATUS_EMPTY) return;
+	if (status & !(STATUS_EMPTY & STATUS_OFF)) return;
 
 	if (!mixer::recording) {
 		armed = !armed;
@@ -1057,7 +1071,10 @@ void SampleChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool fo
 		}
 		case REC_READING:
 		{
-			recStop(forceStart);
+			if (recMode & REC_SINGLE_ANY & REC_ZERO_ANY) {
+				// TODO: one more layer
+			}
+			else recStop(forceStart);
 			break;
 		}
 		case REC_WAITING:
@@ -1106,24 +1123,26 @@ void SampleChannel::recStop(bool force) {
 	bool doQuantize = clock::getQuantize() != 0;
 	bool running = clock::isRunning() != 0;
 
-	if (recMode & REC_ZERO_ANY) {
-		if (force) {
-			stopInputRec();
-			setReadActions(true, false);
-		}
-		recStatus = REC_ENDING;
+	if (force) {
+		stopInputRec();
+		setReadActions(true, false);
 	}
 	else {
-		if (running && doQuantize) {
-			qRecWait = true;
-			recStatus = REC_ENDING;
+		if (recMode & REC_Q_ANY) {
+			if (running && doQuantize) {
+				qRecWait = true;
+				recStatus = REC_ENDING;
+			}
+			else {
+				stopInputRec();
+				setReadActions(true, false);
+			}
 		}
 		else {
-			stopInputRec();
-			setReadActions(true, false);
+			recStatus = REC_ENDING;
 		}
 	}
-	armed = false;
+
 	guiChannel->update();
 }
 

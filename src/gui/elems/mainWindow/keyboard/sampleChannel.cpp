@@ -381,7 +381,7 @@ void geSampleChannel::refresh()
 	setColorsByStatus(((ResourceChannel*)ch)->status, ((ResourceChannel*)ch)->recStatus);
 	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {
 		// TODO: channel record status
-		if (m::mixer::recording)// && ch->armed)
+		if (static_cast<SampleChannel*>(ch)->isRecording())// && ch->armed)
 			mainButton->setInputRecordMode();
 		if (m::recorder::active) {
 			if (m::recorder::canRec(ch, m::clock::isRunning(), m::mixer::recording))
@@ -428,10 +428,7 @@ void geSampleChannel::update()
 			break;
 	}
 
-	gu_log("armed: %d\n",sch->armed);
-	gu_log("recStatus: %x\n",sch->recStatus);
-	gu_log("value: %d\n",sch->armed || sch->recStatus != REC_STOPPED);
-	arm->value(sch->armed || sch->recStatus != REC_STOPPED);
+	arm->value(sch->armed || ((SampleChannel*)sch)->isRecording());
 	arm->redraw();
 
 	/* Update channels. If you load a patch with recorded actions, the 'R' button

@@ -45,7 +45,6 @@
 #include "audioBuffer.h"
 #include "mixer.h"
 
-
 namespace giada {
 namespace m {
 namespace mixer

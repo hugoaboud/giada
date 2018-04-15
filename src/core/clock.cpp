@@ -68,7 +68,9 @@ kernelAudio::JackState jackStatePrev;
 
 void updateQuanto()
 {
-	if (quantize != 0)
+	if (quantize > 0)
+		quanto = framesInBeat / quantize;
+	else if (quantize < 0)
 		quanto = framesInBeat * quantize;
 }
 
