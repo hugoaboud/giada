@@ -51,6 +51,10 @@ class Channel
 
 	protected:
 
+		/* mono
+		true: mono; false: stereo; */
+		bool mono;
+
 		/* vChan
 		Virtual channel for internal processing. */
 
@@ -134,7 +138,7 @@ public:
 	/* input
 	Merge input to vChan. */
 
-	virtual void input(giada::m::AudioBuffer& in);
+	virtual void input(giada::m::AudioBuffer& in, bool mono = false, int channel = 0);
 
 	/* process
 	Input, plus plugin processing (if any) and output. Warning:
@@ -146,6 +150,10 @@ public:
 	Merge vChannels into buffer. */
 
 	virtual void output(giada::m::AudioBuffer& out);
+
+	/* setMono
+	realloc buffers */
+	virtual void setMono(bool mono);
 
 	/* mute / premute
 	What to do when channel is muted. If internal == true, set internal mute
@@ -165,6 +173,11 @@ public:
 
 	virtual void parseAction(giada::m::recorder::action* a, int localFrame,
     int globalFrame, bool mixerIsRunning) = 0;
+
+	/* Mono/Stereo utils */
+
+	void toggleMono();
+	bool isMono();
 
 	/* setReadActions
 	If enabled (v == true), recorder will read actions from this channel. If

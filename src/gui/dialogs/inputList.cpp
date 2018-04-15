@@ -57,7 +57,7 @@
 
 extern gdMainWindow* G_MainWin;
 
-#define INPUTLIST_W 849
+#define INPUTLIST_W 749
 
 using std::string;
 using namespace giada::m;
@@ -172,7 +172,7 @@ void gdInputList::refreshList()
 	addInput->callback(cb_addInput, (void*)this);
 	list->add(addInput);
 
-	/* if num(plugins) > 7 make room for the side scrollbar.
+	/* if numInputs > 7 make room for the side scrollbar.
 	 * Scrollbar.width = 20 + 4(margin) */
 
 	if (numInputs>7)
@@ -194,7 +194,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 {
 	begin();
 	button  		 = new geIdButton(x(), y(), 120, 20);
-	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 132, 20);
+	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 32, 20);
 	inputMidiDevice  = new geChoice(inputAudio->x()+inputAudio->w()+4, y(), 132, 20);
 	inputMidiChannel = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);
 	preMute			 = new geStatusButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
@@ -210,9 +210,6 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	button->callback(cb_button, (void*)this);
 	button->value(0);
 
-	inputAudio->add("- no audio source -");
-	for (int i = 0; i < G_MAX_IO_CHANS/2; i++) inputAudio->add(std::to_string(i+1).c_str());
-	inputAudio->value(i->inputIndex+1);
 	inputAudio->callback(cb_setInputAudio, (void*)this);
 
 	inputMidiDevice->add("- no midi source -");
@@ -269,6 +266,8 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	shiftDown->callback(cb_shiftDown, (void*)this);
 	remove->callback(cb_removeInput, (void*)this);
 	*/
+
+	update();
 }
 
 
@@ -298,8 +297,9 @@ void gdInput::cb_inputMonitor(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_inputMo
 
 enum class Menu
 {
-	RENAME_CHANNEL = 0,
-	DELETE_CHANNEL
+	RENAME_INPUT = 0,
+	DELETE_INPUT,
+	MONO_STEREO
 };
 
 void inputButtonCallback(Fl_Widget* w, void* v)
@@ -308,11 +308,15 @@ void inputButtonCallback(Fl_Widget* w, void* v)
 	Menu selectedItem = (Menu) (intptr_t) v;
 
 	switch (selectedItem) {
-		case Menu::RENAME_CHANNEL:
+		case Menu::RENAME_INPUT:
 			gu_openSubWindow(G_MainWin, new gdChannelNameInput(gin->ch), WID_SAMPLE_NAME);
 			break;
-		case Menu::DELETE_CHANNEL:
+		case Menu::DELETE_INPUT:
 			channel::deleteChannel(gin->ch);
+			break;
+		case Menu::MONO_STEREO:
+			gin->ch->toggleMono();
+			gin->update();
 			break;
 	}
 }
@@ -322,8 +326,9 @@ void gdInput::cb_button()
 	using namespace giada;
 
 	Fl_Menu_Item rclick_menu[] = {
-		{"Rename input", 		0, inputButtonCallback, (void*) Menu::RENAME_CHANNEL},
-		{"Delete input", 		0, inputButtonCallback, (void*) Menu::DELETE_CHANNEL},
+		{"Rename input", 		0, inputButtonCallback, (void*) Menu::RENAME_INPUT},
+		{"Delete input", 		0, inputButtonCallback, (void*) Menu::DELETE_INPUT},
+		{ch->isMono()?"Set Stereo":"Set Mono", 		0, inputButtonCallback, (void*) Menu::MONO_STEREO},
 		{0}
 	};
 
@@ -339,34 +344,6 @@ void gdInput::cb_button()
 	return;
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-
-int gdInput::openInputChannelMenu()
-{
-	Fl_Menu_Item rclick_menu[] = {
-		{"Rename"},
-		{"Remove"},
-		{0}
-	};
-
-	Fl_Menu_Button* b = new Fl_Menu_Button(0, 0, 100, 50);
-	b->box(G_CUSTOM_BORDER_BOX);
-	b->textsize(G_GUI_FONT_SIZE_BASE);
-	b->textcolor(G_COLOR_LIGHT_2);
-	b->color(G_COLOR_GREY_2);
-
-	const Fl_Menu_Item *m = rclick_menu->popup(Fl::event_x(), Fl::event_y(), 0, 0, b);
-	if (!m) return 0;
-
-	if (strcmp(m->label(), "Rename") == 0)
-		return INPUTCHANNEL_RENAME;
-	if (strcmp(m->label(), "Remove") == 0)
-		return INPUTCHANNEL_REMOVE;
-	return 0;
-}
-
 /* -------------------------------------------------------------------------- */
 
 
@@ -379,7 +356,8 @@ void gdInput::cb_setBypass()
 
 void gdInput::cb_setInputAudio()
 {
-	ch->inputIndex = inputAudio->value()-1;
+	if (ch->isMono()) ch->inputIndex = inputAudio->value();
+	else ch->inputIndex = inputAudio->value()*2;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -454,4 +432,15 @@ void gdInputList::refresh() {
 void gdInput::refresh() {
 	meter->mixerPeak  = ch->getPeak();
 	meter->redraw();
+}
+
+/* -------------------------------------------------------------------------- */
+
+void gdInput::update() {
+
+	inputAudio->clear();
+	if (ch->isMono()) for (int i = 0; i < conf::channelsIn; i++) inputAudio->add(std::to_string(i+1).c_str());
+	else if (conf::channelsIn > 1) for (int i = 0; i < conf::channelsIn; i+=2) inputAudio->add((gu_iToString(i+1) + "-" + gu_iToString(i+2)).c_str());
+	else ch->inputIndex = -1;
+	inputAudio->value(ch->isMono()?ch->inputIndex:ch->inputIndex/2);
 }

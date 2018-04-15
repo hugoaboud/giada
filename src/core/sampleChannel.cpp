@@ -932,7 +932,7 @@ bool SampleChannel::startInputRec()
 		Wave*  w = nullptr;
 		string name = string("TAKE-" + gu_iToString(patch::lastTakeId++)); // Increase lastTakeId
 
-		int result = waveManager::createEmpty(clock::getFramesInLoop(), G_MAX_IO_CHANS,
+		int result = waveManager::createEmpty(clock::getFramesInLoop(), mono?1:2,
 			conf::samplerate, name + ".wav", &w);
 		if (result != G_RES_OK)
 			return false;

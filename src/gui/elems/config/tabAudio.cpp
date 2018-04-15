@@ -322,11 +322,15 @@ void geTabAudio::fetchInChans(int menuItem)
 		channelsIn->value(0);
 		return;
 	}
-	for (unsigned i=0; i<chs; i+=2) {
+	/*for (unsigned i=0; i<chs; i+=2) {
 		string tmp = gu_iToString(i+1) + "-" + gu_iToString(i+2);
 		channelsIn->add(tmp.c_str());
+	}*/
+	for (unsigned i=0; i<chs; i++) {
+		string tmp = gu_iToString(i+1);
+		channelsIn->add(tmp.c_str());
 	}
-	channelsIn->value(conf::channelsIn);
+	channelsIn->value(conf::channelsIn-1);
 }
 
 
@@ -487,9 +491,7 @@ void geTabAudio::save()
 	conf::soundDeviceOut = kernelAudio::getDeviceByName(sounddevOut->text(sounddevOut->value()));
 	conf::soundDeviceIn  = kernelAudio::getDeviceByName(sounddevIn->text(sounddevIn->value()));
 	conf::channelsOut    = channelsOut->value();
-
-	// TODO: multiple/mono inputs
-	conf::channelsIn     = channelsIn->value();
+	conf::channelsIn     = channelsIn->value()+1;
 
 	conf::limitOutput    = limitOutput->value();
 	conf::rsmpQuality    = rsmpQuality->value();

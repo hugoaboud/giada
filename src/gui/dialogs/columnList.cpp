@@ -223,10 +223,8 @@ gdColumn::gdColumn(gdColumnList* gdi, ColumnChannel* i, int X, int Y, int W)
 	posMute->value(i->mute);
 	posMute->callback(cb_posMute, (void*)this);
 
-	output->add("- no output -");
-	// TODO: output list + mono/stereo
-	output->add("1");
-	output->value(i->outputIndex+1);
+	output->add("1-2");
+	output->value(0);
 	output->callback(cb_setOutput, (void*)this);
 
 	vol->value(i->getVolume());
@@ -254,7 +252,7 @@ void gdColumn::cb_inputMonitor		(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_inp
 
 void gdColumn::cb_setOutput()
 {
-	pColumn->outputIndex = output->value()-1;
+	pColumn->outputIndex = output->value();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -288,7 +286,6 @@ void gdColumn::cb_posMute() {
 /* -------------------------------------------------------------------------- */
 
 void gdColumn::cb_changeVol() {
-	gu_log("dialvol: %f\n", vol->value());
 	pColumn->setVolume(vol->value());
 }
 

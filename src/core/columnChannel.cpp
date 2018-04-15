@@ -73,6 +73,31 @@ void ColumnChannel::writePatch(bool isProject)
 
 /* -------------------------------------------------------------------------- */
 
+
+bool ColumnChannel::allocBuffers()
+{
+	if (!Channel::allocBuffers())
+		return false;
+
+	if (!rChan.alloc(bufferSize, mono?1:2)) {
+		gu_log("[ColumnChannel::allocBuffers] unable to alloc memory for rChan!\n");
+		return false;
+	}
+
+	return true;
+}
+
+/* -------------------------------------------------------------------------- */
+
+
+void ColumnChannel::clearBuffers()
+{
+	vChan.clear();
+	rChan.clear();
+}
+
+/* -------------------------------------------------------------------------- */
+
 void ColumnChannel::readPatch(const std::string& basePath, int i)
 {
 	/*
@@ -94,13 +119,26 @@ void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 {
 	if (mute) return;
 
-	assert(out.countSamples() == vChan.countSamples());
+	assert(out.countFrames() == vChan.countFrames());
 	// Ignore input, receive only throught ColumnChannel::input()
 
+	bool rAlive = false;
 	if (!pre_mute) {
 		for (ResourceChannel* ch : resources) {
-			ch->process(out, vChan);
-			//ch->preview(out);
+			if (!rAlive)
+				if (ch->inputMonitor || ch->isPlaying() || ch->isRecording()) rAlive = true;
+			ch->process(rChan, vChan);
+			ch->preview(rChan);
+		}
+	}
+
+	if (!inputMonitor) vChan.clear();
+
+	if (rAlive) {
+		for (int i=0; i<vChan.countFrames(); i++) {
+			for (int j=0; j<vChan.countChannels(); j++) {
+				vChan[i][j] += rChan[i][j];
+			}
 		}
 	}
 
@@ -108,7 +146,6 @@ void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 	pluginHost::processStack(vChan, this);
 #endif
 
-	if (inputMonitor)
 		output(out);
 }
 
@@ -165,3 +202,8 @@ bool ColumnChannel::isSilent() {
 }
 
 /* -------------------------------------------------------------------------- */
+
+void ColumnChannel::setMono(bool mono) {
+	rChan.free();
+	Channel::setMono(mono);
+}

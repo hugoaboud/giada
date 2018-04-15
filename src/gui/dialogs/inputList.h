@@ -106,8 +106,6 @@ class gdInput : public Fl_Group
   	void cb_changeVol();
   	void cb_inputMonitor();
 
-  	int openInputChannelMenu();
-
   public:
 
     InputChannel *ch;
@@ -129,6 +127,7 @@ class gdInput : public Fl_Group
 
   	gdInput(gdInputList *gdi, InputChannel *i, int x, int y, int w);
   	void refresh();
+    void update();
 
 };
 

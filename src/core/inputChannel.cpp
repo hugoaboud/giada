@@ -36,7 +36,7 @@ using namespace giada::m;
 
 InputChannel::InputChannel(int bufferSize)
 	: Channel          (G_CHANNEL_INPUT, bufferSize),
-	inputIndex(-1),
+	inputIndex(0),
 	outColumn(nullptr)
 {
 	name = "Input";
@@ -96,16 +96,16 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 				colInput = true;
 				break;
 			}
-			if (!inputMonitor && !colInput) return;
 		}
+		if (!inputMonitor && !colInput) return;
 	}
 	else if (!inputMonitor) return;
 
-	assert(out.countSamples() == vChan.countSamples());
-	assert(in.countSamples() == vChan.countSamples());
+	assert(out.countFrames() == vChan.countFrames());
+	assert(in.countFrames() == vChan.countFrames());
 
 	if (!pre_mute)
-		input(in);
+		input(in, this->mono, inputIndex);
 
 #ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
@@ -116,9 +116,14 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 
 	// feed outColumn ColumnChannel
 	if (colInput)
-		outColumn->input(vChan);
+		outColumn->input(vChan, mono);
 }
 
 void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) {
 
+}
+
+void InputChannel::setMono(bool mono) {
+	Channel::setMono(mono);
+	inputIndex = 0;
 }

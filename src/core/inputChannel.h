@@ -47,6 +47,7 @@ public:
 	void writePatch(bool isProject) override;
 	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
+	void setMono(bool mono) override;
 
 	int				inputIndex;
 	ColumnChannel*	outColumn;

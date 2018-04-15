@@ -41,6 +41,11 @@ private:
 	/* ResourceChannel stack */
 	std::vector <ResourceChannel*> resources;
 
+	/* rChan
+	Buffer for outputs of ResourceChannels. */
+
+	giada::m::AudioBuffer rChan;
+
 public:
 
 	ColumnChannel(int bufferSize);
@@ -50,8 +55,11 @@ public:
 	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
 	void readPatch(const std::string& basePath, int i) override;
 	void writePatch(bool isProject) override;
+	bool allocBuffers() override;
+	void clearBuffers() override;
 	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
+	void setMono(bool mono) override;
 
 
 	/* */
