@@ -1,0 +1,16 @@
+/tmp/cc1pR7aM.o: In function `main':
+main.cpp:(.text+0x17): undefined reference to `init_prepareParser()'
+main.cpp:(.text+0x1c): undefined reference to `init_prepareMidiMap()'
+main.cpp:(.text+0x21): undefined reference to `init_prepareKernelAudio()'
+main.cpp:(.text+0x26): undefined reference to `init_prepareKernelMIDI()'
+main.cpp:(.text+0x37): undefined reference to `init_startGUI(int, char**)'
+main.cpp:(.text+0x3c): undefined reference to `Fl::lock()'
+main.cpp:(.text+0x59): undefined reference to `pthread_create'
+main.cpp:(.text+0x5e): undefined reference to `init_startKernelAudio()'
+main.cpp:(.text+0x63): undefined reference to `Fl::run()'
+main.cpp:(.text+0x7a): undefined reference to `pthread_join'
+/tmp/cc1pR7aM.o: In function `videoThreadCb(void*)':
+main.cpp:(.text+0x90): undefined reference to `giada::m::kernelAudio::getStatus()'
+main.cpp:(.text+0xa4): undefined reference to `gu_refreshUI()'
+main.cpp:(.text+0xae): undefined reference to `giada::u::time::sleep(int)'
+collect2: error: ld returned 1 exit status

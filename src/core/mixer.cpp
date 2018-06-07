@@ -98,6 +98,7 @@ void routeAudio(AudioBuffer& out, AudioBuffer& in, unsigned bufferSize)
 	}
 
 	// Process ColumnChannels
+	// (Input is ignored)
 	//
 	for (unsigned i=0; i<columnChannels.size(); i++) {
 		columnChannels[i]->process(out, in);
@@ -332,9 +333,9 @@ int masterPlay(void* outBuf, void* inBuf, unsigned bufferSize,
 #endif
 
 	AudioBuffer out, in;
-	out.setData((float*) outBuf, bufferSize, G_MAX_IO_CHANS);
+	out.setData((float*) outBuf, bufferSize, G_OUT_CHANS);
 	if (kernelAudio::isInputEnabled())
-		in.setData((float*) inBuf, bufferSize, G_MAX_IO_CHANS);
+		in.setData((float*) inBuf, bufferSize, conf::channelsIn);
 
 	peakOut = 0.0f;  // reset peak calculator
 	peakIn  = 0.0f;  // reset peak calculator

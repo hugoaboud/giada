@@ -151,7 +151,7 @@ void close()
 void init(int buffersize_, int samplerate_)
 {
 	messageManager = juce::MessageManager::getInstance();
-	audioBuffer.setSize(G_MAX_IO_CHANS, buffersize_);
+	audioBuffer.setSize(G_OUT_CHANS, buffersize_);
 	samplerate = samplerate_;
 	buffersize = buffersize_;
 	missingPlugins = false;

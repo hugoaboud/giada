@@ -102,18 +102,18 @@ bool SampleChannel::allocBuffers()
 	if (!Channel::allocBuffers())
 		return false;
 
-	rsmp_state = src_new(SRC_LINEAR, G_MAX_IO_CHANS, nullptr);
+	rsmp_state = src_new(SRC_LINEAR, mono?1:2, nullptr);
 	if (rsmp_state == nullptr) {
 		gu_log("[SampleChannel::allocBuffers] unable to alloc memory for SRC_STATE!\n");
 		return false;
 	}
 
-	if (!pChan.alloc(bufferSize, G_MAX_IO_CHANS)) {
+	if (!pChan.alloc(bufferSize, mono?1:2)) {
 		gu_log("[SampleChannel::allocBuffers] unable to alloc memory for pChan!\n");
 		return false;
 	}
 
-	if (!vChanPreview.alloc(bufferSize, G_MAX_IO_CHANS)) {
+	if (!vChanPreview.alloc(bufferSize, mono?1:2)) {
 		gu_log("[SampleChannel::allocBuffers] unable to alloc memory for vChanPreview!\n");
 		return false;
 	}

@@ -35,7 +35,7 @@
 using namespace giada::m;
 
 InputChannel::InputChannel(int bufferSize)
-	: Channel          (G_CHANNEL_INPUT, bufferSize),
+	: Channel          (G_CHANNEL_INPUT, bufferSize, true),
 	inputIndex(0),
 	outColumn(nullptr)
 {
@@ -83,7 +83,7 @@ void InputChannel::readPatch(const std::string& basePath, int i)
 
 void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in)
 {
-	if (inputIndex < 0 || mute) return;
+	if (inputIndex < 0 || mute || (!mono && inputIndex + 1 >= conf::channelsIn)) return;
 
 	// Check if any Column's resource needs input.
 	// If the column doesn't exists neither needs input and
@@ -104,8 +104,21 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 	assert(out.countFrames() == vChan.countFrames());
 	assert(in.countFrames() == vChan.countFrames());
 
-	if (!pre_mute)
-		input(in, this->mono, inputIndex);
+	if (!pre_mute) {
+
+		// de-interleave audio from soundcard
+		if (mono) {
+			for (int i=0; i<vChan.countFrames(); i++)
+				vChan[i][0] += in[i][inputIndex];
+		}
+		else {
+			for (int i=0; i<vChan.countFrames(); i++) {
+				vChan[i][0] += in[i][inputIndex];
+				vChan[i][1] += in[i][inputIndex+1];
+			}
+		}
+
+	}
 
 #ifdef WITH_VST
 		pluginHost::processStack(vChan, this);
@@ -116,14 +129,9 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 
 	// feed outColumn ColumnChannel
 	if (colInput)
-		outColumn->input(vChan, mono);
+		outColumn->input(vChan);
 }
 
 void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) {
 
-}
-
-void InputChannel::setMono(bool mono) {
-	Channel::setMono(mono);
-	inputIndex = 0;
 }

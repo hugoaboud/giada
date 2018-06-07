@@ -52,7 +52,7 @@ using namespace giada::m;
 
 
 ResourceChannel::ResourceChannel(int type, int status, int bufferSize)
-: Channel						(type, bufferSize),
+: Channel						(type, bufferSize, false),
 	previewMode    		(G_PREVIEW_NONE),
 	status         		(status),
 	recStatus      		(REC_STOPPED),

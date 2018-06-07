@@ -84,7 +84,7 @@ void updateQuanto()
 
 void init(int sampleRate, float midiTCfps)
 {
-	midiTCrate = (sampleRate / midiTCfps) * G_MAX_IO_CHANS;  // stereo values
+	midiTCrate = (sampleRate / midiTCfps) * G_OUT_CHANS;  // stereo values
 	running    = false;
 	bpm        = G_DEFAULT_BPM;
 	bars       = G_DEFAULT_BARS;

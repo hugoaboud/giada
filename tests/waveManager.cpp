@@ -35,7 +35,7 @@ TEST_CASE("Test waveManager")
 
   SECTION("test recording")
   {
-    int res = waveManager::createEmpty(G_BUFFER_SIZE, G_MAX_IO_CHANS, G_SAMPLE_RATE, 
+    int res = waveManager::createEmpty(G_BUFFER_SIZE, G_OUT_CHANS, G_SAMPLE_RATE, 
       "test.wav", &w);
     std::unique_ptr<Wave> wave(w);
 

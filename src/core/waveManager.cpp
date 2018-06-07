@@ -89,7 +89,7 @@ int create(const string& path, Wave** out)
 		return G_RES_ERR_IO;
 	}
 
-	if (header.channels > G_MAX_IO_CHANS) {
+	if (header.channels > G_OUT_CHANS) {
 		gu_log("[waveManager::create] unsupported multi-channel sample\n");
 		return G_RES_ERR_WRONG_DATA;
 	}
@@ -122,7 +122,7 @@ int create(const string& path, Wave** out)
 /* -------------------------------------------------------------------------- */
 
 
-int createEmpty(int frames, int channels, int samplerate, const string& name, 
+int createEmpty(int frames, int channels, int samplerate, const string& name,
 	Wave** out)
 {
 	Wave* wave = new Wave();
@@ -136,7 +136,7 @@ int createEmpty(int frames, int channels, int samplerate, const string& name,
 
 	*out = wave;
 
-	gu_log("[waveManager::createEmpty] new empty Wave created, %d frames\n", 
+	gu_log("[waveManager::createEmpty] new empty Wave created, %d frames\n",
 		wave->getSize());
 
 	return G_RES_OK;

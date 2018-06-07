@@ -139,15 +139,15 @@ int openDevice()
 	RtAudio::StreamParameters inParams;
 
 	outParams.deviceId     = conf::soundDeviceOut == G_DEFAULT_SOUNDDEV_OUT ? getDefaultOut() : conf::soundDeviceOut;
-	outParams.nChannels    = G_MAX_IO_CHANS;
-	outParams.firstChannel = conf::channelsOut * G_MAX_IO_CHANS;   // chan 0=0, 1=2, 2=4, ...
+	outParams.nChannels    = G_OUT_CHANS;
+	outParams.firstChannel = conf::channelsOut;   // chan 0=0, 1=2, 2=4, ...
 
 	/* inDevice can be disabled. */
 
 	if (conf::soundDeviceIn != -1) {
 		inParams.deviceId     = conf::soundDeviceIn;
-		inParams.nChannels    = conf::channelsIn; //G_MAX_IO_CHANS;
-		inParams.firstChannel = 0; //conf::channelsIn * G_MAX_IO_CHANS;   // chan 0=0, 1=2, 2=4, ...
+		inParams.nChannels    = conf::channelsIn;
+		inParams.firstChannel = 0; // chan 0=0, 1=2, 2=4, ...
 		inputEnabled = true;
 	}
 	else

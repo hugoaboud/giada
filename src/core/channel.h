@@ -104,7 +104,7 @@ class Channel
 
 public:
 
-	Channel(int type, int bufferSize);
+	Channel(int type, int bufferSize, bool mono);
 
 	virtual ~Channel();
 
@@ -138,7 +138,7 @@ public:
 	/* input
 	Merge input to vChan. */
 
-	virtual void input(giada::m::AudioBuffer& in, bool mono = false, int channel = 0);
+	virtual void input(giada::m::AudioBuffer& in);
 
 	/* process
 	Input, plus plugin processing (if any) and output. Warning:

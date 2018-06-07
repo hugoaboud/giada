@@ -57,7 +57,7 @@
 
 extern gdMainWindow* G_MainWin;
 
-#define INPUTLIST_W 749
+#define INPUTLIST_W 789
 
 using std::string;
 using namespace giada::m;
@@ -194,7 +194,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 {
 	begin();
 	button  		 = new geIdButton(x(), y(), 120, 20);
-	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 32, 20);
+	inputAudio       = new geChoice(button->x()+button->w()+4, y(), 72, 20);
 	inputMidiDevice  = new geChoice(inputAudio->x()+inputAudio->w()+4, y(), 132, 20);
 	inputMidiChannel = new geChoice(inputMidiDevice->x()+inputMidiDevice->w()+4, y(), 40, 20);
 	preMute			 = new geStatusButton(inputMidiChannel->x()+inputMidiChannel->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
@@ -437,10 +437,9 @@ void gdInput::refresh() {
 /* -------------------------------------------------------------------------- */
 
 void gdInput::update() {
-
 	inputAudio->clear();
 	if (ch->isMono()) for (int i = 0; i < conf::channelsIn; i++) inputAudio->add(std::to_string(i+1).c_str());
-	else if (conf::channelsIn > 1) for (int i = 0; i < conf::channelsIn; i+=2) inputAudio->add((gu_iToString(i+1) + "-" + gu_iToString(i+2)).c_str());
+	else if (conf::channelsIn > 1) for (int i = 0; i < conf::channelsIn-1; i++) inputAudio->add((gu_iToString(i+1) + "-" + gu_iToString(i+2)).c_str());
 	else ch->inputIndex = -1;
-	inputAudio->value(ch->isMono()?ch->inputIndex:ch->inputIndex/2);
+	inputAudio->value(ch->inputIndex);
 }

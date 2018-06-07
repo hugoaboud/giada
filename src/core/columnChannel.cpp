@@ -40,7 +40,7 @@ using namespace giada::m;
 
 
 ColumnChannel::ColumnChannel(int bufferSize)
-	: Channel(G_CHANNEL_COLUMN, bufferSize),
+	: Channel(G_CHANNEL_COLUMN, bufferSize, false),
 	outputIndex(-1)
 {
 }

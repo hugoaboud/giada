@@ -80,7 +80,7 @@ public:
 	int	outputIndex;
 
 	/* iterator */
-	explicit ColumnChannel(std::initializer_list<ResourceChannel*> init) : Channel(G_CHANNEL_COLUMN, bufferSize), resources(init) {}
+	explicit ColumnChannel(std::initializer_list<ResourceChannel*> init) : Channel(G_CHANNEL_COLUMN, bufferSize, false), resources(init) {}
 
   using iterator = std::vector<ResourceChannel*>::iterator;
   using const_iterator = std::vector<ResourceChannel*>::const_iterator;

@@ -1,12 +1,12 @@
 AUTOMAKE_OPTIONS = foreign
 
 # Define conditional variables -------------------------------------------------
-# WITH_VST, LINUX, WINDOWS and OSX are varibles defined via AM_CONDITIONAL 
+# WITH_VST, LINUX, WINDOWS and OSX are varibles defined via AM_CONDITIONAL
 # inside configure.ac.
 
-extraSources = 
+extraSources =
 cppFlags =
-cxxFlags = -std=c++11 -Wall -Werror
+cxxFlags = -std=c++11 -Wall -Werror -Wno-class-memaccess -Wno-maybe-uninitialized
 ldAdd =
 ldFlags =
 
@@ -32,7 +32,7 @@ cppFlags += \
   -DJUCE_PLUGINHOST_VST=1                    \
   -DJUCE_PLUGINHOST_VST3=0                   \
   -DJUCE_PLUGINHOST_AU=0                     \
-  -DJUCE_WEB_BROWSER=0 
+  -DJUCE_WEB_BROWSER=0
 
 endif
 

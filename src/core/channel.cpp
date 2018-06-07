@@ -49,9 +49,9 @@
 using std::string;
 using namespace giada::m;
 
-Channel::Channel(int type, int bufferSize)
+Channel::Channel(int type, int bufferSize, bool mono)
 : type					(type),
-	mono					(false),
+	mono					(mono),
 	bufferSize    (bufferSize),
 	volume_i      (1.0f),
 	volume_d      (0.0f),
@@ -257,10 +257,12 @@ bool Channel::isMidiInAllowed(int c) const
 
 /* -------------------------------------------------------------------------- */
 
-void Channel::input(giada::m::AudioBuffer& in, bool mono, int channel)
+void Channel::input(giada::m::AudioBuffer& in)
 {
-	if (pre_mute || !in.isAllocd() || (!mono && channel+1 > in.countChannels()-1)) return;
+	if (pre_mute || !in.isAllocd()) return;
 	assert(in.countFrames() == vChan.countFrames());
+
+	bool mono_in = in.countChannels() == 1;
 
 	/* Add input buffer to vChan.
 	The vChan will be overwritten later by pluginHost::processStack,
@@ -268,27 +270,27 @@ void Channel::input(giada::m::AudioBuffer& in, bool mono, int channel)
 	If input is mono(L) and channel is stereo(L,R), the result is (L,L);
 	If input is stereo(L,R) and channel is mono(L), the result is ((L+R)/2) */
 
-	if (this->mono) {
-		if (mono) { // mono channel, mono input
+	if (mono) {
+		if (mono_in) { // mono channel, mono input
 			for (int i=0; i<vChan.countFrames(); i++)
-				vChan[i][0] += in[i][channel];
+				vChan[i][0] += in[i][0];
 		}
 		else { // mono channel, stereo input
 			for (int i=0; i<vChan.countFrames(); i++)
-				vChan[i][0] += (in[i][channel] + in[i][channel+1])/2;
+				vChan[i][0] += (in[i][0] + in[i][1])/2;
 		}
 	}
 	else {
-		if (mono) { // stereo channel, mono input
+		if (mono_in) { // stereo channel, mono input
 				for (int i=0; i<vChan.countFrames(); i++) {
-					vChan[i][0] += in[i][channel];
-					vChan[i][1] += in[i][channel];
+					vChan[i][0] += in[i][0];
+					vChan[i][1] += in[i][0];
 				}
 		}
 		else { // stereo channel, stereo input
 				for (int i=0; i<vChan.countFrames(); i++) {
-					vChan[i][0] += in[i][channel];
-					vChan[i][1] += in[i][channel+1];
+					vChan[i][0] += in[i][0];
+					vChan[i][1] += in[i][1];
 				}
 		}
 	}
@@ -298,13 +300,23 @@ void Channel::output(giada::m::AudioBuffer& out) {
 	if (mute) return;
 	assert(out.countFrames() == vChan.countFrames());
 
-	// Stereo output fixed to (1-2)
+	// Output fixed to stereo
 	peak = 0;
-	for (int i=0; i<vChan.countFrames(); i++) {
-		for (int j=0; j<vChan.countChannels(); j++) { 
-			int k = j+conf::channelsOut*G_MAX_IO_CHANS;
-			out[i][k] += vChan[i][j] * volume * calcPanning(j) * boost;
-			if (out[i][k] > peak) peak = out[i][k];
+	int outCh = conf::channelsOut;
+	if (mono) {
+		for (int i=0; i<vChan.countFrames(); i++) {
+			out[i][outCh] += vChan[i][0] * volume * calcPanning(0) * boost;
+			out[i][outCh+1] += vChan[i][0] * volume * calcPanning(1) * boost;
+			if (out[i][outCh] > peak) peak = out[i][outCh];
+			if (out[i][outCh+1] > peak) peak = out[i][outCh+1];
+		}
+	}
+	else {
+		for (int i=0; i<vChan.countFrames(); i++) {
+			out[i][outCh] += vChan[i][0] * volume * calcPanning(0) * boost;
+			out[i][outCh+1] += vChan[i][1] * volume * calcPanning(1) * boost;
+			if (out[i][outCh] > peak) peak = out[i][outCh];
+			if (out[i][outCh+1] > peak) peak = out[i][outCh+1];
 		}
 	}
 }

@@ -106,7 +106,7 @@
 #define G_MAX_BUF_SIZE      4096
 #define G_MIN_GUI_WIDTH     816
 #define G_MIN_GUI_HEIGHT    510
-#define G_MAX_IO_CHANS      2
+#define G_OUT_CHANS					2
 
 
 

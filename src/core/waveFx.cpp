@@ -105,11 +105,11 @@ void normalizeHard(Wave& w, int a, int b)
 
 int monoToStereo(Wave& w)
 {
-	if (w.getChannels() >= G_MAX_IO_CHANS)
+	if (w.getChannels() >= G_OUT_CHANS)
 		return G_RES_OK;
 
 	AudioBuffer newData;
-	if (!newData.alloc(w.getSize(), G_MAX_IO_CHANS)) {
+	if (!newData.alloc(w.getSize(), G_OUT_CHANS)) {
 		gu_log("[wfx::monoToStereo] unable to allocate memory!\n");
 		return G_RES_ERR_MEMORY;
 	}
@@ -132,7 +132,7 @@ void silence(Wave& w, int a, int b)
 	gu_log("[wfx::silence] silencing from %d to %d\n", a, b);
 
 	for (int i=a; i<b; i++) {
-		for (int j=0; j<w.getChannels(); j++)	
+		for (int j=0; j<w.getChannels(); j++)
 			w[i][j] = 0.0f;
 	}
 
@@ -148,7 +148,7 @@ int cut(Wave& w, int a, int b)
 	if (a < 0) a = 0;
 	if (b > w.getSize()) b = w.getSize();
 
-	/* Create a new temp wave and copy there the original one, skipping the a-b 
+	/* Create a new temp wave and copy there the original one, skipping the a-b
 	range. */
 
 	int newSize = w.getSize() - (b - a);
@@ -163,7 +163,7 @@ int cut(Wave& w, int a, int b)
 
 	for (int i=0, k=0; i<w.getSize(); i++) {
 		if (i < a || i >= b) {
-			for (int j=0; j<w.getChannels(); j++)	
+			for (int j=0; j<w.getChannels(); j++)
 				newData[k][j] = w[i][j];
 			k++;
 		}
@@ -247,7 +247,7 @@ void fade(Wave& w, int a, int b, int type)
 			fadeFrame(w, i, m);
 	else
 		for (int i=b; i>=a; i--, m+=d)
-			fadeFrame(w, i, m);		
+			fadeFrame(w, i, m);
 
   w.setEdited(true);
 }
@@ -258,7 +258,7 @@ void fade(Wave& w, int a, int b, int type)
 
 void smooth(Wave& w, int a, int b)
 {
-	/* Do nothing if fade edges (both of SMOOTH_SIZE samples) are > than selected 
+	/* Do nothing if fade edges (both of SMOOTH_SIZE samples) are > than selected
 	portion of wave. SMOOTH_SIZE*2 to count both edges. */
 
 	if (SMOOTH_SIZE*2 > (b-a)) {

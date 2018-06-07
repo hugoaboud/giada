@@ -349,7 +349,7 @@ void geTabAudio::fetchOutChans(int menuItem)
 		channelsOut->value(0);
 		return;
 	}
-	for (unsigned i=0; i<chs; i+=2) {
+	for (unsigned i=0; i<chs-1; i++) {
 		string tmp = gu_iToString(i+1) + "-" + gu_iToString(i+2);
 		channelsOut->add(tmp.c_str());
 	}
