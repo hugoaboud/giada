@@ -26,6 +26,7 @@
 
 
 #include "../core/mixer.h"
+#include "../core/metronome.h"
 #include "../core/mixerHandler.h"
 #include "../core/channel.h"
 #include "../core/pluginHost.h"
@@ -149,7 +150,7 @@ static void glue_fillPatchGlobals__(const string &name)
 	patch::quantize     = clock::getQuantize();
 	patch::masterVolIn  = mixer::inVol;
 	patch::masterVolOut = mixer::outVol;
-	patch::metronome    = mixer::metronome;
+	patch::metronome    = metronome::on;
 
 #ifdef WITH_VST
 

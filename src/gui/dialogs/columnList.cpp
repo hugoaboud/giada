@@ -37,6 +37,7 @@
 #include "../../core/mixer.h"
 #include "../../core/mixerHandler.h"
 #include "../../core/channel.h"
+#include "../../core/inputChannel.h"
 #include "../../core/columnChannel.h"
 #include "../../glue/channel.h"
 #include "../../glue/plugin.h"
@@ -62,7 +63,7 @@ using std::string;
 using namespace giada::m;
 using namespace giada::c;
 
-#define COLUMNLIST_W 535
+#define COLUMNLIST_W 667
 
 gdColumnList::gdColumnList()
 	: gdWindow(COLUMNLIST_W, 204)
@@ -200,18 +201,28 @@ gdColumn::gdColumn(gdColumnList* gdi, ColumnChannel* i, int X, int Y, int W)
 {
 	begin();
 	button  		 = new geIdButton(x(), y(), 120, 20);
-	preMute			 = new geStatusButton(button->x()+button->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
+	inputChannel = new geChoice(button->x()+button->w()+4, y(), 132, 20);
+	preMute			 = new geStatusButton(inputChannel->x()+inputChannel->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
 	fx    			 = new geStatusButton(preMute->x()+preMute->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
 	posMute			 = new geStatusButton(fx->x()+fx->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
 	meter   		 = new geSoundMeter(posMute->x()+posMute->w()+4, y()+4, 140, 12);
-	output		     = new geChoice(meter->x()+meter->w()+4, y(), 132, 20);
-	vol				 = new geDial(output->x()+output->w()+4, y(), 20, 20);
-	inputMonitor	 = new geStatusButton(vol->x()+vol->w()+4, y(), 20, 20, channelStop_xpm, channelPlay_xpm);
+	output		   = new geChoice(meter->x()+meter->w()+4, y(), 132, 20);
+	vol				   = new geDial(output->x()+output->w()+4, y(), 20, 20);
+	inputMonitor = new geStatusButton(vol->x()+vol->w()+4, y(), 20, 20, channelStop_xpm, channelPlay_xpm);
 	end();
 
 	button->copy_label(i->getName().c_str());
 	button->callback(cb_button, (void*)this);
 	button->value(0);
+
+	inputChannel->add("- no input -");
+	int inIndex = 0;
+	for (unsigned j = 0; j < mixer::inputChannels.size(); j++) {
+		inputChannel->add(mixer::inputChannels[j]->getName().c_str());
+		if (mixer::inputChannels[j] == i->inputChannel) inIndex = j+1;
+	}
+	inputChannel->value(inIndex);
+	inputChannel->callback(cb_setInputChannel, (void*)this);
 
 	preMute->type(FL_TOGGLE_BUTTON);
 	preMute->value(i->pre_mute);
@@ -239,6 +250,7 @@ gdColumn::gdColumn(gdColumnList* gdi, ColumnChannel* i, int X, int Y, int W)
 /* -------------------------------------------------------------------------- */
 
 void gdColumn::cb_button		    (Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_button(); }
+void gdColumn::cb_setInputChannel(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_setInputChannel(); }
 void gdColumn::cb_setOutput      	(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_setOutput(); }
 void gdColumn::cb_preMute			(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_preMute(); }
 #ifdef WITH_VST
@@ -247,6 +259,12 @@ void gdColumn::cb_openFxWindow		(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_ope
 void gdColumn::cb_posMute			(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_posMute(); }
 void gdColumn::cb_changeVol			(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_changeVol(); }
 void gdColumn::cb_inputMonitor		(Fl_Widget* v, void* p) { ((gdColumn*)p)->cb_inputMonitor(); }
+
+/* -------------------------------------------------------------------------- */
+
+void gdColumn::cb_setInputChannel() {
+	giada::c::channel::setInput(pColumn, mixer::inputChannels[inputChannel->value()-1]);
+}
 
 /* -------------------------------------------------------------------------- */
 

@@ -24,29 +24,40 @@
  *
  * -------------------------------------------------------------------------- */
 
+#ifndef G_METRONOME_H
+#define G_METRONOME_H
 
-#ifndef G_INPUT_CHANNEL_H
-#define G_INPUT_CHANNEL_H
+#include <initializer_list>
+#include <algorithm>
 
-#include "channel.h"
+namespace giada {
+namespace m {
 
-class InputChannel : public Channel
-{
-private:
+class AudioBuffer;
 
-public:
+namespace metronome {
 
-	InputChannel(int bufferSize);
-	~InputChannel();
-
-	/* [Channel] inheritance */
-	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
-	void readPatch(const std::string& basePath, int i) override;
-	void writePatch(bool isProject) override;
-	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
-
-	int				inputIndex;
+struct MetronomeWave {
+  int size;
+  float* tick;
+  float* tock;
+  MetronomeWave(int size, float* tick, float* tock): size(size), tick(tick), tock(tock) {}
+  MetronomeWave(int size, std::initializer_list<float> tick, std::initializer_list<float> tock) {
+    this->size = size;
+    this->tick = new float[tick.size()];
+    std::copy(tick.begin(), tick.end(), this->tick);
+    this->tock = new float[tock.size()];
+    std::copy(tock.begin(), tock.end(), this->tock);
+  }
 };
+
+void render(AudioBuffer& outBuf, unsigned frame);
+
+extern bool   on;
+extern int    output;
+extern int    tickTracker, tockTracker;
+extern bool   tickPlay, tockPlay;
+
+}}} // giada::m::metronome::;
 
 #endif

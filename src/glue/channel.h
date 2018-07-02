@@ -33,6 +33,7 @@
 
 
 class Channel;
+class InputChannel;
 class ColumnChannel;
 class ResourceChannel;
 class SampleChannel;
@@ -85,6 +86,7 @@ int cloneResourceChannel(ResourceChannel* ch);
 Toggles or set several channel properties. If gui == true the signal comes from
 a manual interaction on the GUI, otherwise it's a MIDI/Jack/external signal. */
 
+void setInput(ColumnChannel* ch, InputChannel* input);
 void toggleArm(ResourceChannel* ch, bool gui);
 void toggleInputMonitor(Channel* ch);
 void setVolume(Channel* ch, float v, bool gui=true, bool editor=false);

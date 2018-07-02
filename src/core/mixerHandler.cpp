@@ -34,6 +34,7 @@
 #include "../glue/channel.h"
 #include "kernelMidi.h"
 #include "mixer.h"
+#include "metronome.h"
 #include "const.h"
 #include "init.h"
 #include "pluginHost.h"
@@ -421,7 +422,7 @@ void readPatch()
 	clock::setBeats(patch::beats);
 	clock::setQuantize(patch::quantize);
 	clock::updateFrameBars();
-	mixer::metronome = patch::metronome;
+	metronome::on = patch::metronome;
 
 #ifdef WITH_VST
 

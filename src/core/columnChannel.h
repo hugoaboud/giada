@@ -32,6 +32,7 @@
 #include "const.h"
 
 class ResourceChannel;
+class InputChannel;
 class geColumn;
 
 class ColumnChannel : public Channel
@@ -75,6 +76,9 @@ public:
 	void stopRecResources();
 	void clearAllResources();
 	bool isSilent();
+
+	/* Input */
+	InputChannel *inputChannel;
 
 	/* Output */
 	int	outputIndex;

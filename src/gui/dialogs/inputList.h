@@ -88,7 +88,6 @@ class gdInput : public Fl_Group
   #endif
   	static void cb_preMute(Fl_Widget* v, void* p);
   	static void cb_posMute(Fl_Widget* v, void* p);
-  	static void cb_setColumnChannel(Fl_Widget *v, void *p);
   	static void cb_changeVol(Fl_Widget* v, void* p);
   	static void cb_inputMonitor(Fl_Widget* v, void* p);
 
@@ -102,7 +101,6 @@ class gdInput : public Fl_Group
   #endif
   	void cb_preMute();
   	void cb_posMute();
-  	void cb_setColumnChannel();
   	void cb_changeVol();
   	void cb_inputMonitor();
 
@@ -121,7 +119,6 @@ class gdInput : public Fl_Group
   	geStatusButton *preMute;
   	geStatusButton *posMute;
   	geSoundMeter   *meter;
-  	geChoice	   *columnChannel;
   	geDial         *vol;
   	geStatusButton *inputMonitor;
 

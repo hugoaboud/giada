@@ -256,6 +256,8 @@ int aboutY = 0;
 int nameX = 0;
 int nameY = 0;
 
+int columnInputX = 0;
+int columnInputY = 0;
 
 #ifdef WITH_VST
 
@@ -339,9 +341,9 @@ int read()
 	if (!storager::setString(jRoot, CONF_KEY_LAST_MIDIMAP, lastFileMap)) return 0;
 	if (!storager::setInt(jRoot, CONF_KEY_MIDI_SYNC, midiSync)) return 0;
 	if (!storager::setFloat(jRoot, CONF_KEY_MIDI_TC_FPS, midiTCfps)) return 0;
-	if (!storager::setBool(jRoot, CONF_KEY_MIDI_IN, midiIn)) return 0; 
-	if (!storager::setInt(jRoot, CONF_KEY_MIDI_IN_FILTER, midiInFilter)) return 0; 
-	if (!storager::setUint32(jRoot, CONF_KEY_MIDI_IN_REWIND, midiInRewind)) return 0; 
+	if (!storager::setBool(jRoot, CONF_KEY_MIDI_IN, midiIn)) return 0;
+	if (!storager::setInt(jRoot, CONF_KEY_MIDI_IN_FILTER, midiInFilter)) return 0;
+	if (!storager::setUint32(jRoot, CONF_KEY_MIDI_IN_REWIND, midiInRewind)) return 0;
 	if (!storager::setUint32(jRoot, CONF_KEY_MIDI_IN_START_STOP, midiInStartStop)) return 0;
 	if (!storager::setUint32(jRoot, CONF_KEY_MIDI_IN_ACTION_REC, midiInActionRec)) return 0;
 	if (!storager::setUint32(jRoot, CONF_KEY_MIDI_IN_INPUT_REC, midiInInputRec)) return 0;
@@ -503,7 +505,7 @@ int write()
 	json_object_set_new(jRoot, CONF_KEY_BEATS_X,                   json_integer(beatsX));
 	json_object_set_new(jRoot, CONF_KEY_BEATS_Y,                   json_integer(beatsY));
 	json_object_set_new(jRoot, CONF_KEY_ABOUT_X,                   json_integer(aboutX));
-	json_object_set_new(jRoot, CONF_KEY_ABOUT_Y,                   json_integer(aboutY));	
+	json_object_set_new(jRoot, CONF_KEY_ABOUT_Y,                   json_integer(aboutY));
 	json_object_set_new(jRoot, CONF_KEY_NAME_X,                    json_integer(nameX));
 	json_object_set_new(jRoot, CONF_KEY_NAME_Y,                    json_integer(nameY));
 	json_object_set_new(jRoot, CONF_KEY_MIDI_INPUT_X,              json_integer(midiInputX));

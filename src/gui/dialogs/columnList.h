@@ -82,6 +82,7 @@ private:
   ColumnChannel *pColumn;
 
   	static void cb_button(Fl_Widget *v, void *p);
+		static void cb_setInputChannel(Fl_Widget *v, void *p);
   	static void cb_setOutput(Fl_Widget* v, void* p);
 	static void cb_preMute(Fl_Widget* v, void* p);
 #ifdef WITH_VST
@@ -92,6 +93,7 @@ private:
 	static void cb_inputMonitor(Fl_Widget* v, void* p);
 
 	void cb_button();
+	void cb_setInputChannel();
 	void cb_setOutput();
 	void cb_preMute();
 #ifdef WITH_VST
@@ -104,6 +106,7 @@ private:
 public:
 
 	geIdButton	   *button;
+	geChoice	   *inputChannel;
 	geStatusButton *preMute;
 #ifdef WITH_VST
 	geStatusButton *fx;

@@ -37,7 +37,6 @@
 #include "../../core/mixer.h"
 #include "../../core/mixerHandler.h"
 #include "../../core/channel.h"
-#include "../../core/columnChannel.h"
 #include "../../glue/channel.h"
 #include "../../glue/plugin.h"
 #include "../../utils/log.h"
@@ -57,7 +56,7 @@
 
 extern gdMainWindow* G_MainWin;
 
-#define INPUTLIST_W 789
+#define INPUTLIST_W 657
 
 using std::string;
 using namespace giada::m;
@@ -201,8 +200,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	fx    			 = new geStatusButton(preMute->x()+preMute->w()+4, y(), 20, 20, fxOff_xpm, fxOn_xpm);
 	posMute			 = new geStatusButton(fx->x()+fx->w()+4, y(), 20, 20, muteOff_xpm, muteOn_xpm);
 	meter   		 = new geSoundMeter(posMute->x()+posMute->w()+4, y()+4, 140, 12);
-	columnChannel    = new geChoice(meter->x()+meter->w()+4, y(), 132, 20);
-	vol				 = new geDial(columnChannel->x()+columnChannel->w()+4, y(), 20, 20);
+	vol				 = new geDial(meter->x()+meter->w()+4, y(), 20, 20);
 	inputMonitor	 = new geStatusButton(vol->x()+vol->w()+4, y(), 20, 20, channelStop_xpm, channelPlay_xpm);
 	end();
 
@@ -229,15 +227,6 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 	posMute->type(FL_TOGGLE_BUTTON);
 	posMute->value(i->mute);
 	posMute->callback(cb_posMute, (void*)this);
-
-	columnChannel->add("- no output column -");
-	int colIndex = 0;
-	for (unsigned j = 0; j < mixer::columnChannels.size(); j++) {
-		columnChannel->add(mixer::columnChannels[j]->getName().c_str());
-		if (mixer::columnChannels[j] == i->outColumn) colIndex = j+1;
-	}
-	columnChannel->value(colIndex);
-	columnChannel->callback(cb_setColumnChannel, (void*)this);
 
 	vol->value(i->getVolume());
 
@@ -283,7 +272,6 @@ void gdInput::cb_openFxWindow(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_openFxW
 #endif
 void gdInput::cb_preMute(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_preMute(); }
 void gdInput::cb_posMute(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_posMute(); }
-void gdInput::cb_setColumnChannel(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_setColumnChannel(); }
 void gdInput::cb_changeVol(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_changeVol(); }
 void gdInput::cb_inputMonitor(Fl_Widget* v, void* p) { ((gdInput*)p)->cb_inputMonitor(); }
 
@@ -401,11 +389,6 @@ void gdInput::cb_posMute() {
 	else ch->unsetMute(false);
 }
 
-/* -------------------------------------------------------------------------- */
-
-void gdInput::cb_setColumnChannel() {
-	ch->outColumn = mixer::columnChannels[columnChannel->value()-1];
-}
 
 /* -------------------------------------------------------------------------- */
 

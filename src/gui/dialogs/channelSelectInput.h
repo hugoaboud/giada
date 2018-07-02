@@ -25,28 +25,36 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_INPUT_CHANNEL_H
-#define G_INPUT_CHANNEL_H
+#ifndef GD_CHANNEL_SELECT_INPUT_H
+#define GD_CHANNEL_SELECT_INPUT_H
 
-#include "channel.h"
 
-class InputChannel : public Channel
+#include "window.h"
+
+
+class Channel;
+class geChoice;
+class geButton;
+
+
+class gdChannelSelectInput : public gdWindow
 {
 private:
 
+	static void cb_setInputChannel(Fl_Widget* v, void* p);
+	static void cb_update(Fl_Widget* w, void* p);
+	void cb_setInputChannel();
+	void cb_update();
+
+	ColumnChannel* m_ch;
+
+	geChoice	   *m_input;
+	geButton* m_ok;
+
 public:
 
-	InputChannel(int bufferSize);
-	~InputChannel();
-
-	/* [Channel] inheritance */
-	void copy(const Channel* src, pthread_mutex_t* pluginMutex) override;
-	void readPatch(const std::string& basePath, int i) override;
-	void writePatch(bool isProject) override;
-	void process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in) override;
-	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
-
-	int				inputIndex;
+	gdChannelSelectInput(ColumnChannel* ch);
+	~gdChannelSelectInput();
 };
 
 #endif

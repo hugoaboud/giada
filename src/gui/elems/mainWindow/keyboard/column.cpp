@@ -38,6 +38,7 @@
 #include "../../../../utils/fs.h"
 #include "../../../../utils/string.h"
 #include "../../../dialogs/gd_warnings.h"
+#include "../../../dialogs/channelSelectInput.h"
 #include "../../../dialogs/channelNameInput.h"
 #include "../../../elems/basics/boxtypes.h"
 #include "../../../elems/basics/resizerBar.h"
@@ -58,6 +59,7 @@ enum class Menu
 {
 	ADD_SAMPLE_CHANNEL = 0,
 	ADD_MIDI_CHANNEL,
+	SELECT_INPUT,
 	RENAME_CHANNEL,
 	DELETE_CHANNEL
 };
@@ -76,6 +78,10 @@ void menuCallback(Fl_Widget* w, void* v)
 		}
 		case Menu::ADD_MIDI_CHANNEL: {
 			c::channel::addResourceChannel((ColumnChannel*)gcol->ch, G_CHANNEL_MIDI, G_GUI_CHANNEL_H_1);
+			break;
+		}
+		case Menu::SELECT_INPUT: {
+			gu_openSubWindow(G_MainWin, new gdChannelSelectInput((ColumnChannel*)gcol->ch), WID_SAMPLE_NAME);
 			break;
 		}
 		case Menu::RENAME_CHANNEL: {
@@ -301,6 +307,7 @@ void geColumn::cb_openMenu()
 	Fl_Menu_Item rclick_menu[] = {
 		{"Add Sample Channel",	0, menuCallback, (void*) Menu::ADD_SAMPLE_CHANNEL},
 		{"Add MIDI Channel",	0, menuCallback, (void*) Menu::ADD_MIDI_CHANNEL},
+		{"Select Input",	0, menuCallback, (void*) Menu::SELECT_INPUT},
 		{"Rename column", 		0, menuCallback, (void*) Menu::RENAME_CHANNEL},
 		{"Delete column", 		0, menuCallback, (void*) Menu::DELETE_CHANNEL},
 		{0}

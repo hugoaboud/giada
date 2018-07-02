@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include "const.h"
+#include "inputChannel.h"
 #include "sampleChannel.h"
 #include "columnChannel.h"
 #include "pluginHost.h"
@@ -41,6 +42,7 @@ using namespace giada::m;
 
 ColumnChannel::ColumnChannel(int bufferSize)
 	: Channel(G_CHANNEL_COLUMN, bufferSize, false),
+	inputChannel(nullptr),
 	outputIndex(-1)
 {
 }
@@ -120,7 +122,10 @@ void ColumnChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 	if (mute) return;
 
 	assert(out.countFrames() == vChan.countFrames());
-	// Ignore input, receive only throught ColumnChannel::input()
+	// Ignore mixer input, receive only throught InputChannel
+
+	if (inputChannel != nullptr)
+		inputChannel->output(vChan);
 
 	bool rAlive = false;
 	if (!pre_mute) {

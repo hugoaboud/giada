@@ -33,6 +33,7 @@
 	#include <X11/xpm.h>
 #endif
 #include "../core/mixer.h"
+#include "../core/metronome.h"
 #include "../core/recorder.h"
 #include "../core/wave.h"
 #include "../core/clock.h"
@@ -135,7 +136,7 @@ void gu_updateControls()
 	G_MainWin->mainTimer->setBpm(clock::getBpm());
 
 	G_MainWin->mainTransport->updatePlay(clock::isRunning());
-	G_MainWin->mainTransport->updateMetronome(mixer::metronome);
+	G_MainWin->mainTransport->updateMetronome(metronome::on);
 }
 
 

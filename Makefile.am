@@ -161,6 +161,8 @@ src/core/recorder.h                    \
 src/core/recorder.cpp                  \
 src/core/mixer.h                       \
 src/core/mixer.cpp                     \
+src/core/metronome.h                   \
+src/core/metronome.cpp                 \
 src/core/storager.h	                   \
 src/core/storager.cpp                  \
 src/core/clock.h                       \
@@ -201,6 +203,8 @@ src/gui/dialogs/bpmInput.h             \
 src/gui/dialogs/bpmInput.cpp           \
 src/gui/dialogs/channelNameInput.h     \
 src/gui/dialogs/channelNameInput.cpp   \
+src/gui/dialogs/channelSelectInput.h     \
+src/gui/dialogs/channelSelectInput.cpp   \
 src/gui/dialogs/gd_config.h      			 \
 src/gui/dialogs/gd_config.cpp          \
 src/gui/dialogs/gd_devInfo.h           \

@@ -83,7 +83,6 @@ extern bool   ready;
 extern float  outVol;
 extern float  inVol;
 extern float  peakIn;
-extern bool	  metronome;
 extern int    waitRec;       // delayComp guard
 extern bool   rewindWait;	   // rewind guard, if quantized
 extern bool   hasSolos;      // more than 0 channels soloed

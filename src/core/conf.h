@@ -115,6 +115,7 @@ extern int bpmX, bpmY;
 extern int beatsX, beatsY;
 extern int aboutX, aboutY;
 extern int nameX, nameY;
+extern int columnInputX, columnInputY;
 
 #ifdef WITH_VST
 

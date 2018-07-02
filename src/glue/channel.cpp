@@ -55,6 +55,7 @@
 #include "../core/conf.h"
 #include "../core/wave.h"
 #include "../core/channel.h"
+#include "../core/inputChannel.h"
 #include "../core/columnChannel.h"
 #include "../core/sampleChannel.h"
 #include "../core/midiChannel.h"
@@ -250,6 +251,18 @@ int cloneResourceChannel(ResourceChannel* src)
 
 /* -------------------------------------------------------------------------- */
 
+void setInput(ColumnChannel* ch, InputChannel* input) {
+	ch->inputChannel = input;
+	if (ch->guiChannel != nullptr) ch->guiChannel->update();
+	gdColumnList* gdColumn = static_cast<gdColumnList*>(gu_getSubwindow(G_MainWin, WID_COLUMN_LIST));
+	if (gdColumn) {
+		Fl::lock();
+		gdColumn->refreshList();
+		Fl::unlock();
+	}
+}
+
+/* -------------------------------------------------------------------------- */
 
 void toggleArm(ResourceChannel* ch, bool gui)
 {

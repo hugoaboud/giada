@@ -30,6 +30,7 @@
 #include "../gui/dialogs/gd_mainWindow.h"
 #include "../core/clock.h"
 #include "../core/kernelAudio.h"
+#include "../core/metronome.h"
 #include "../core/mixerHandler.h"
 #include "../core/mixer.h"
 #include "../core/recorder.h"
@@ -111,10 +112,10 @@ void glue_stopSeq(bool gui)
 
 void glue_startStopMetronome(bool gui)
 {
-	mixer::metronome = !mixer::metronome;
+	metronome::on = !metronome::on;
 	if (!gui) {
 		Fl::lock();
-		G_MainWin->mainTransport->updateMetronome(mixer::metronome);
+		G_MainWin->mainTransport->updateMetronome(metronome::on);
 		Fl::unlock();
 	}
 }
