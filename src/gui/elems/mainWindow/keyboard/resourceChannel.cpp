@@ -43,6 +43,8 @@
 #include "column.h"
 #include "channelStatus.h"
 #include "channelButton.h"
+#include "channelMode.h"
+#include "channelRecMode.h"
 #include "resourceChannel.h"
 
 
@@ -60,7 +62,7 @@ geResourceChannel::geResourceChannel(int X, int Y, int W, int H, int type, Resou
 
 /* -------------------------------------------------------------------------- */
 
-
+void geResourceChannel::cb_button      (Fl_Widget* v, void* p) { ((geResourceChannel*)p)->cb_button(); }
 void geResourceChannel::cb_arm(Fl_Widget* v, void* p) { ((geResourceChannel*)p)->cb_arm(); }
 void geResourceChannel::cb_mute(Fl_Widget* v, void* p) { ((geResourceChannel*)p)->cb_mute(); }
 void geResourceChannel::cb_solo(Fl_Widget* v, void* p) { ((geResourceChannel*)p)->cb_solo(); }
@@ -69,6 +71,18 @@ void geResourceChannel::cb_changeVol(Fl_Widget* v, void* p) { ((geResourceChanne
 void geResourceChannel::cb_openFxWindow(Fl_Widget* v, void* p) { ((geResourceChannel*)p)->cb_openFxWindow(); }
 #endif
 
+/* -------------------------------------------------------------------------- */
+
+
+void geResourceChannel::cb_button()
+{
+	using namespace giada::c;
+
+	if (button->value())    // pushed, max velocity (127 i.e. 0x7f)
+		io::keyPress((ResourceChannel*)ch, Fl::event_ctrl(), Fl::event_shift(), 0x7F);
+	else                    // released
+		io::keyRelease((ResourceChannel*)ch, Fl::event_ctrl(), Fl::event_shift());
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -95,7 +109,7 @@ void geResourceChannel::cb_mute()
 
 void geResourceChannel::cb_solo()
 {
-	solo->value() ? c::channel::setSolo(ch, true, true) : c::channel::setSolo(ch, true, true);
+	c::channel::setSolo(ch, !solo->value(), true);
 }
 
 
@@ -258,7 +272,10 @@ void geResourceChannel::changeSize(int H)
 
 	button->resize(x(), Y, w(), G_GUI_UNIT);
 	arm->resize(x(), Y, w(), G_GUI_UNIT);
-	mainButton->resize(x(), y(), w(), H);
+  status->resize(x(), Y, w(), G_GUI_UNIT);
+  mainButton->resize(x(), y(), w(), H);
+	modeBox->resize(x(), Y, w(), G_GUI_UNIT);
+	recModeBox->resize(x(), Y, w(), G_GUI_UNIT);
 	mute->resize(x(), Y, w(), G_GUI_UNIT);
 	solo->resize(x(), Y, w(), G_GUI_UNIT);
 	vol->resize(x(), Y, w(), G_GUI_UNIT);

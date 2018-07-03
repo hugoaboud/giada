@@ -33,19 +33,14 @@
 
 
 class SampleChannel;
-class geChannelMode;
-class geChannelRecMode;
 class geButton;
 
 
 class geSampleChannel : public geResourceChannel
 {
 private:
-
-	static void cb_button(Fl_Widget* v, void* p);
 	static void cb_openMenu(Fl_Widget* v, void* p);
 	static void cb_readActions(Fl_Widget* v, void* p);
-	void cb_button();
 	void cb_openMenu();
 	void cb_readActions();
 
@@ -66,8 +61,6 @@ public:
 	void showActionButton();
 	void hideActionButton();
 
-	geChannelMode* 		modeBox;
-	geChannelRecMode* recModeBox;
 	geButton*      		readActions;
 };
 

@@ -76,6 +76,10 @@ public:
 	bool startInputRec() override;
 	void stopInputRec() override;
 
+	void setBegin(int f) override;
+	void setEnd(int f) override;
+	int getPosition() override;
+
 	/* sendMidi
 	 * send Midi event to the outside world. */
 

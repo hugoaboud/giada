@@ -34,6 +34,7 @@ class ColumnChannel;
 
 class ResourceChannel : public Channel
 {
+
 protected:
 
 	/* previewMode
@@ -43,6 +44,12 @@ protected:
 	/* onPreviewEnd
 	A callback fired when audio preview ends. */
 	std::function<void()> onPreviewEnd;
+
+	/* begin, end
+	Begin/end point to read wave data from/to. */
+
+	int begin;
+	int end;
 
 public:
 
@@ -143,6 +150,13 @@ public:
 
 	virtual void stopInputRec() = 0;
 
+	int getBegin() const;
+	int getEnd() const;
+	virtual void setBegin(int f) = 0;
+	virtual void setEnd(int f) = 0;
+	virtual int getPosition() = 0;
+
+
 	/* isPreview
 	Whethet a channel is previewing. */
 	bool isPreview();
@@ -194,6 +208,9 @@ public:
 	Armed for recording */
 
 	bool armed;
+
+	int   mode;            // mode: see const.h
+	int   recMode;         // recMode: see const.h
 
 	/* column
 	ColumnChannel this channel belongs to */

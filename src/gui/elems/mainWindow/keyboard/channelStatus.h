@@ -33,14 +33,13 @@
 
 #include <FL/Fl_Box.H>
 
-
 class geChannelStatus : public Fl_Box
 {
 public:
-	geChannelStatus(int X, int Y, int W, int H, class SampleChannel *ch,
+	geChannelStatus(int X, int Y, int W, int H, class ResourceChannel *ch,
     const char *L=0);
 	void draw();
-	class SampleChannel *ch;
+	class ResourceChannel *ch;
 };
 
 

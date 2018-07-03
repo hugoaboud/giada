@@ -49,7 +49,9 @@
 #include "column.h"
 #include "midiChannelButton.h"
 #include "midiChannel.h"
-
+#include "channelStatus.h"
+#include "channelMode.h"
+#include "channelRecMode.h"
 
 extern gdMainWindow* G_MainWin;
 
@@ -61,7 +63,8 @@ namespace
 {
 enum class Menu
 {
-	EDIT_ACTIONS = 0,
+	INPUT_MONITOR = 0,
+	EDIT_ACTIONS,
 	CLEAR_ACTIONS,
 	CLEAR_ACTIONS_ALL,
 	__END_CLEAR_ACTION_SUBMENU__,
@@ -92,6 +95,10 @@ void menuCallback(Fl_Widget* w, void* v)
 
 	switch (selectedItem)
 	{
+		case Menu::INPUT_MONITOR: {
+			c::channel::toggleInputMonitor(gch->ch);
+			break;
+		}
 		case Menu::CLEAR_ACTIONS:
 		case Menu::__END_CLEAR_ACTION_SUBMENU__:
 		case Menu::RESIZE:
@@ -152,17 +159,15 @@ geMidiChannel::geMidiChannel(int X, int Y, int W, int H, MidiChannel* ch)
 {
 	begin();
 
-#if defined(WITH_VST)
-	int delta = 144; // (6 widgets * G_GUI_UNIT) + (6 paddings * 4)
-#else
-	int delta = 120; // (5 widgets * G_GUI_UNIT) + (5 paddings * 4)
-#endif
+	button      = new geIdButton(x(), y(), G_GUI_UNIT, G_GUI_UNIT, "", channelStop_xpm, channelPlay_xpm);
+	arm         = new geButton(button->x()+button->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", armOff_xpm, armOn_xpm);
+	status      = new geChannelStatus(arm->x()+arm->w()+4, y(), G_GUI_UNIT, H, ch);
+	mainButton  = new geMidiChannelButton(status->x()+status->w()+4, y(), G_GUI_UNIT, H, "-- MIDI --");
+	modeBox     = new geChannelMode(mainButton->x()+mainButton->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, ch);
+	recModeBox  = new geChannelRecMode(modeBox->x()+modeBox->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, ch);
+	mute        = new geButton(recModeBox->x()+recModeBox->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", muteOff_xpm, muteOn_xpm);
+	solo        = new geButton(mute->x()+mute->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", soloOff_xpm, soloOn_xpm);
 
-	button     = new geIdButton(x(), y(), G_GUI_UNIT, G_GUI_UNIT, "", channelStop_xpm, channelPlay_xpm);
-	arm        = new geButton(button->x()+button->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", armOff_xpm, armOn_xpm);
-	mainButton = new geMidiChannelButton(arm->x()+arm->w()+4, y(), w() - delta, H, "-- MIDI --");
-	mute       = new geButton(mainButton->x()+mainButton->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", muteOff_xpm, muteOn_xpm);
-	solo       = new geButton(mute->x()+mute->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, "", soloOff_xpm, soloOn_xpm);
 #if defined(WITH_VST)
 	fx         = new geStatusButton(solo->x()+solo->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT, fxOff_xpm, fxOn_xpm);
 	vol        = new geDial(fx->x()+fx->w()+4, y(), G_GUI_UNIT, G_GUI_UNIT);
@@ -179,7 +184,6 @@ geMidiChannel::geMidiChannel(int X, int Y, int W, int H, MidiChannel* ch)
 	button->callback(cb_button, (void*)this);
 	button->when(FL_WHEN_CHANGED);   // do callback on keypress && on keyrelease
 
-	arm->type(FL_TOGGLE_BUTTON);
 	arm->callback(cb_arm, (void*)this);
 
 #ifdef WITH_VST
@@ -204,29 +208,15 @@ geMidiChannel::geMidiChannel(int X, int Y, int W, int H, MidiChannel* ch)
 
 /* -------------------------------------------------------------------------- */
 
-
-void geMidiChannel::cb_button  (Fl_Widget* v, void* p) { ((geMidiChannel*)p)->cb_button(); }
 void geMidiChannel::cb_openMenu(Fl_Widget* v, void* p) { ((geMidiChannel*)p)->cb_openMenu(); }
 
-
 /* -------------------------------------------------------------------------- */
-
-
-void geMidiChannel::cb_button()
-{
-	using namespace giada;
-
-	if (button->value())
-		c::io::keyPress(static_cast<MidiChannel*>(ch), Fl::event_ctrl(), Fl::event_shift());
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 
 void geMidiChannel::cb_openMenu()
 {
 	Fl_Menu_Item rclick_menu[] = {
+		{"Input monitor",            0, menuCallback, (void*) Menu::INPUT_MONITOR,
+			FL_MENU_TOGGLE | FL_MENU_DIVIDER | (ch->inputMonitor ? FL_MENU_VALUE : 0)},
 		{"Edit actions...", 0, menuCallback, (void*) Menu::EDIT_ACTIONS},
 		{"Clear actions",   0, menuCallback, (void*) Menu::CLEAR_ACTIONS, FL_SUBMENU},
 			{"All",           0, menuCallback, (void*) Menu::CLEAR_ACTIONS_ALL},
@@ -269,7 +259,10 @@ void geMidiChannel::cb_openMenu()
 
 void geMidiChannel::refresh()
 {
+	if (!mainButton->visible()) // mainButton invisible? status too (see below)
+		return;
 	setColorsByStatus(((ResourceChannel*)ch)->status, ((ResourceChannel*)ch)->recStatus);
+	status->redraw(); // status invisible? sampleButton too (see below)
 	mainButton->redraw();
 }
 
@@ -281,6 +274,7 @@ void geMidiChannel::reset()
 {
 	mainButton->setDefaultMode("-- MIDI --");
 	mainButton->redraw();
+	status->redraw();
 }
 
 
@@ -308,7 +302,14 @@ void geMidiChannel::update()
 
 	mainButton->setKey(mch->key);
 
-	arm->value(mch->armed);
+	arm->value(mch->armed || ((MidiChannel*)mch)->isRecording());
+	arm->redraw();
+
+	modeBox->value(mch->mode);
+	modeBox->redraw();
+
+	recModeBox->value(mch->recMode);
+	recModeBox->redraw();
 
 #ifdef WITH_VST
 	fx->status = mch->plugins.size() > 0;
@@ -325,6 +326,8 @@ void geMidiChannel::resize(int X, int Y, int W, int H)
 	geChannel::resize(X, Y, W, H);
 
 	arm->hide();
+	modeBox->hide();
+	recModeBox->hide();
 #ifdef WITH_VST
 	fx->hide();
 #endif
@@ -335,6 +338,11 @@ void geMidiChannel::resize(int X, int Y, int W, int H)
 	if (w() > BREAK_FX)
 		fx->show();
 #endif
+
+	if (w() > BREAK_MODE_BOX)
+		modeBox->show();
+	if (w() > BREAK_MODE_BOX)
+			recModeBox->show();
 
 	packWidgets();
 }

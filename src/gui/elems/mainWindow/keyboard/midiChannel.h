@@ -40,9 +40,7 @@ class geMidiChannel : public geResourceChannel
 {
 private:
 
-	static void cb_button(Fl_Widget* v, void* p);
 	static void cb_openMenu(Fl_Widget* v, void* p);
-	void cb_button();
 	void cb_openMenu();
 
 public:

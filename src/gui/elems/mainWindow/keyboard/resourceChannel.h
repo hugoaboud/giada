@@ -39,6 +39,8 @@ class geChannelStatus;
 class geButton;
 class geChannelButton;
 class geDial;
+class geChannelMode;
+class geChannelRecMode;
 #ifdef WITH_VST
 class geStatusButton;
 #endif
@@ -64,6 +66,7 @@ protected:
 
 	static const int MIN_ELEM_W = 20;
 
+	static void cb_button(Fl_Widget* v, void* p);
 	static void cb_arm(Fl_Widget* v, void* p);
 	static void cb_mute(Fl_Widget* v, void* p);
 	static void cb_solo(Fl_Widget* v, void* p);
@@ -71,13 +74,14 @@ protected:
 #ifdef WITH_VST
 		static void cb_openFxWindow(Fl_Widget* v, void* p);
 #endif
+	void cb_button();
+	void cb_arm();
 	void cb_mute();
-	virtual void cb_arm();
 	void cb_solo();
-	void cb_changeVol();
 #ifdef WITH_VST
 		void cb_openFxWindow();
 #endif
+void cb_changeVol();
 
 	/* blink
 	 * blink button when channel is in wait/ending status. */
@@ -106,18 +110,22 @@ public:
 	/* reset
 	 * reset channel to initial status. */
 
-	//virtual void reset() = 0;
+	virtual void reset() = 0;
 
 	/* update
 	 * update the label of sample button and everything else such as 'R'
 	 * button, key box and so on, according to global values. */
 
-	//virtual void update() = 0;
+	virtual void update() = 0;
 
 	/* refresh
 	 * update graphics. */
 
-	//virtual void refresh() = 0;
+	virtual void refresh() = 0;
+
+	/* resize
+	 *  */
+	virtual void resize(int x, int y, int w, int h) = 0;
 
 	/* changeSize
 	Changes channel's size according to a template (x1, x2, ...). */
@@ -138,9 +146,11 @@ public:
 	int getSize() override;
 
 	geIdButton*      button;
-	geChannelStatus* status;
 	geButton*        arm;
+	geChannelStatus* status;
 	geChannelButton* mainButton;
+	geChannelMode* 		modeBox;
+	geChannelRecMode* recModeBox;
 #ifdef WITH_VST
 	geStatusButton*  fx;
 #endif

@@ -398,9 +398,15 @@ void processStack(AudioBuffer& out, Channel* ch)
 	if (ch != nullptr && ch->type == G_CHANNEL_MIDI)
 		audioBuffer.clear();
 	else
-		for (int i=0; i<out.countFrames(); i++)
-			for (int j=0; j<out.countChannels(); j++)
-				audioBuffer.setSample(j, i, out[i][j]);
+		if (ch->isMono())
+			for (int i=0; i<out.countFrames(); i++) {
+					audioBuffer.setSample(0, i, out[i][0]);
+					audioBuffer.setSample(1, i, out[i][0]);
+			}
+		else
+			for (int i=0; i<out.countFrames(); i++)
+				for (int j=0; j<out.countChannels(); j++)
+					audioBuffer.setSample(j, i, out[i][j]);
 
 	/* Hardcore processing. At the end we swap input and output, so that he N-th
 	plugin will process the result of the plugin N-1. Part of this loop must be
@@ -445,9 +451,13 @@ void processStack(AudioBuffer& out, Channel* ch)
 	/* Converting buffer from Juce to Giada. A note for the future: if we
 	overwrite (=) (as we do now) it's SEND, if we add (+) it's INSERT. */
 
-	for (int i=0; i<out.countFrames(); i++)
-		for (int j=0; j<out.countChannels(); j++)
-			out[i][j] = audioBuffer.getSample(j, i);
+	if (ch->isMono())
+		for (int i=0; i<out.countFrames(); i++)
+				out[i][0] = (audioBuffer.getSample(0, i) + audioBuffer.getSample(1, i))/2.0f;
+	else
+		for (int i=0; i<out.countFrames(); i++)
+			for (int j=0; j<out.countChannels(); j++)
+				out[i][j] = audioBuffer.getSample(j, i);
 }
 
 

@@ -41,11 +41,11 @@ private:
 	static void cb_changeMode  (Fl_Widget *v, void *p);
 	inline void __cb_changeMode(int mode);
 
-	class SampleChannel *ch;
+	class ResourceChannel *ch;
 
 public:
 
-  geChannelMode(int x, int y, int w, int h, class SampleChannel *ch,
+  geChannelMode(int x, int y, int w, int h, class ResourceChannel *ch,
     const char *l=0);
 	void draw();
 };

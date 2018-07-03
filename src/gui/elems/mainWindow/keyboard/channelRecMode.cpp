@@ -30,13 +30,13 @@
 #include <FL/fl_draw.H>
 #include "../../../../utils/gui.h"
 #include "../../../../core/graphics.h"
-#include "../../../../core/sampleChannel.h"
+#include "../../../../core/resourceChannel.h"
 #include "../../../../core/const.h"
 #include "../../basics/boxtypes.h"
 #include "channelRecMode.h"
 
 
-geChannelRecMode::geChannelRecMode(int x, int y, int w, int h, SampleChannel *ch,
+geChannelRecMode::geChannelRecMode(int x, int y, int w, int h, ResourceChannel *ch,
   const char *L)
   : Fl_Menu_Button(x, y, w, h, L), ch(ch)
 {

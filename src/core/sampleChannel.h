@@ -101,12 +101,6 @@ private:
 
 	int frameRewind;
 
-	/* begin, end
-	Begin/end point to read wave data from/to. */
-
-	int begin;
-	int end;
-
 	float pitch;
 
 	bool  fadeinOn;
@@ -152,8 +146,6 @@ public:
 	bool startInputRec() override;
 	void stopInputRec() override;
 
-	int   getBegin() const;
-	int   getEnd() const;
 	float getPitch() const;
 
 	/* pushWave
@@ -164,7 +156,7 @@ public:
 	/* getPosition
 	Returns the position of an active sample. If EMPTY o MISSING returns -1. */
 
-	int getPosition();
+	int getPosition() override;
 
 	/* sum
 	Adds sample frames to virtual channel. Frame = processed frame in Mixer. */
@@ -172,9 +164,8 @@ public:
 	void sum(int frame);
 
 	void setPitch(float v);
-	void setBegin(int f);
-	void setEnd(int f);
-
+	void setBegin(int f) override;
+	void setEnd(int f) override;
 
 	/* hardStop
 	Stops the channel immediately, no further checks. */
@@ -190,8 +181,6 @@ public:
 	int   tracker;         // chan position
 	int   trackerPreview;  // chan position for audio preview
 	int   shift;
-	int   mode;            // mode: see const.h
-	int   recMode;         // recMode: see const.h
 	bool  qWait;           // quantizer wait
 	bool  qRecWait;        // quantizer recording wait
 

@@ -54,9 +54,13 @@ using namespace giada::m;
 ResourceChannel::ResourceChannel(int type, int status, int bufferSize)
 : Channel						(type, bufferSize, false),
 	previewMode    		(G_PREVIEW_NONE),
+	begin            (0),
+	end              (0),
 	status         		(status),
 	recStatus      		(REC_STOPPED),
 	armed            	(false),
+	mode             (G_DEFAULT_CHANMODE),
+	recMode          (G_DEFAULT_CHANRECMODE),
 	column		 				(nullptr),
 	midiInKeyPress 		(0x0),
 	midiInKeyRel   		(0x0),
@@ -134,6 +138,11 @@ bool ResourceChannel::isRecording()
 {
 	return recStatus & (REC_READING | REC_ENDING);
 }
+
+/* -------------------------------------------------------------------------- */
+
+int ResourceChannel::getBegin() const { return begin; }
+int ResourceChannel::getEnd() const   { return end; }
 
 /* -------------------------------------------------------------------------- */
 

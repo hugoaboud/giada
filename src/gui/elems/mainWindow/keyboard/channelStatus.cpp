@@ -28,7 +28,7 @@
 #include <FL/fl_draw.H>
 #include "../../../../core/mixer.h"
 #include "../../../../core/clock.h"
-#include "../../../../core/sampleChannel.h"
+#include "../../../../core/resourceChannel.h"
 #include "../../../../core/recorder.h"
 #include "../../../../core/const.h"
 #include "channelStatus.h"
@@ -37,7 +37,7 @@
 using namespace giada::m;
 
 
-geChannelStatus::geChannelStatus(int x, int y, int w, int h, SampleChannel *ch,
+geChannelStatus::geChannelStatus(int x, int y, int w, int h, ResourceChannel *ch,
   const char *L)
   : Fl_Box(x, y, w, h, L), ch(ch) {}
 

@@ -59,8 +59,6 @@ SampleChannel::SampleChannel(int bufferSize)
 		rsmp_state       (nullptr),
 		inputTracker		 (0),
 		frameRewind      (-1),
-		begin            (0),
-		end              (0),
 		pitch            (G_DEFAULT_PITCH),
 		fadeinOn         (false),
 		fadeinVol        (1.0f),
@@ -72,8 +70,6 @@ SampleChannel::SampleChannel(int bufferSize)
 		tracker          (0),
 		trackerPreview   (0),
 		shift            (0),
-		mode             (G_DEFAULT_CHANMODE),
-		recMode          (G_DEFAULT_CHANRECMODE),
 		qWait	           (false),
 		qRecWait	           (false),
 		midiInReadActions(0x0),
@@ -274,14 +270,6 @@ void SampleChannel::setEnd(int f)
 		end = f;
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-
-int SampleChannel::getBegin() const { return begin; }
-int SampleChannel::getEnd() const   { return end; }
-
-
 /* -------------------------------------------------------------------------- */
 
 
@@ -481,7 +469,21 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 		return;
 	}
 
+	if (recStatus & REC_ENDING || ((recMode & REC_SINGLE_ANY & REC_ZERO_ANY) && isRecording())) {
+		setReadActions(false, recsStopOnChanHalt);  // rec stop
+		inputTracker = wave->getSize()-1;
+		stopInputRec();
+		armed = false;
+	}
+
 	if (mode & LOOP_ANY) {
+
+		if (status == STATUS_WAIT) {
+			status  = STATUS_PLAY;
+			qWait = false;
+			sendMidiLplay();
+			tracker = fillChan(vChan, tracker, frame);
+		}
 
 		/* do a crossfade if the sample is playing. Regular chanReset
 		 * instead if it's muted, otherwise a click occurs */
@@ -498,19 +500,6 @@ void SampleChannel::onZero(int frame, bool recsStopOnChanHalt)
 		else
 		if (status == STATUS_ENDING)
 			hardStop(frame);
-	}
-
-	if (status == STATUS_WAIT) { /// FIXME - should be inside previous if!
-		status  = STATUS_PLAY;
-		qWait = false;
-		sendMidiLplay();
-		tracker = fillChan(vChan, tracker, frame);
-	}
-
-	if (recStatus & REC_ENDING || ((recMode & REC_SINGLE_ANY & REC_ZERO_ANY) && isRecording())) {
-		setReadActions(false, recsStopOnChanHalt);  // rec stop
-		stopInputRec();
-		armed = false;
 	}
 
 	((geSampleChannel*)guiChannel)->update();
@@ -771,8 +760,9 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 	// overdub monitor
 	bool overdub = (recMode & REC_OVERDUB_ANY) && isRecording() && !pre_mute;
 	if (overdub) {
-		if (waitRec >= conf::delayComp)
+		if (waitRec >= conf::delayComp) {
 			fillChan(vChan, inputTracker, 0);
+		}
 	}
 
 	// recording
@@ -781,20 +771,19 @@ void SampleChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& i
 			waitRec++;
 		}
 		else {
+			int waveSize = wave->getSize();
 			for (int i=0; i<vChan.countFrames(); i++) {
-				if (i+inputTracker >= wave->getSize()) {
+				for (int j=0; j<vChan.countChannels(); j++) {
+					(*wave)[inputTracker][j] += in[i][j];   // add, don't overwrite
+				}
+				inputTracker++;
+				if (inputTracker >= waveSize) {
 					if (recMode & REC_SINGLE_ANY) {
 						stopInputRec();
 						break;
 					}
-					inputTracker = 0;
+					else inputTracker -= waveSize;
 				}
-				else {
-					for (int j=0; j<vChan.countChannels(); j++) {
-						(*wave)[inputTracker][j] += in[i][j];   // add, don't overwrite
-					}
-				}
-				inputTracker++;
 			}
 		}
 	}
@@ -1072,7 +1061,7 @@ void SampleChannel::rec(int frame, bool doQuantize, bool mixerIsRunning, bool fo
 		case REC_READING:
 		{
 			if (recMode & REC_SINGLE_ANY & REC_ZERO_ANY) {
-				// TODO: one more layer
+				// TODO: record one more layer
 			}
 			else recStop(forceStart);
 			break;
@@ -1169,7 +1158,6 @@ int SampleChannel::fillChan(giada::m::AudioBuffer& dest, int start, int offset, 
 		smaller than the buffer. */
 
 		int chunkSize = bufferSize - offset;
-
 		if (start + chunkSize <= end) {
 			position = start + chunkSize;
 			if (rewind)

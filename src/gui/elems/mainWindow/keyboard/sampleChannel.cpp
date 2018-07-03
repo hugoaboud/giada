@@ -57,6 +57,7 @@
 #include "sampleChannelButton.h"
 #include "keyboard.h"
 #include "column.h"
+#include "resourceChannel.h"
 #include "sampleChannel.h"
 
 extern gdMainWindow* G_MainWin;
@@ -237,7 +238,6 @@ geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
 	button->callback(cb_button, (void*)this);
 	button->when(FL_WHEN_CHANGED);   // do callback on keypress && on keyrelease
 
-
 	arm->callback(cb_arm, (void*)this);
 
 #ifdef WITH_VST
@@ -266,25 +266,8 @@ geSampleChannel::geSampleChannel(int X, int Y, int W, int H, SampleChannel* ch)
 
 /* -------------------------------------------------------------------------- */
 
-
-void geSampleChannel::cb_button      (Fl_Widget* v, void* p) { ((geSampleChannel*)p)->cb_button(); }
 void geSampleChannel::cb_openMenu    (Fl_Widget* v, void* p) { ((geSampleChannel*)p)->cb_openMenu(); }
-void geSampleChannel::cb_readActions (Fl_Widget* v, void* p) { ((geSampleChannel*)p)->cb_readActions(); }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-void geSampleChannel::cb_button()
-{
-	using namespace giada::c;
-
-	if (button->value())    // pushed, max velocity (127 i.e. 0x7f)
-		io::keyPress((ResourceChannel*)ch, Fl::event_ctrl(), Fl::event_shift(), 0x7F);
-	else                    // released
-		io::keyRelease((ResourceChannel*)ch, Fl::event_ctrl(), Fl::event_shift());
-}
-
+void geSampleChannel::cb_readActions    (Fl_Widget* v, void* p) { ((geSampleChannel*)p)->cb_readActions(); }
 
 /* -------------------------------------------------------------------------- */
 
@@ -301,7 +284,7 @@ void geSampleChannel::cb_openMenu()
 
 	Fl_Menu_Item rclick_menu[] = {
 		{"Input monitor",            0, menuCallback, (void*) Menu::INPUT_MONITOR,
-			FL_MENU_TOGGLE | FL_MENU_DIVIDER | (static_cast<SampleChannel*>(ch)->inputMonitor ? FL_MENU_VALUE : 0)},
+			FL_MENU_TOGGLE | FL_MENU_DIVIDER | (ch->inputMonitor ? FL_MENU_VALUE : 0)},
 		{"Load new sample...",       0, menuCallback, (void*) Menu::LOAD_SAMPLE},
 		{"Export sample to file...", 0, menuCallback, (void*) Menu::EXPORT_SAMPLE},
 		{"Setup keyboard input...",  0, menuCallback, (void*) Menu::SETUP_KEYBOARD_INPUT},
@@ -380,8 +363,7 @@ void geSampleChannel::refresh()
 
 	setColorsByStatus(((ResourceChannel*)ch)->status, ((ResourceChannel*)ch)->recStatus);
 	if (static_cast<const SampleChannel*>(ch)->wave != nullptr) {
-		// TODO: channel record status
-		if (static_cast<SampleChannel*>(ch)->isRecording())// && ch->armed)
+		if (static_cast<SampleChannel*>(ch)->isRecording())
 			mainButton->setInputRecordMode();
 		if (m::recorder::active) {
 			if (m::recorder::canRec(ch, m::clock::isRunning(), m::mixer::recording))
@@ -522,8 +504,5 @@ void geSampleChannel::changeSize(int H)
 
 	int Y = y() + (H / 2 - (G_GUI_UNIT / 2));
 
-	status->resize(x(), Y, w(), G_GUI_UNIT);
-	modeBox->resize(x(), Y, w(), G_GUI_UNIT);
-	recModeBox->resize(x(), Y, w(), G_GUI_UNIT);
 	readActions->resize(x(), Y, w(), G_GUI_UNIT);
 }
