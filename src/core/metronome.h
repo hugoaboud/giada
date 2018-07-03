@@ -38,11 +38,13 @@ class AudioBuffer;
 namespace metronome {
 
 struct MetronomeWave {
+  int id;
   int size;
   float* tick;
   float* tock;
-  MetronomeWave(int size, float* tick, float* tock): size(size), tick(tick), tock(tock) {}
-  MetronomeWave(int size, std::initializer_list<float> tick, std::initializer_list<float> tock) {
+  MetronomeWave(int id, int size, float* tick, float* tock): id(id), size(size), tick(tick), tock(tock) {}
+  MetronomeWave(int id, int size, std::initializer_list<float> tick, std::initializer_list<float> tock) {
+    this->id = id;
     this->size = size;
     this->tick = new float[tick.size()];
     std::copy(tick.begin(), tick.end(), this->tick);
@@ -53,7 +55,11 @@ struct MetronomeWave {
 
 void render(AudioBuffer& outBuf, unsigned frame);
 
+extern MetronomeWave defaultWave, tigerWave;
+
+extern MetronomeWave wave;
 extern bool   on;
+extern float  vol;
 extern int    output;
 extern int    tickTracker, tockTracker;
 extern bool   tickPlay, tockPlay;

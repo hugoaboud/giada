@@ -36,6 +36,7 @@ class geChoice;
 class geCheck;
 class geButton;
 class geInput;
+class geDial;
 
 
 class geTabAudio : public Fl_Group
@@ -47,11 +48,15 @@ private:
 	static void cb_fetchOutChans      (Fl_Widget *w, void *p);
 	static void cb_showInputInfo      (Fl_Widget *w, void *p);
 	static void cb_showOutputInfo     (Fl_Widget *w, void *p);
+	static void cb_metronomeWave      (Fl_Widget *w, void *p);
+	static void cb_metronomeVol       (Fl_Widget *w, void *p);
 	inline void __cb_deactivate_sounddev();
 	inline void __cb_fetchInChans();
 	inline void __cb_fetchOutChans();
 	inline void __cb_showInputInfo();
 	inline void __cb_showOutputInfo();
+	inline void __cb_metronomeWave();
+	inline void __cb_metronomeVol();
 
 	void fetchSoundDevs();
 	void fetchInChans(int menuItem);
@@ -74,8 +79,12 @@ public:
 	geCheck  *limitOutput;
 	geChoice *buffersize;
 	geInput  *delayComp;
+	geChoice *metronomeWave;
+	geDial *metronomeVol;
 
 	geTabAudio(int x, int y, int w, int h);
+
+	void refreshMetronome();
 
 	void save();
 };

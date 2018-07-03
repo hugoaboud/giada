@@ -38,6 +38,7 @@ void glue_startSeq(bool gui=true);
 void glue_stopSeq(bool gui=true);
 void glue_rewindSeq(bool gui=true, bool notifyJack=true);
 void glue_startStopMetronome(bool gui=true);
-
+void glue_setMetronomeWave(int w, bool gui=true);
+void glue_setMetronomeVol(float v, bool gui=true);
 
 #endif

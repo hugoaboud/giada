@@ -33,7 +33,7 @@ namespace m {
 namespace metronome
 {
 
-    MetronomeWave defaultWave = MetronomeWave(38,
+    MetronomeWave defaultWave = MetronomeWave(0,38,
     {
       0.175860,  0.341914,  0.488904,  0.608633,  0.694426,  0.741500,
       0.747229,  0.711293,	0.635697,  0.524656,  0.384362,  0.222636,
@@ -53,7 +53,7 @@ namespace metronome
       -0.070862, -0.048844
     });
 
-    MetronomeWave tigerWave = MetronomeWave(928,
+    MetronomeWave tigerWave = MetronomeWave(1,928,
       {
           0.006017,  0.006457,  0.006709,  0.00674 ,  0.003597, -0.003208,
          -0.001789,  0.005167,  0.006354,  0.001945, -0.000517, -0.002252,
@@ -369,6 +369,7 @@ namespace metronome
     });
 
    bool   on = false;
+   float  vol = 1;
    MetronomeWave wave = tigerWave;
    int    output = 0;
    bool   mono = false;
@@ -380,7 +381,7 @@ namespace metronome
      //gu_log("tick:%x, tock:%x\n", tickPlay, tockPlay);
    	if (tockPlay) {
    		for (int i=output; i<output+(mono?1:2) && i<outBuf.countChannels(); i++)
-   			outBuf[frame][i] += wave.tock[tockTracker];
+   			outBuf[frame][i] += wave.tock[tockTracker] * vol;
    		tockTracker++;
    		if (tockTracker >= wave.size-1) {
    			tockPlay    = false;
@@ -389,7 +390,7 @@ namespace metronome
    	}
    	if (tickPlay) {
    		for (int i=output; i<output+(mono?1:2) && i<outBuf.countChannels(); i++)
-   			outBuf[frame][i] += wave.tick[tickTracker];
+   			outBuf[frame][i] += wave.tick[tickTracker] * vol;
    		tickTracker++;
    		if (tickTracker >= wave.size-1) {
    			tickPlay    = false;

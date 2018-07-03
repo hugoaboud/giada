@@ -30,10 +30,13 @@
 #include "../../../core/const.h"
 #include "../../../core/conf.h"
 #include "../../../core/kernelAudio.h"
+#include "../../../core/metronome.h"
+#include "../../../glue/transport.h"
 #include "../../../utils/string.h"
 #include "../../../gui/dialogs/gd_devInfo.h"
 #include "../basics/box.h"
 #include "../basics/choice.h"
+#include "../basics/dial.h"
 #include "../basics/check.h"
 #include "../basics/input.h"
 #include "../basics/button.h"
@@ -60,6 +63,8 @@ geTabAudio::geTabAudio(int X, int Y, int W, int H)
 	channelsIn  = new geChoice(x()+114, y()+149, 55,  20, "Input channels");
 	delayComp   = new geInput (x()+309, y()+149, 55,  20, "Rec delay comp.");
 	rsmpQuality = new geChoice(x()+114, y()+177, 250, 20, "Resampling");
+	metronomeWave = new geChoice(x()+114, y()+205, 100, 20, "Metronome");
+	metronomeVol = new geDial(x()+224, y()+205, 20, 20);
                 new geBox(x(), rsmpQuality->y()+rsmpQuality->h()+8, w(), 92,
 										"Restart Giada for the changes to take effect.");
 	end();
@@ -195,6 +200,15 @@ geTabAudio::geTabAudio(int X, int Y, int W, int H)
 	delayComp->maximum_size(5);
 
 	limitOutput->value(conf::limitOutput);
+
+	metronomeWave->add("Default");
+	metronomeWave->add("Tiger Classic");
+	metronomeWave->value(giada::m::metronome::wave.id);
+
+	metronomeWave->callback(cb_metronomeWave, this);
+
+	metronomeVol->value(giada::m::metronome::vol);
+	metronomeVol->callback(cb_metronomeVol, this);
 }
 
 
@@ -206,7 +220,8 @@ void geTabAudio::cb_fetchInChans(Fl_Widget *w, void *p)        { ((geTabAudio*)p
 void geTabAudio::cb_fetchOutChans(Fl_Widget *w, void *p)       { ((geTabAudio*)p)->__cb_fetchOutChans(); }
 void geTabAudio::cb_showInputInfo(Fl_Widget *w, void *p)       { ((geTabAudio*)p)->__cb_showInputInfo(); }
 void geTabAudio::cb_showOutputInfo(Fl_Widget *w, void *p)      { ((geTabAudio*)p)->__cb_showOutputInfo(); }
-
+void geTabAudio::cb_metronomeWave(Fl_Widget *w, void *p)       { ((geTabAudio*)p)->__cb_metronomeWave(); }
+void geTabAudio::cb_metronomeVol(Fl_Widget *w, void *p)      { ((geTabAudio*)p)->__cb_metronomeVol(); }
 
 /* -------------------------------------------------------------------------- */
 
@@ -380,6 +395,12 @@ int geTabAudio::findMenuDevice(geChoice *m, int device)
 	return 0;
 }
 
+/* -------------------------------------------------------------------------- */
+
+void geTabAudio::refreshMetronome()
+{
+	metronomeVol->value(giada::m::metronome::vol);
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -448,6 +469,19 @@ void geTabAudio::fetchSoundDevs()
 	}
 }
 
+/* -------------------------------------------------------------------------- */
+
+void geTabAudio::__cb_metronomeWave()
+{
+	glue_setMetronomeWave(metronomeWave->value(), true);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void geTabAudio::__cb_metronomeVol()
+{
+	glue_setMetronomeVol(metronomeVol->value(), true);
+}
 
 /* -------------------------------------------------------------------------- */
 

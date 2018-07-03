@@ -27,7 +27,11 @@
 
 #include <FL/Fl.H>
 #include "../gui/elems/mainWindow/mainTransport.h"
+#include "../gui/elems/config/tabAudio.h"
 #include "../gui/dialogs/gd_mainWindow.h"
+#include "../gui/dialogs/gd_config.h"
+#include "../utils/gui.h"
+#include "../core/const.h"
 #include "../core/clock.h"
 #include "../core/kernelAudio.h"
 #include "../core/metronome.h"
@@ -117,5 +121,35 @@ void glue_startStopMetronome(bool gui)
 		Fl::lock();
 		G_MainWin->mainTransport->updateMetronome(metronome::on);
 		Fl::unlock();
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+void glue_setMetronomeWave(int w, bool gui)
+{
+	switch (w) {
+		case 1:
+			metronome::wave = metronome::tigerWave;
+			break;
+		case 0:
+		default:
+			metronome::wave = metronome::defaultWave;
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+
+void glue_setMetronomeVol(float v, bool gui)
+{
+	metronome::vol = v;
+	if (!gui) {
+		gdConfig* gdInput = static_cast<gdConfig*>(gu_getSubwindow(G_MainWin, WID_CONFIG));
+		if (gdInput) {
+			geTabAudio* tabAudio = gdInput->tabAudio;
+			Fl::lock();
+				tabAudio->refreshMetronome();
+			Fl::unlock();
+		}
 	}
 }
