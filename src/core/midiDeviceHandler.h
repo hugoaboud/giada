@@ -25,29 +25,39 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_MIDI_DISPATCHER_H
-#define G_MIDI_DISPATCHER_H
+#ifndef G_MIDI_DEVICE_HANDLER_H
+#define G_MIDI_DEVICE_HANDLER_H
 
-
-#ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
-	#include <stdint.h>
-#else
-	#include <cstdint>
-#endif
+#include <vector>
 #include "midiDevice.h"
 
 namespace giada {
 namespace m {
-namespace midiDispatcher
+namespace mdh
 {
-typedef void (cb_midiLearn) (uint32_t, void*);
 
-void startMidiLearn(cb_midiLearn* cb, void* data);
-void stopMidiLearn();
+extern std::vector<MidiDevice*> midiDevices;
 
-void dispatch(MidiDevice *device, int byte1, int byte2, int byte3);
+/* addMidiDevice
+Add a new midi device into stack. */
 
-}}}; // giada::m::midiDispatcher::
+MidiDevice* addMidiDevice();
+
+/* deleteMidiDevice
+Completely removes a midi device from the stack. */
+
+bool deleteMidiDevice(MidiDevice* dev);
+
+/* getMidiDeviceCount
+Get how many devices are on stack. */
+unsigned getMidiDeviceCount();
+
+/* getMidiDeviceByIndex
+Returns midi device with given index 'i'. */
+
+MidiDevice* getMidiDeviceByIndex(int i);
+
+}}}  // giada::m::mh::
 
 
 #endif

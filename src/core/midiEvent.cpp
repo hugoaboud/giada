@@ -84,11 +84,15 @@ void MidiEvent::setChannel(int c)
 
 /* -------------------------------------------------------------------------- */
 
+MidiDevice *MidiEvent::getDevice() const
+{
+	return m_device;
+}
 
 int MidiEvent::getStatus() const
 {
 	return m_status;
-}	
+}
 
 
 int MidiEvent::getChannel() const
@@ -100,13 +104,13 @@ int MidiEvent::getChannel() const
 int MidiEvent::getNote() const
 {
 	return m_note;
-}	
+}
 
 
 int MidiEvent::getVelocity() const
 {
 	return m_velocity;
-}	
+}
 
 
 bool MidiEvent::isNoteOnOff() const

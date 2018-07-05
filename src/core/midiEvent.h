@@ -30,7 +30,7 @@
 
 
 #include <cstdint>
-
+#include "midiDevice.h"
 
 namespace giada {
 namespace m
@@ -46,11 +46,12 @@ public:
 	MidiEvent(uint32_t raw);
 	MidiEvent(int byte1, int byte2, int byte3);
 
-	int getStatus() const;	
-	int getChannel() const;	
-	int getNote() const;	
-	int getVelocity() const;	
-	bool isNoteOnOff() const;	
+	MidiDevice *getDevice() const;
+	int getStatus() const;
+	int getChannel() const;
+	int getNote() const;
+	int getVelocity() const;
+	bool isNoteOnOff() const;
 	int getDelta() const;
 
 	/* getRaw
@@ -64,6 +65,7 @@ public:
 
 private:
 
+	MidiDevice *m_device;
 	uint32_t m_raw;
 	int m_status;
 	int m_channel;

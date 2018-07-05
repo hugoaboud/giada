@@ -36,7 +36,8 @@ using namespace giada::m;
 
 InputChannel::InputChannel(int bufferSize)
 	: Channel          (G_CHANNEL_INPUT, bufferSize, true),
-	inputIndex(0)
+	inputIndex(0),
+	midiInput(nullptr)
 {
 	name = "Input";
 	inputMonitor = conf::inputMonitorDefaultOn;
@@ -101,6 +102,4 @@ void InputChannel::process(giada::m::AudioBuffer& out, giada::m::AudioBuffer& in
 		output(out);
 }
 
-void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) {
-
-}
+void InputChannel::parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) {}

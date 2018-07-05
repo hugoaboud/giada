@@ -29,12 +29,11 @@
 #define GE_TAB_MIDI_H
 
 
+#include <FL/Fl_Scroll.H>
 #include <FL/Fl_Group.H>
-
 
 class geChoice;
 class geCheck;
-
 
 class geTabMidi : public Fl_Group
 {
@@ -48,20 +47,22 @@ private:
 	static void cb_changeSystem  (Fl_Widget *w, void *p);
 	inline void __cb_changeSystem();
 
+	static void cb_addDevice  (Fl_Widget *w, void *p);
+	inline void __cb_addDevice();
+
 	int systemInitValue;
 
 public:
 
 	geChoice *system;
-	geChoice *portOut;
-	geChoice *portIn;
-	geCheck  *noNoteOff;
-	geChoice *midiMap;
+	Fl_Scroll *deviceList;
+	geButton *addDevice;
 	geChoice *sync;
 
 	geTabMidi(int x, int y, int w, int h);
 
 	void save();
+	void refreshDeviceList();
 };
 
 

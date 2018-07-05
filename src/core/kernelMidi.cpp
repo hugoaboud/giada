@@ -26,11 +26,6 @@
 
 
 #include "const.h"
-#ifdef G_OS_MAC
-	#include <RtMidi.h>
-#else
-	#include <rtmidi/RtMidi.h>
-#endif
 #include "../utils/log.h"
 #include "midiDispatcher.h"
 #include "midiMapConf.h"
@@ -50,7 +45,7 @@ namespace
 bool status = false;
 int api = 0;
 RtMidiOut* midiOut = nullptr;
-RtMidiIn*  midiIn  = nullptr;
+//RtMidiIn*  midiIn  = nullptr;
 unsigned numOutPorts = 0;
 unsigned numInPorts  = 0;
 
@@ -64,7 +59,7 @@ static void callback(double t, std::vector<unsigned char>* msg, void* data)
 		//gu_log("\n");
 		return;
 	}
-	midiDispatcher::dispatch(msg->at(0), msg->at(1), msg->at(2));
+	midiDispatcher::dispatch((MidiDevice*) data, msg->at(0), msg->at(1), msg->at(2));
 }
 
 
@@ -96,40 +91,44 @@ void setApi(int _api)
 	gu_log("[KM] using system 0x%x\n", api);
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-
-int openOutDevice(int port)
+RtMidiOut *openOutDevice()
 {
+	RtMidiOut *midiOut = nullptr;
+
 	try {
-		midiOut = new RtMidiOut((RtMidi::Api) api, "Giada MIDI Output");
-		status = true;
+		midiOut = new RtMidiOut((RtMidi::Api) api, "Giada MIDI output");
 	}
 	catch (RtMidiError &error) {
 		gu_log("[KM] MIDI out device error: %s\n", error.getMessage().c_str());
-		status = false;
-		return 0;
 	}
 
-	/* print output ports */
+	/* print input ports */
 
-	numOutPorts = midiOut->getPortCount();
-	gu_log("[KM] %d output MIDI ports found\n", numOutPorts);
-	for (unsigned i=0; i<numOutPorts; i++)
-		gu_log("  %d) %s\n", i, getOutPortName(i).c_str());
+	if (midiOut != nullptr) {
+		unsigned numOutPorts = midiOut->getPortCount();
+		gu_log("[KM] %d output MIDI ports found\n", numOutPorts);
+		for (unsigned i=0; i<numOutPorts; i++)
+			gu_log("  %d) %s\n", i, midiOut->getPortName(i).c_str());
+	}
 
+	return midiOut;
+}
+
+int openOutPort(RtMidiOut *device, int port)
+{
 	/* try to open a port, if enabled */
 
-	if (port != -1 && numOutPorts > 0) {
+	if (port >= 0 && (unsigned) port < device->getPortCount()) {
 		try {
-			midiOut->openPort(port, getOutPortName(port));
+			device->openPort(port, device->getPortName(port));
 			gu_log("[KM] MIDI out port %d open\n", port);
 
 			/* TODO - it shold send midiLightning message only if there is a map loaded
 			and available in midimap:: */
 
-			sendMidiLightningInitMsgs();
+			//sendMidiLightningInitMsgs();
 			return 1;
 		}
 		catch (RtMidiError &error) {
@@ -142,37 +141,56 @@ int openOutDevice(int port)
 		return 2;
 }
 
+int closeOutPort(RtMidiOut *device)
+{
+	try {
+		device->closePort();
+		gu_log("[KM] MIDI out closed\n");
+		return 1;
+	}
+	catch (RtMidiError &error) {
+		gu_log("[KM] unable to close MIDI out: %s\n", error.getMessage().c_str());
+	}
+	return 0;
+}
+
 
 /* -------------------------------------------------------------------------- */
 
-
-int openInDevice(int port)
+RtMidiIn *openInDevice()
 {
+	RtMidiIn *midiIn = nullptr;
+
 	try {
 		midiIn = new RtMidiIn((RtMidi::Api) api, "Giada MIDI input");
-		status = true;
 	}
 	catch (RtMidiError &error) {
 		gu_log("[KM] MIDI in device error: %s\n", error.getMessage().c_str());
-		status = false;
-		return 0;
 	}
 
 	/* print input ports */
 
-	numInPorts = midiIn->getPortCount();
-	gu_log("[KM] %d input MIDI ports found\n", numInPorts);
-	for (unsigned i=0; i<numInPorts; i++)
-		gu_log("  %d) %s\n", i, getInPortName(i).c_str());
+	if (midiIn != nullptr) {
+		unsigned numInPorts = midiIn->getPortCount();
+		gu_log("[KM] %d input MIDI ports found\n", numInPorts);
+		for (unsigned i=0; i<numInPorts; i++)
+			gu_log("  %d) %s\n", i, midiIn->getPortName(i).c_str());
+	}
+
+	return midiIn;
+}
+
+int openInPort(RtMidiIn *device, int port, MidiDevice *dev)
+{
 
 	/* try to open a port, if enabled */
 
-	if (port != -1 && numInPorts > 0) {
+	if (port >= 0 && (unsigned) port < device->getPortCount()) {
 		try {
-			midiIn->openPort(port, getInPortName(port));
-			midiIn->ignoreTypes(true, false, true); // ignore all system/time msgs, for now
+			device->openPort(port, device->getPortName(port));
+			device->ignoreTypes(true, false, true); // ignore all system/time msgs, for now
 			gu_log("[KM] MIDI in port %d open\n", port);
-			midiIn->setCallback(&callback);
+			device->setCallback(callback, dev);
 			return 1;
 		}
 		catch (RtMidiError &error) {
@@ -185,6 +203,19 @@ int openInDevice(int port)
 		return 2;
 }
 
+int closeInPort(RtMidiIn *device)
+{
+	try {
+		device->closePort();
+		device->cancelCallback();
+		gu_log("[KM] MIDI in closed\n");
+		return 1;
+	}
+	catch (RtMidiError &error) {
+		gu_log("[KM] unable to close MIDI in: %s\n", error.getMessage().c_str());
+	}
+	return 0;
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -198,23 +229,6 @@ bool hasAPI(int API)
 			return true;
 	return false;
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
-string getOutPortName(unsigned p)
-{
-	try { return midiOut->getPortName(p); }
-	catch (RtMidiError &error) { return ""; }
-}
-
-string getInPortName(unsigned p)
-{
-	try { return midiIn->getPortName(p); }
-	catch (RtMidiError &error) { return ""; }
-}
-
 
 /* -------------------------------------------------------------------------- */
 

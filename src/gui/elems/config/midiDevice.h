@@ -25,29 +25,52 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_MIDI_DISPATCHER_H
-#define G_MIDI_DISPATCHER_H
+#ifndef GE_MIDI_DEVICE_H
+#define GE_MIDI_DEVICE_H
 
+#include <FL/Fl_Group.H>
+#include "../../../core/midiDevice.h"
 
-#ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
-	#include <stdint.h>
-#else
-	#include <cstdint>
-#endif
-#include "midiDevice.h"
+class geIdButton;
+class geChoice;
+class geCheck;
 
-namespace giada {
-namespace m {
-namespace midiDispatcher
+using namespace giada::m;
+
+class geMidiDevice : public Fl_Group
 {
-typedef void (cb_midiLearn) (uint32_t, void*);
+private:
 
-void startMidiLearn(cb_midiLearn* cb, void* data);
-void stopMidiLearn();
+	static void cb_button(Fl_Widget *v, void *p);
+	static void cb_setPortIn(Fl_Widget *v, void *p);
+	static void cb_setPortOut(Fl_Widget *v, void *p);
+	static void cb_setNoNoteOff(Fl_Widget *v, void *p);
+	static void cb_midiMap(Fl_Widget *v, void *p);
 
-void dispatch(MidiDevice *device, int byte1, int byte2, int byte3);
+	void cb_button();
+	void cb_setPortIn();
+	void cb_setPortOut();
+	void cb_setNoNoteOff();
+	void cb_midiMap();
 
-}}}; // giada::m::midiDispatcher::
+	void fetchOutPorts();
+	void fetchInPorts();
+	void fetchMidiMaps();
+
+public:
+
+	MidiDevice *device;
+
+	geIdButton *button;
+	geChoice *portIn;
+	geChoice *portOut;
+	geCheck  *noNoteOff;
+	geChoice *midiMap;
+
+	geMidiDevice(MidiDevice *device, int X, int Y, int W);
+
+	void save();
+};
 
 
 #endif

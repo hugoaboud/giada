@@ -86,17 +86,6 @@ public:
 	void sendMidi(giada::m::recorder::action* a, int localFrame);
 	void sendMidi(uint32_t data);
 
-#ifdef WITH_VST
-
-	/* addVstMidiEvent
-	 * Add a new Midi event to the midiEvent stack fom a composite uint32_t raw
-	 * Midi event. LocalFrame is the offset: it tells where to put the event
-	 * inside the buffer. */
-
-	void addVstMidiEvent(uint32_t msg, int localFrame);
-
-#endif
-
 	bool    midiOut;           // enable midi output
 	uint8_t midiOutChan;       // midi output channel
 };

@@ -25,29 +25,34 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_MIDI_DISPATCHER_H
-#define G_MIDI_DISPATCHER_H
+#ifndef GD_MIDI_DEVICE_NAME_INPUT_H
+#define GD_MIDI_DEVICE_NAME_INPUT_H
 
 
-#ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
-	#include <stdint.h>
-#else
-	#include <cstdint>
-#endif
-#include "midiDevice.h"
+#include "window.h"
+#include "../../core/midiDevice.h"
+class geInput;
+class geButton;
 
-namespace giada {
-namespace m {
-namespace midiDispatcher
+class gdMidiDeviceNameInput : public gdWindow
 {
-typedef void (cb_midiLearn) (uint32_t, void*);
+private:
 
-void startMidiLearn(cb_midiLearn* cb, void* data);
-void stopMidiLearn();
+	static void cb_update(Fl_Widget* w, void* p);
+	static void cb_cancel(Fl_Widget* w, void* p);
+	void cb_update();
+	void cb_cancel();
 
-void dispatch(MidiDevice *device, int byte1, int byte2, int byte3);
+	giada::m::MidiDevice* m_dev;
 
-}}}; // giada::m::midiDispatcher::
+	geInput* m_name;
+	geButton* m_ok;
+	geButton* m_cancel;
 
+public:
+
+	gdMidiDeviceNameInput(giada::m::MidiDevice* dev);
+	~gdMidiDeviceNameInput();
+};
 
 #endif

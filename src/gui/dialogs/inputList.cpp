@@ -36,8 +36,10 @@
 #include "../../core/plugin.h"
 #include "../../core/mixer.h"
 #include "../../core/mixerHandler.h"
+#include "../../core/midiDeviceHandler.h"
 #include "../../core/channel.h"
 #include "../../glue/channel.h"
+#include "../../glue/midi.h"
 #include "../../glue/plugin.h"
 #include "../../utils/log.h"
 #include "../../utils/string.h"
@@ -212,6 +214,7 @@ gdInput::gdInput(gdInputList* gdi, InputChannel* i, int X, int Y, int W)
 
 	inputMidiDevice->add("- no midi source -");
 	inputMidiDevice->value(0);
+	inputMidiDevice->callback(cb_setInputMidiDevice, (void*)this);
 
 	inputMidiChannel->add("All");
 	for (int j = 0; j < 16; j++) inputMidiChannel->add(std::to_string(j+1).c_str());
@@ -352,7 +355,7 @@ void gdInput::cb_setInputAudio()
 
 void gdInput::cb_setInputMidiDevice()
 {
-
+	ch->midiInput = mdh::getMidiDeviceByIndex(inputMidiDevice->value()-1);
 }
 /* -------------------------------------------------------------------------- */
 
@@ -425,4 +428,19 @@ void gdInput::update() {
 	else if (conf::channelsIn > 1) for (int i = 0; i < conf::channelsIn-1; i++) inputAudio->add((gu_iToString(i+1) + "-" + gu_iToString(i+2)).c_str());
 	else ch->inputIndex = -1;
 	inputAudio->value(ch->inputIndex);
+
+	inputMidiDevice->clear();
+	int devCount = mdh::getMidiDeviceCount();
+	if (devCount > 0)
+	{
+		inputMidiDevice->add("- no midi input -");
+		for (int i = 0; i < devCount; i++)
+			inputMidiDevice->add(mdh::midiDevices[i]->getName().c_str());
+		inputMidiDevice->value(0);
+	}
+	else
+	{
+		inputMidiDevice->add("- no midi devices -");
+		inputMidiDevice->value(0);
+	}
 }

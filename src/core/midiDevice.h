@@ -25,29 +25,65 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_MIDI_DISPATCHER_H
-#define G_MIDI_DISPATCHER_H
+#ifndef G_MIDI_DEVICE_H
+#define G_MIDI_DEVICE_H
 
-
-#ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
-	#include <stdint.h>
+#ifdef G_OS_MAC
+	#include <RtMidi.h>
 #else
-	#include <cstdint>
+	#include <rtmidi/RtMidi.h>
 #endif
-#include "midiDevice.h"
+
+
+#include <string>
+using std::string;
 
 namespace giada {
-namespace m {
-namespace midiDispatcher
+namespace m
 {
-typedef void (cb_midiLearn) (uint32_t, void*);
+class MidiDevice
+{
+public:
 
-void startMidiLearn(cb_midiLearn* cb, void* data);
-void stopMidiLearn();
+	MidiDevice(int index);
 
-void dispatch(MidiDevice *device, int byte1, int byte2, int byte3);
+	int getIndex() const;
+	string getName() const;
+	int getPortIn() const;
+	int getPortOut() const;
+	bool getNoNoteOff() const;
 
-}}}; // giada::m::midiDispatcher::
+	void setName(string name);
+	void setPortIn(int port);
+	void setPortOut(int port);
+	void setNoNoteOff(bool no);
+
+	unsigned getInPortCount();
+	unsigned getOutPortCount();
+
+	string getInPortName(unsigned p);
+	string getOutPortName(unsigned p);
+
+private:
+
+	void callback(double t, std::vector<unsigned char>* msg, void* data);
+
+	int		 m_index;
+	string m_name;
+	int    m_portIn;
+	int    m_portOut;
+	bool   m_noNoteOff;
+	string m_midiMapPath;
+	string m_lastFileMap;
+
+	RtMidiIn*  m_midiIn;
+	RtMidiOut* m_midiOut;
+
+	bool m_statusIn;
+	bool m_statusOut;
+};
+
+}} // giada::m::
 
 
 #endif

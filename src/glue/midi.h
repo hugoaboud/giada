@@ -2,6 +2,13 @@
  *
  * Giada - Your Hardcore Loopmachine
  *
+ * glue
+ * Intermediate layer GUI <-> CORE.
+ *
+ * How to know if you need another glue_ function? Ask yourself if the
+ * new action will ever be called via MIDI or keyboard/mouse. If yes,
+ * put it here.
+ *
  * -----------------------------------------------------------------------------
  *
  * Copyright (C) 2010-2018 Giovanni A. Zuliani | Monocasual
@@ -25,29 +32,33 @@
  * -------------------------------------------------------------------------- */
 
 
-#ifndef G_MIDI_DISPATCHER_H
-#define G_MIDI_DISPATCHER_H
+#ifndef G_GLUE_MIDI_H
+#define G_GLUE_MIDI_H
 
+#include <string>
 
-#ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
-	#include <stdint.h>
-#else
-	#include <cstdint>
-#endif
-#include "midiDevice.h"
+#include "../core/midiDevice.h"
 
 namespace giada {
-namespace m {
-namespace midiDispatcher
+namespace c     {
+namespace midi
 {
-typedef void (cb_midiLearn) (uint32_t, void*);
 
-void startMidiLearn(cb_midiLearn* cb, void* data);
-void stopMidiLearn();
+/* addColumnChannel
+Add a MIDI Device to the stack. Return the device. */
 
-void dispatch(MidiDevice *device, int byte1, int byte2, int byte3);
+m::MidiDevice* addMidiDevice();
 
-}}}; // giada::m::midiDispatcher::
+/* deletChannel
+Removes a MidiDevice. */
 
+void deleteMidiDevice(m::MidiDevice* dev, bool warn=true);
+
+/* setName
+Set the name of a MidiDevice. */
+
+void setName(m::MidiDevice* dev, string name);
+
+}}} // giada::c::midi::
 
 #endif

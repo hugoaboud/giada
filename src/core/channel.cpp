@@ -238,15 +238,6 @@ void Channel::sendMidiLsolo()
 		sendMidiLmessage(midiOutLsolo, midimap::soloOff);
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-
-void Channel::receiveMidi(const MidiEvent& midiEvent)
-{
-}
-
-
 /* -------------------------------------------------------------------------- */
 
 
@@ -416,6 +407,41 @@ std::string Channel::getName() const
 	return name;
 }
 
+/* -------------------------------------------------------------------------- */
+
+void Channel::receiveMidi(const giada::m::MidiEvent& midiEvent) {
+#ifdef WITH_VST
+
+
+	MidiEvent midiEventFlat(midiEvent);
+	midiEventFlat.setChannel(0);
+
+	while (true) {
+		if (pthread_mutex_trylock(&pluginHost::mutex_midi) != 0)
+			continue;
+		gu_log("[Channel::receiveMidi] msg=%X\n", midiEventFlat.getRaw());
+		addVstMidiEvent(midiEventFlat.getRaw(), 0);
+		pthread_mutex_unlock(&pluginHost::mutex_midi);
+		break;
+	}
+
+#endif
+}
+
+#ifdef WITH_VST
+
+void Channel::addVstMidiEvent(uint32_t msg, int localFrame)
+{
+	juce::MidiMessage message = juce::MidiMessage(
+		kernelMidi::getB1(msg),
+		kernelMidi::getB2(msg),
+		kernelMidi::getB3(msg));
+	midiBuffer.addEvent(message, localFrame);
+}
+
+#endif
+
+/* -------------------------------------------------------------------------- */
 
 void Channel::setName(const std::string& s)
 {

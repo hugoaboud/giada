@@ -67,24 +67,6 @@ void MidiChannel::copy(const Channel* src_, pthread_mutex_t* pluginMutex)
 	midiOutChan = src->midiOutChan;
 }
 
-
-/* -------------------------------------------------------------------------- */
-
-
-#ifdef WITH_VST
-
-void MidiChannel::addVstMidiEvent(uint32_t msg, int localFrame)
-{
-	juce::MidiMessage message = juce::MidiMessage(
-		kernelMidi::getB1(msg),
-		kernelMidi::getB2(msg),
-		kernelMidi::getB3(msg));
-	midiBuffer.addEvent(message, localFrame);
-}
-
-#endif
-
-
 /* -------------------------------------------------------------------------- */
 
 

@@ -131,6 +131,8 @@ src/core/midiChannel.h                 \
 src/core/midiChannel.cpp               \
 src/core/midiMapConf.h                 \
 src/core/midiMapConf.cpp               \
+src/core/midiDevice.h                  \
+src/core/midiDevice.cpp                \
 src/core/midiEvent.h                   \
 src/core/midiEvent.cpp                 \
 src/core/audioBuffer.h                 \
@@ -141,6 +143,8 @@ src/core/kernelAudio.h                 \
 src/core/kernelAudio.cpp               \
 src/core/pluginHost.h		               \
 src/core/pluginHost.cpp                \
+src/core/midiDeviceHandler.h           \
+src/core/midiDeviceHandler.cpp         \
 src/core/mixerHandler.h                \
 src/core/mixerHandler.cpp              \
 src/core/init.h                        \
@@ -173,6 +177,8 @@ src/core/channelManager.h              \
 src/core/channelManager.cpp            \
 src/glue/main.h                        \
 src/glue/main.cpp                      \
+src/glue/midi.h                        \
+src/glue/midi.cpp                      \
 src/glue/io.h                          \
 src/glue/io.cpp                        \
 src/glue/storage.h                     \
@@ -203,16 +209,18 @@ src/gui/dialogs/bpmInput.h             \
 src/gui/dialogs/bpmInput.cpp           \
 src/gui/dialogs/channelNameInput.h     \
 src/gui/dialogs/channelNameInput.cpp   \
-src/gui/dialogs/channelSelectInput.h     \
-src/gui/dialogs/channelSelectInput.cpp   \
+src/gui/dialogs/channelSelectInput.h   \
+src/gui/dialogs/channelSelectInput.cpp \
+src/gui/dialogs/midiDeviceNameInput.h  \
+src/gui/dialogs/midiDeviceNameInput.cpp\
 src/gui/dialogs/gd_config.h      			 \
 src/gui/dialogs/gd_config.cpp          \
 src/gui/dialogs/gd_devInfo.h           \
 src/gui/dialogs/gd_devInfo.cpp		     \
 src/gui/dialogs/pluginList.h	         \
 src/gui/dialogs/pluginList.cpp         \
-src/gui/dialogs/inputList.h	         \
-src/gui/dialogs/inputList.cpp         \
+src/gui/dialogs/inputList.h	           \
+src/gui/dialogs/inputList.cpp          \
 src/gui/dialogs/columnList.h	         \
 src/gui/dialogs/columnList.cpp         \
 src/gui/dialogs/pluginWindow.h	       \
@@ -327,6 +335,8 @@ src/gui/elems/mainWindow/keyboard/sampleChannelButton.h   \
 src/gui/elems/mainWindow/keyboard/sampleChannelButton.cpp \
 src/gui/elems/mainWindow/keyboard/midiChannelButton.h     \
 src/gui/elems/mainWindow/keyboard/midiChannelButton.cpp   \
+src/gui/elems/config/midiDevice.h      \
+src/gui/elems/config/midiDevice.cpp    \
 src/gui/elems/config/tabMisc.h         \
 src/gui/elems/config/tabMisc.cpp       \
 src/gui/elems/config/tabMidi.h         \

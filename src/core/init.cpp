@@ -109,8 +109,8 @@ void init_prepareKernelAudio()
 void init_prepareKernelMIDI()
 {
 	kernelMidi::setApi(conf::midiSystem);
-	kernelMidi::openOutDevice(conf::midiPortOut);
-	kernelMidi::openInDevice(conf::midiPortIn);
+	//kernelMidi::openOutDevice(conf::midiPortOut);
+	//kernelMidi::openInDevice(conf::midiPortIn);
 }
 
 

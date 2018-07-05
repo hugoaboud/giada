@@ -285,6 +285,13 @@ public:
 
 #ifdef WITH_VST
   std::vector <Plugin*> plugins;
+
+	/* addVstMidiEvent
+	 * Add a new Midi event to the midiEvent stack fom a composite uint32_t raw
+	 * Midi event. LocalFrame is the offset: it tells where to put the event
+	 * inside the buffer. */
+
+	void addVstMidiEvent(uint32_t msg, int localFrame);
 #endif
 
 };

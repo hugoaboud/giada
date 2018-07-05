@@ -28,6 +28,11 @@
 #ifndef G_KERNELMIDI_H
 #define G_KERNELMIDI_H
 
+#ifdef G_OS_MAC
+	#include <RtMidi.h>
+#else
+	#include <rtmidi/RtMidi.h>
+#endif
 
 #ifdef __APPLE__  // our Clang still doesn't know about cstdint (c++11 stuff)
 	#include <stdint.h>
@@ -35,7 +40,7 @@
 	#include <cstdint>
 #endif
 #include <string>
-
+#include "midiDevice.h"
 
 namespace giada {
 namespace m {
@@ -75,19 +80,13 @@ bool getStatus();
 
 /* open/close/in/outDevice */
 
-int openOutDevice(int port);
-int openInDevice(int port);
-int closeInDevice();
-int closeOutDevice();
+RtMidiIn *openInDevice();
+RtMidiOut *openOutDevice();
 
-/* getIn/OutPortName
- * return the name of the port 'p'. */
-
-std::string getInPortName(unsigned p);
-std::string getOutPortName(unsigned p);
-
-unsigned countInPorts();
-unsigned countOutPorts();
+int openInPort(RtMidiIn *device, int port, MidiDevice *dev);
+int openOutPort(RtMidiOut *device, int port);
+int closeInPort(RtMidiIn *device);
+int closeOutPort(RtMidiOut *device);
 
 bool hasAPI(int API);
 

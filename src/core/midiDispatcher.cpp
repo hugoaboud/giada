@@ -33,6 +33,7 @@
 #include "../glue/main.h"
 #include "../utils/log.h"
 #include "channel.h"
+#include "inputChannel.h"
 #include "sampleChannel.h"
 #include "columnChannel.h"
 #include "midiChannel.h"
@@ -99,12 +100,44 @@ void processPlugins(Channel* ch, const MidiEvent& midiEvent)
 /* -------------------------------------------------------------------------- */
 
 
-void processChannels(const MidiEvent& midiEvent)
+void processChannels(const MidiDevice *device, const MidiEvent& midiEvent)
 {
 	/* Pure value: if 'noNoteOff' in global config, get the raw value with the
 	'velocy' byte. Otherwise strip it off. */
 
 	uint32_t pure = midiEvent.getRaw(conf::noNoteOff);
+
+
+	/*
+			Input Channels
+	*/
+
+	for (InputChannel* ch : mixer::inputChannels) {
+		if (!ch->isMidiInAllowed(midiEvent.getChannel()))
+			continue;
+		if (pure == ch->midiInMute) {
+			gu_log("  >>> mute input ch=%d (pure=0x%X)\n", ch->index, pure);
+			c::channel::toggleMute(ch, false);
+		}
+		else if (pure == ch->midiInVolume) {
+			float vf = midiEvent.getVelocity() / 127.0f;
+			gu_log("  >>> volume input ch=%d (pure=0x%X, value=%d, float=%f)\n",
+				ch->index, pure, midiEvent.getVelocity(), vf);
+			c::channel::setVolume(ch, vf, false);
+		}
+
+		if (ch->midiInput != device) continue;
+
+	#ifdef WITH_VST
+		processPlugins(ch, midiEvent); // Process plugins' parameters
+	#endif
+
+		ch->receiveMidi(midiEvent);
+	}
+
+	/*
+		Resource Channels
+	*/
 
 	for (ColumnChannel* cch : mixer::columnChannels) {
 		for (ResourceChannel* ch : (*cch)) {
@@ -168,7 +201,7 @@ void processChannels(const MidiEvent& midiEvent)
 
 			/* Redirect full midi message (pure + velocity) to plugins. */
 
-			ch->receiveMidi(midiEvent.getRaw());
+			ch->receiveMidi(midiEvent);
 		}
 	}
 }
@@ -254,7 +287,7 @@ void stopMidiLearn()
 /* -------------------------------------------------------------------------- */
 
 
-void dispatch(int byte1, int byte2, int byte3)
+void dispatch(MidiDevice *device, int byte1, int byte2, int byte3)
 {
 	/* Here we want to catch two things: a) note on/note off from a keyboard and
 	b) knob/wheel/slider movements from a controller. */
@@ -275,7 +308,7 @@ void dispatch(int byte1, int byte2, int byte3)
 		cb_learn(midiEvent.getRaw(conf::noNoteOff), cb_data);
 	else {
 		processMaster(midiEvent);
-		processChannels(midiEvent);
+		processChannels(device, midiEvent);
 	}
 }
 }}}; // giada::m::midiDispatcher::

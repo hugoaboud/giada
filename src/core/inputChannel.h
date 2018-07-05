@@ -47,6 +47,7 @@ public:
 	void parseAction(giada::m::recorder::action* a, int localFrame, int globalFrame, bool mixerIsRunning) override;
 
 	int				inputIndex;
+	giada::m::MidiDevice *midiInput;
 };
 
 #endif
